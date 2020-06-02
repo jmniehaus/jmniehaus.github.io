@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Iteratively Re-weighted Least Squares (IRLS):</title>
+
+<script src="site_libs/header-attrs-2.2/header-attrs.js"></script>
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  { color: #cccccc; background-color: #303030; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ffcfaf; } /* Alert */
+code span.an { color: #7f9f7f; font-weight: bold; } /* Annotation */
+code span.at { } /* Attribute */
+code span.bn { color: #dca3a3; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #f0dfaf; } /* ControlFlow */
+code span.ch { color: #dca3a3; } /* Char */
+code span.cn { color: #dca3a3; font-weight: bold; } /* Constant */
+code span.co { color: #7f9f7f; } /* Comment */
+code span.cv { color: #7f9f7f; font-weight: bold; } /* CommentVar */
+code span.do { color: #7f9f7f; } /* Documentation */
+code span.dt { color: #dfdfbf; } /* DataType */
+code span.dv { color: #dcdccc; } /* DecVal */
+code span.er { color: #c3bf9f; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #c0bed1; } /* Float */
+code span.fu { color: #efef8f; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #7f9f7f; font-weight: bold; } /* Information */
+code span.kw { color: #f0dfaf; } /* Keyword */
+code span.op { color: #f0efd0; } /* Operator */
+code span.ot { color: #efef8f; } /* Other */
+code span.pp { color: #ffcfaf; font-weight: bold; } /* Preprocessor */
+code span.sc { color: #dca3a3; } /* SpecialChar */
+code span.ss { color: #cc9393; } /* SpecialString */
+code span.st { color: #cc9393; } /* String */
+code span.va { } /* Variable */
+code span.vs { color: #cc9393; } /* VerbatimString */
+code span.wa { color: #7f9f7f; font-weight: bold; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 45px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h2 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h3 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h4 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h5 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.section h6 {
+  padding-top: 50px;
+  margin-top: -50px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">John M. Niehaus</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="./files/niehaus_cv_S2020_online.pdf">CV</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Programming &amp; Derivations
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="irls.html">Iteratively Reweighted Least Squares for GLMs</a>
+    </li>
+    <li class="dropdown-header">COMING SOON:</li>
+    <li class="dropdown-header">Multivariate Normal Draws</li>
+    <li class="dropdown-header">Efficient, Reproducible Monte Carlo Analyses</li>
+    <li class="dropdown-header">Bias of MLE for Gamma Rate Parameter</li>
+    <li class="dropdown-header">Programming a Heckman Model in R</li>
+    <li class="dropdown-header">Derivation of Negative Binomial Regression</li>
+    <li class="dropdown-header">Spurious Regression Problem in Time Series</li>
+    <li class="dropdown-header">Omitted Variables Bias in Probit Models</li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="http://github.com/jmniehaus">
+    <span class="fa fa-github fa-lg"></span>
+     
+    Github
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Iteratively Re-weighted Least Squares (IRLS):</h1>
+<h3 class="subtitle">Motivation, Derivation, and Programming in R</h3>
+
+</div>
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { 
+      equationNumbers: { 
+            autoNumber: "AMS",
+      } 
+  }
+});
+</script>
+<style type="text/css">
+
+  body{ /* Normal  */
+      font-size: 16px;
+    }
+    
+  p {
+  line-height: 1.75em;
+  margin-bottom: 1.5em;
+  }
+  
+</style>
+<p><br />
+</p>
+<p><strong>NOTE:</strong> <em>The material presented here is not original in the sense that others have already researched this. I am simply reiterating work that has already been done. Please see the the end of the document for supporting references.</em></p>
+<p><br />
+</p>
+<div id="motivation" class="section level1">
+<h1>Motivation</h1>
+<hr />
+<div id="what-is-it-and-why-use-it" class="section level3">
+<h3>What is it, and why use it?</h3>
+<p>When reading about GLMs, authors often state that the MLEs of the parameters are found by iteratively reweighted least squares (IRLS). However, texts vary in their mathematical treatment of the process, with some stating that Newton’s method is used, while others give a bit more derivation than others <span class="citation">(for some examples, see: Friedman, Hastie, and Tibshirani <a href="#ref-ESL" role="doc-biblioref">2009</a>, 121; Hilbe <a href="#ref-hilbe2011negative" role="doc-biblioref">2011</a>, Ch. 4; Jorgensen <a href="#ref-jorgensen2006iteratively" role="doc-biblioref">2006</a>; Long <a href="#ref-long1997" role="doc-biblioref">1997</a>; Nelder and Wedderburn <a href="#ref-nelder1972generalized" role="doc-biblioref">1972</a>, 372–74; Stirling <a href="#ref-stirling1984iteratively" role="doc-biblioref">1984</a>)</span>. Thus, the purpose of this page is to consolidate several sources on IRLS into a general derivation, followed by specific derivations for logistic and Poisson regression, both with example programming in R.</p>
+<p>For a bit of background, IRLS is an iterative method that can (among other things) be used to find the coefficients of a generalized linear model.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> At each iteration, it utilizes weighted least squares until convergence to the vector of maximum likelihood estimates (MLEs). The method relies on the Newton-Raphson algorithm, but is equivalent to Fisher scoring when using the canonical link (e.g., logit for logistic regression, and log for Poisson).<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> However, at each iteration of the Newton-Raphson algorithm, IRLS computes the closed-form solution to a weighted least squares problem. Interestingly, then, it takes an optimization problem without a closed-form solution, and turns it into one that does have a solution at each iteration. Unfortunately, the Newton-Raphson algorithm requires an analytic first and second derivative (or good approximations) in order to work, so often times alternative, quasi-Newton methods are used for numerical optimization. These methods do not require analytic derivatives to converge, and can therefore be used when analytic derivatives are not easily found.</p>
+<p>Because IRLS relies on the Newton-Raphson algorithm to converge, it follows that first and second partials are necessary. Although this can be expensive, computing the gradient vector and Hessian matrix is fairly simple for typical GLMs, and therefore lends to IRLS quite nicely. By supplying an analytic first and second derivative, we forgo having to approximate these functions, and therefore converge fairly fast to the vector of MLEs. Alternative, quasi-Newton methods must approximate both the first and second derivatives by a differencing approach, which can be computationally costly.</p>
+<p><br />
+</p>
+</div>
+<div id="why-study-it" class="section level3">
+<h3>Why study it?</h3>
+<p>My initial motivation to study IRLS came about when I was using R’s <code>optim()</code> command to find the maximum of a custom-defined likelihood. In studying the source-code of the <code>glm()</code> function, I found that it was not using quasi-Newton methods (as is mostly the case with <code>optim</code>), which lead me to study IRLS. Thus, aside from some of the clear efficiency and accuracy gains from IRLS over other numerical optimization procedures for estimating GLMs, there is another, more intrinsically valuable reason to study IRLS. Namely, R’s <code>glm</code> command is in fact running the IRLS algorithm “under the hood,” so to speak (and most canned GLM packages do so, too). That is, when user’s specify a GLM such as <code>glm(y~x, family=binomial)</code> in R, the underlying routine (<code>glm.fit</code>, for those interested) makes a call to C, which then makes a call to FORTRAN, with FORTRAN finally running the IRLS algorithm (<a href="https://madrury.github.io/jekyll/update/statistics/2016/07/20/lm-in-R.html">This link</a> has a deep exposition on the process, for those interested). Thus, despite how many social scientists may be taught MLE and GLMs (i.e., quasi-Newton methods), the actual procedure utilized by R is in fact IRLS.</p>
+<p><br />
+</p>
+</div>
+</div>
+<div id="general-derivation" class="section level1">
+<h1>General Derivation</h1>
+<hr />
+<div id="understanding-newtons-method" class="section level3">
+<h3>Understanding Newton’s Method</h3>
+<p>As has already been discussed, the underlying machinery of IRLS is the Newton-Raphson algorithm. Due to this fact, I first review Newton’s method for finding the zeros of a function, the results of which are easily ported over to a general derivation of the IRLS algorithm.</p>
+<p>Suppose we have the following function:</p>
+<p><img src="irls_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p>and we want to approximate the location at which it crosses the x-axis. That is, we want to find the zero, or root of the function without having to use the quadratic equation or some other analytic method (indeed, we often <em>cannot</em> find a closed-form solution in the case of GLMs). We can turn to Newton’s method to do so.</p>
+<p>In addition to the above function, suppose that we have a single point <span class="math inline">\((x_0,f(x_0))\)</span> available to us. The point <span class="math inline">\(x_0\)</span> could simply be a guess about the root, with the corresponding function evaluation <span class="math inline">\(y_0=f(x_0)\)</span> there. Because we are given the function in this scenario, we then know from calculus that the slope of the function at this point is <span class="math inline">\(f&#39;(x_0)\)</span>. So we have a point on the function, <span class="math inline">\(y_0 = f(x_0)\)</span>, and the slope at that point <span class="math inline">\(f&#39;(x_0)\)</span>. Further, notice that the point <span class="math inline">\((x_0,f(x_0))\)</span> on the function is, by definition, also a point on the tangent line. Because we have a point on the tangent, as well as that tangent’s slope, we can then linearly approximate the function using the point-slope form of the tangent at <span class="math inline">\((x_0,f(x_0))\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+y-f(x_0) &amp;= f&#39;(x_0)(x-x_0) \nonumber \\
+\nonumber \\
+\implies y &amp;= f(x_0) + f&#39;(x_0)(x-x_0) \label{newton} \\
+\end{align}\]</span></p>
+<p>Alternatively, we could look at this as a Taylor series expansion of <span class="math inline">\(f(x)\)</span> about the point <span class="math inline">\(x_0\)</span>, where we simply drop the higher order polynomials altogether. The Taylor Series view will become important when applying the above to ML estimation.</p>
+<p>Graphically, suppose we select an arbitrary point <span class="math inline">\(x_0\)</span>, and draw its corresponding linear approximation to the <span class="math inline">\(f(x)\)</span> as in the process just described:</p>
+<p><img src="irls_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>Glancing at the plot, it looks like the point at which the red tangent intersects the x-axis is somewhat closer to the function’s zero than is the initial guess, <span class="math inline">\(x_0\)</span>. So, what if we updated our guess about where the zero is, from <span class="math inline">\(x_0\)</span> to <span class="math inline">\(x_1\)</span>, where <span class="math inline">\(x_1\)</span> is the point where the original red tangent intersects the x-axis? Lets find out.</p>
+<p>First, we have the equation for the red line; thus, we can obtain the x-intercept by solving for <span class="math inline">\(x=x_1\)</span> in equation \ref{newton}:</p>
+<p><span class="math display">\[\begin{align}
+y &amp;= f(x_0) + f&#39;(x_0)(x-x_0) \nonumber \\
+\nonumber \\
+\implies 0 &amp; = f(x_0) + f&#39;(x_0)(x_1-x_0) \nonumber \\
+\nonumber \\
+x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)} 
+\end{align}\]</span></p>
+<p>Now that we have <span class="math inline">\(x_1\)</span>, we can obtain the corresponding tangent/linear approximation to <span class="math inline">\(f(x)\)</span>, but this time at <span class="math inline">\(f(x_1)\)</span>. Recall, <span class="math inline">\(x_1\)</span> is the point at which <span class="math inline">\(x_0\)</span>’s tangent intersected the x-axis. Graphically, then:</p>
+<p><img src="irls_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Now a pattern is emerging. The <span class="math inline">\(x\)</span>-intercepts of the tangent line seem to be moving closer to the <span class="math inline">\(x\)</span>-intercept of <span class="math inline">\(f(x)\)</span>, which is what we ultimately want to find. Perhaps if we continue this process—finding tangents, finding their <span class="math inline">\(x\)</span>-intercepts, and using these <span class="math inline">\(x\)</span>-intercepts to find new tangents—until the <span class="math inline">\(x\)</span>-intercepts stop changing by some tolerance limit, we will converge to the zero of the function. Graphically, carrying this process (nearly)<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> to its limit yields the following set of points:</p>
+<p><img src="irls_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>To verify that the algorithm converges, the function here is <span class="math inline">\(f(x) = -e^x + 4\)</span>. Solving for the zero analytically yields <span class="math inline">\(\ln(4) = 1.3862944\)</span>. The below R-code shows that the Newton Method correctly arrives at this solution:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co">#fns</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>fn =<span class="st"> </span><span class="cf">function</span>(x) <span class="op">-</span><span class="kw">exp</span>(x)<span class="op">+</span><span class="dv">4</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>fprime =<span class="st"> </span><span class="cf">function</span>(x) <span class="op">-</span><span class="kw">exp</span>(x)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="co"># function that returns x-intercepts at successive newton iterations.</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="co"># Wont work on multi-dimensional problems</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>newt =<span class="st"> </span><span class="cf">function</span>(x0, fn, fprime, <span class="dt">itmax=</span><span class="dv">10</span>, <span class="dt">tol=</span><span class="fl">1e-3</span>){</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>  xint =<span class="st"> </span><span class="cf">function</span>(x) x <span class="op">-</span><span class="st"> </span><span class="kw">fn</span>(x)<span class="op">/</span><span class="kw">fprime</span>(x)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>  res=<span class="kw">vector</span>()</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>  res[<span class="dv">1</span>]=x0</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>  i=<span class="dv">1</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>  </span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>  <span class="cf">while</span>(i <span class="op">&lt;=</span><span class="st"> </span>itmax){</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>    i =<span class="st"> </span>i <span class="op">+</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>    <span class="cf">if</span>(i <span class="op">%%</span><span class="st"> </span><span class="dv">5</span> <span class="op">==</span><span class="st"> </span><span class="dv">0</span>) <span class="kw">message</span>(<span class="st">&quot;Iterating...&quot;</span>, i, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>    </span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>    res[i] =<span class="st"> </span><span class="kw">xint</span>(res[i<span class="dv">-1</span>])</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>    </span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>    <span class="cf">if</span>(<span class="kw">abs</span>(res[i]<span class="op">-</span>res[i<span class="dv">-1</span>]) <span class="op">&lt;</span><span class="st"> </span>tol) <span class="cf">break</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a>    </span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>    <span class="cf">if</span>(i<span class="op">==</span>itmax){</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a>      <span class="kw">warning</span>(<span class="st">&quot;Stopping value of intercept:&quot;</span>, res[i], <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a>      <span class="kw">stop</span>(<span class="st">&quot;Maximum iterations reached prior to convergence.&quot;</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a>    }</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>    </span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>  }</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a>  </span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>  <span class="kw">return</span>(<span class="kw">list</span>(<span class="dt">all_ints =</span> res, <span class="dt">final_val =</span> <span class="kw">tail</span>(res,<span class="dv">1</span>)))</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a>}</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a><span class="co">#point</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a>x0 =<span class="st"> </span><span class="fl">.35</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true"></a><span class="kw">newt</span>(x0, <span class="dt">fn=</span>fn, <span class="dt">fprime=</span>fprime)</span></code></pre></div>
+<pre><code>## Iterating...5</code></pre>
+<pre><code>## $all_ints
+## [1] 0.350000 2.168752 1.626033 1.412866 1.386644 1.386294
+## 
+## $final_val
+## [1] 1.386294</code></pre>
+<p><br />
+</p>
+</div>
+<div id="putting-the-iterative-in-irls" class="section level3">
+<h3>Putting the “Iterative” in IRLS</h3>
+<p>Now that we’ve reviewed Newton’s method (a.k.a., Newton-Raphson), we might wonder why this is useful for maximum likelihood estimation. In MLE we want to find the parameter vector that maximizes the log-likelihood function (i.e., <span class="math inline">\(\mathop{\arg \max}_\theta\ln\mathcal{L}(\theta|X)\)</span>). From basic calculus we know that to do so we simply take the first derivative of the likelihood function, set this equal to zero, and solve this first order condition for <span class="math inline">\(\theta\)</span>. However, in most instances of estimating generalized linear models, a closed form solution does not exist due to the presence of transcendental functions. Thus, a non-analytic solution is required, and Newton’s method provides one means of arriving at such a solution.</p>
+<p>Proceeding with the general derivation, suppose we have a likelihood function for a generalized linear model, and we take its natural logarithm:</p>
+<p><span class="math display">\[\begin{align}
+\mathcal{L}(\boldsymbol{\beta}| \boldsymbol{X}, \boldsymbol{y}) &amp;= \prod_{i=1}^n f(y_i | \boldsymbol{x}_i) \nonumber \\
+\implies \ln\mathcal{L}(\boldsymbol{\beta}| \boldsymbol{X}, \boldsymbol{y}) &amp;= \sum_{i=1}^n \ln f(y_i|\boldsymbol{x}_i) \label{like}
+\end{align}\]</span></p>
+<p>where:</p>
+<ul>
+<li><p><span class="math inline">\(f(\cdot)\)</span> is the marginal probability distribution function</p></li>
+<li><p><span class="math inline">\(\boldsymbol{\beta}\)</span> is the <span class="math inline">\(k\times 1\)</span> vector of parameters to be estimated</p></li>
+<li><p><span class="math inline">\(\boldsymbol{X}\)</span> is the <span class="math inline">\(n\times k\)</span> matrix of covariates with <span class="math inline">\(\boldsymbol{x}_i\)</span> being a <span class="math inline">\(1 \times k\)</span> observation vector</p></li>
+<li><p><span class="math inline">\(\boldsymbol{y}\)</span> is an <span class="math inline">\(n\times 1\)</span> vector of outcomes</p></li>
+<li><p>And <span class="math inline">\(n\)</span> is the number of observations, <span class="math inline">\(i\)</span>.</p></li>
+</ul>
+<p>We then want to find:</p>
+<p><span class="math display">\[\begin{align*}
+\mathop{\arg \max}_\beta [\ln\mathcal{L}(\boldsymbol{\beta}| \boldsymbol{X}, \boldsymbol{y})]
+\end{align*}\]</span></p>
+<p>by solving</p>
+<p><span class="math display">\[\begin{align}
+\dfrac{\partial}{\partial \beta_j}(\ln\mathcal{L}) = 0 \quad \forall \quad \beta_j, \quad j \in(1,2,...,k) \label{foc}
+\end{align}\]</span></p>
+<p>Just as we wanted to find the zeros of a function in the preceding review of Newton’s Method, we want to do so as well in equation \ref{foc}, but now we are finding the zeros of the first derivative instead of the original function. That is, we want to find the values of <span class="math inline">\(\beta=\hat\beta\)</span> where the first derivative function equals zero. This location will be a local extremum of the likelihood, and can be arrived at by Newton’s method.</p>
+<p>Specifically, we take the gradient of the log-likelihood with respect to <span class="math inline">\(\beta\)</span>. Since we want to find the zeros of this gradient, we take its Taylor series expansion, again ignoring higher order polynomials. Expanding the gradient of the log-likelihood about the point <span class="math inline">\(\boldsymbol{b}_0\)</span>, with the gradient denoted <span class="math inline">\(\nabla(\boldsymbol{\beta})\)</span>, we arrive at a linear approximation to the gradient of the log-likelihood with respect to the parameter vector:</p>
+<p><span class="math display">\[\begin{align*}
+\nabla(\boldsymbol{\beta}) = \nabla(\boldsymbol{b}_0) + \boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)(\boldsymbol{\beta }- \boldsymbol{b}_0)
+\end{align*}\]</span></p>
+<p>where:</p>
+<ul>
+<li><p><span class="math inline">\(\boldsymbol{b}_0\)</span> is an initial <span class="math inline">\(k \times 1\)</span> guess about the parameter vector</p></li>
+<li><p><span class="math inline">\(\nabla(\boldsymbol{b}_0)\)</span> is the <span class="math inline">\(k \times 1\)</span> gradient vector of the log-likelihood evaluated at <span class="math inline">\(b_0\)</span></p></li>
+<li><p>And <span class="math inline">\(\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)\)</span> is the <span class="math inline">\(k \times k\)</span> Hessian of the log-likelihood, similarly evaluated at <span class="math inline">\(b_0\)</span>.</p></li>
+</ul>
+<p>We can then re-arrange this as in the preceding Newton review in order to get an updated guess about the optimal solution. That is, setting the LHS to zero and solving for <span class="math inline">\(\beta\)</span> below (equivalent of finding the <span class="math inline">\(x\)</span>-intercept of the tangent in the Newton example):</p>
+<p><span class="math display">\[\begin{align}
+\nabla(\boldsymbol{\beta}) &amp;= \nabla(\boldsymbol{b}_0) + \boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)(\boldsymbol{\beta }- \boldsymbol{b}_0) \nonumber \\
+\nonumber \\
+\implies \boldsymbol{\beta }&amp;= \boldsymbol{b}_0 - [\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)]^{-1} \cdot \nabla(\boldsymbol{b}_0)\label{newton:glm}
+\end{align}\]</span></p>
+<p>Recalling from the previous example of Newton’s method, <span class="math inline">\(\boldsymbol{\beta}\)</span> in \ref{newton:glm} is the equivalent of the <span class="math inline">\(x\)</span>-intercepts of the tangent lines. That is, <span class="math inline">\(\beta\)</span> reflects our new guess for the solution to equation \ref{foc}, and therefore the new point about which we will expand the gradient of the log-likelihood. Thus, re-writing <span class="math inline">\(\boldsymbol{\beta}\)</span> on the LHS of \ref{newton:glm} as <span class="math inline">\(\boldsymbol{b}_1\)</span> for clarity:</p>
+<p><span class="math display">\[\begin{align}
+\boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 - [\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)]^{-1} \cdot \nabla(\boldsymbol{b}_0)
+\end{align}\]</span></p>
+<p>And lastly, as with the previous example of Newton’s method, we simply iterate until the old and new guesses differ by less than some constant. Because the guesses are often vectors, this difference takes the form of the Euclidean distance between the two vectors. That is, if <span class="math inline">\(\left\lVert \boldsymbol{b}_{i} - \boldsymbol{b}_{i-1} \right\rVert\)</span>, is less than some tolerance limit, the algorithm has converged, where <span class="math inline">\(i\)</span> indexes the iteration number of Newton’s procedure, and “<span class="math inline">\(||\)</span>” denotes the <span class="math inline">\(l_2\)</span> norm of a vector.</p>
+<p><br />
+</p>
+</div>
+<div id="putting-the-least-squares-in-irls" class="section level3">
+<h3>Putting the “Least Squares” in IRLS</h3>
+<p>So far we have seen the “iterative” part of IRLS from Newton’s method; what about the “weighted least squares” part? In order to get from Newton’s method to least squares, a bit more information is required. First, recall from calculus that the chain rule can be shown as <span class="math display">\[\frac{\mathrm{d}}{\mathrm{d}x}[f(g(x)] = \frac{\mathrm{d}f}{\mathrm{d}g}\frac{\mathrm{d}g}{\mathrm{d}x}\]</span> Then, suppose we have a log-likelihood as defined in equation \ref{like}, denoted as <span class="math inline">\(l\)</span>, and let <span class="math inline">\(\boldsymbol{x}_{i}\boldsymbol{\beta }\equiv \mu_i\)</span>.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> Then it follows from the chain rule and this likelihood that the first and second derivatives with respect to a single parameter, <span class="math inline">\(\beta_j\)</span>, are:</p>
+<p><span class="math display">\[\begin{align}
+\dfrac{\partial l}{\partial \beta_j} &amp;= \sum_{i=1}^n\dfrac{\partial l}{\partial \mu_i}\dfrac{\partial \mu_i}{\partial \beta_j} \nonumber \\
+&amp;= \sum_{i=1}^nx_{ij} \dfrac{\partial l}{\partial \mu_i} \qquad\quad \overset{\text{let}}{\equiv} \sum_{i=1}^nx_{ij} f_{\mu_i} \\
+\nonumber \\
+\nonumber \\
+\dfrac{\partial ^2l}{\partial \beta_j^2} &amp;= \sum_{i=1}^nx_{ij} \dfrac{\partial f_{\mu_i}}{\partial \mu_i} \dfrac{\partial \mu_i}{\partial \beta_j} \nonumber \\
+&amp;= \sum_{i=1}^nx_{ij}^2 \dfrac{\partial f_{\mu_i}}{\partial \mu_i}  \qquad\quad \overset{\text{let}}{\equiv} \sum_{i=1}^nx^2_{ij} f_{\mu_i\mu_i}
+\end{align}\]</span></p>
+<p>And with respect to the entire parameter vector, <span class="math inline">\(\boldsymbol{\beta}\)</span>, the gradient and Hessian are then:</p>
+<p><span class="math display">\[\begin{align}
+\dfrac{\partial l}{\partial \boldsymbol{\beta}} &amp;= \sum_{i=1}^n\boldsymbol{x}_i^\top f_{\mu_i} \qquad \quad \hspace{1.4ex} = \boldsymbol{X}^\top \boldsymbol{\gamma }\label{grad} \\ 
+\nonumber\\
+\nonumber\\
+\dfrac{\partial ^2l}{\partial \boldsymbol{\beta}^2} &amp;= \sum_{i=1}^n\boldsymbol{x}_i^\top f_{\mu_i\mu_i} \boldsymbol{x}_i \qquad = - \boldsymbol{X}^\top \boldsymbol{W X} \label{hess}
+\end{align}\]</span></p>
+<p>where:</p>
+<ul>
+<li><p><span class="math inline">\(\boldsymbol{\gamma}\)</span> is an <span class="math inline">\(n \times 1\)</span> vector, with elements <span class="math inline">\(\gamma_i = f_\mu\)</span></p></li>
+<li><p>And <span class="math inline">\(\boldsymbol{W}\)</span> is an <span class="math inline">\(n \times n\)</span> diagonal matrix with elements <span class="math inline">\(w_{ii} = -f_{\mu_i\mu_i}\)</span></p></li>
+</ul>
+<p>Thus, a necessary condition for equation \ref{hess} to be non-singular is <span class="math inline">\(f_{\mu_i\mu_i} \neq 0\)</span>, meaning that the underlying likelihood cannot be linear at any point.</p>
+<p>Now we can combine Newton’s method with the preceding gradient and Hessian. That is, Newton’s method as applied to MLE in equation \ref{newton:glm} relies on the gradient and Hessian with respect to <span class="math inline">\(\boldsymbol{\beta}\)</span> as defined in equations \ref{grad} and \ref{hess}. Each of these is evaluated at an initial guess <span class="math inline">\(\boldsymbol{b}_0\)</span>, and then iteration continues until convergence as previously defined. Thus, supposing we have this initial guess and the above equations equations:</p>
+<p><span class="math display">\[\begin{align}
+\boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 - [\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)]^{-1} \cdot \nabla(\boldsymbol{b}_0)
+\nonumber \\
+\nonumber \\
+\implies \boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 + (\boldsymbol{X}^\top \hat{ \boldsymbol{W}} \boldsymbol{X})^{-1} \boldsymbol{X}^\top \hat{\boldsymbol{\gamma}} \nonumber \\
+\nonumber\\
+&amp;= (\boldsymbol{X}^\top \hat{ \boldsymbol{W}} \boldsymbol{X})^{-1} \boldsymbol{X}^\top  ( \hat{\boldsymbol{W}}\boldsymbol{Xb}_0 + \hat{\boldsymbol{\gamma}} ) \nonumber \\
+\nonumber  \\
+\text{Now, letting} \nonumber \\
+\hat{\boldsymbol{z}} &amp; = \boldsymbol{Xb}_0 + \hat{\boldsymbol{W}}^{-1} \hat{\boldsymbol{\gamma}} \nonumber \\
+\nonumber \\
+\implies \boldsymbol{b}_1 &amp;= (\boldsymbol{X}^\top \hat{ \boldsymbol{W}} \boldsymbol{X})^{-1} \boldsymbol{X}^\top \hat{\boldsymbol{W}} \hat{\boldsymbol{z}} \label{irls}
+\end{align}\]</span></p>
+<p>And equation \ref{irls} is clearly a weighted least squares estimator, <span class="math inline">\(\boldsymbol{b}_1\)</span>. Thus, we’ve transformed the Newton-Raphson algorithm to one in which each iteration can be solved using weighted least squares. Accordingly, <span class="math inline">\(\boldsymbol{b}\)</span> is the equivalent of the <span class="math inline">\(x\)</span>-intercepts in the previous section on Newton’s method. Each estimated parameter vector, <span class="math inline">\(\boldsymbol{b}_p\)</span>, with <span class="math inline">\(p \in \mathbb{Z}^{\geq 0}\)</span> being the iteration number, is arrived at using weighted least squares. The next iteration uses this vector in updating to a new guess. Thus, the “hats” over the matrix <span class="math inline">\(\hat{\boldsymbol{W}}\)</span>, and the vectors <span class="math inline">\(\hat{\boldsymbol{\gamma}}\)</span> and <span class="math inline">\(\hat{\boldsymbol{z}}\)</span> denote that these quantities rely on estimates <span class="math inline">\(\boldsymbol{b}_{p-1}\)</span> from the previous iteration, and are therefore estimates themselves.</p>
+<p>Summing up, in order to go from this general IRLS derivation to IRLS for specific probability distributions, we need two quantities:</p>
+<ol style="list-style-type: decimal">
+<li><p>The first partial of the log-likelihood <span class="math inline">\(\equiv f_{\mu_i}\)</span> with respect to <span class="math inline">\(\mu_i = \boldsymbol{x}_i^\top \boldsymbol{\beta}\)</span></p></li>
+<li><p>The second partial of the log-likelihood <span class="math inline">\(\equiv f_{\mu_i\mu_i}\)</span> with respect to <span class="math inline">\(\mu_i = \boldsymbol{x}_i^\top \boldsymbol{\beta}\)</span> .</p></li>
+</ol>
+<p>With each of these equations in hand, the chain rule tells us that we can simply multiply through by <span class="math inline">\(\boldsymbol{X}^\top\)</span> and <span class="math inline">\(\boldsymbol{X}^\top(\cdot)\boldsymbol{X}\)</span> to arrive at the the corresponding <span class="math inline">\(\nabla(\boldsymbol{\beta})\)</span> and <span class="math inline">\(\boldsymbol{\mathcal{H}}(\boldsymbol{\beta})\)</span> that we need in order to recast Newton’s method in terms of weighted least squares. As such, for each of the methods considered below, both of these quantities are derived.</p>
+<p><br />
+</p>
+</div>
+</div>
+<div id="logistic-regression" class="section level1">
+<h1>Logistic Regression</h1>
+<hr />
+<div id="derivation" class="section level3">
+<h3>Derivation</h3>
+<p>Logistic regression is used for binary response variables, and assumes that each observation is distributed independently from a Bernoulli distribution. Thus, it is used to model outcomes with only two possibilities, such as pass or fail, conflict or no conflict, clicked or not clicked, etc.</p>
+<p>Proceeding with the IRLS derivation for logistic regression, recall that we need the first and second partials of the log-likelihood, all as defined previously. Formally, define the likelihood for logistic regression as:</p>
+<p><span class="math display">\[\begin{align}
+\mathcal{L}(\boldsymbol{\beta }| \boldsymbol{x}_i, y_i) &amp;= \prod_i f(y_i | \boldsymbol{x}_i, \boldsymbol{\beta}) \nonumber \\
+\nonumber \\
+&amp;= \prod_i \pi(\mu_i)^{y_i}\cdot \left[1-\pi(\mu_i)^{1-y_i}\right] \nonumber \\
+\nonumber \\
+\implies \ln \mathcal{L} &amp;= \sum_i y_i \ln \pi(\mu_i) + (1-y_i)\ln(1-\pi(\mu_i)) \label{logistlike}
+\end{align}\]</span></p>
+<p>where:</p>
+<ul>
+<li><p><span class="math inline">\(\boldsymbol{\beta}\)</span>, <span class="math inline">\(\boldsymbol{x}_i\)</span>, and <span class="math inline">\(\mu_i\)</span> are the same as defined previously</p></li>
+<li><p><span class="math inline">\(y_i \sim \mathcal{B}(\pi(\mu_i))\)</span></p></li>
+<li><p>And <span class="math inline">\(\pi(\cdot)\)</span> is the cumulative density function for the logistic distribution.</p></li>
+</ul>
+<p>Expanding on this last point,</p>
+<p><span class="math display">\[\begin{align}
+\pi(\mu_i) &amp;= \dfrac{e^{\mu_i}}{1+e^{\mu_i}} \\
+\nonumber \\
+&amp;= \left(\frac{e^{-\mu_i}}{e^{-\mu_i}}\right) \cdot \dfrac{e^{\mu_i}}{1+e^{\mu_i}} \nonumber \\
+\nonumber \\
+&amp;= \frac{1}{1+e^{-\mu_i}}
+\end{align}\]</span></p>
+<p>With this log-likelihood in hand, it becomes clear that in order to find <span class="math inline">\(\partial l/\partial \mu_i\)</span>, we will need to find <span class="math inline">\(\partial \pi / partial \mu_i\)</span>. The math will be a bit neater if we find <span class="math inline">\(\partial \pi / partial \mu_i\)</span> first, then just substitute this in when finding the partials of the likelihood. For <span class="math inline">\(\pi(\mu_i)\)</span>, it is a straightforward application of the chain and product rules:</p>
+<p><span class="math display">\[\begin{align}
+\frac{\mathrm{d}}{\mathrm{d}\mu_i} (\pi(\mu_i)) &amp;= \frac{\mathrm{d}}{\mathrm{d}\mu_i} \frac{e^{\mu_i}}{1+e^{\mu_i}} \nonumber \\
+\nonumber \\
+&amp;= \frac{\mathrm{d}}{\mathrm{d}\mu_i} e^{\mu_i}(1+e^{\mu_i})^{-1} \nonumber \\
+\nonumber \\
+&amp;= e^{\mu_i} (1+e^{\mu_i})^{-1} + (-1)(1+e^{\mu_i})^{-2} (e^{\mu_i})(e^{\mu_i}) \nonumber \\
+\nonumber \\
+&amp;= \frac{e^{\mu_i}}{1+e^{\mu_i}} - \frac{(e^{\mu_i})^2}{(1+e^{\mu_i})^2} \nonumber \\
+\nonumber \\
+&amp;= \frac{e^{\mu_i}(1+e^{\mu_i})}{(1+e^{\mu_i})^2} - \frac{(e^{\mu_i})^2}{(1+e^{\mu_i})^2} \nonumber \\
+\nonumber \\
+&amp;= \frac{e^{\mu_i}}{(1+e^{\mu_i})^2} \nonumber \\
+\nonumber \\
+&amp;= \frac{e^{\mu_i}}{1+e^{\mu_i}}\frac{1}{1+e^{\mu_i}} \nonumber  \\
+\nonumber  \\
+&amp;= \pi(\mu_i)(1-\pi(\mu_i)) \qquad \overset{\text{let}}{\equiv} \pi&#39;(\mu_i) \label{logistprime}
+\end{align}\]</span></p>
+<p>Now that we have the derivative of <span class="math inline">\(\pi(\mu_i)\)</span>, we can get the derivative of the likelihood (equation \ref{logistlike}) with respect to <span class="math inline">\(\mu_i\)</span> a bit easier:</p>
+<p><span class="math display">\[\begin{align}
+\dfrac{\partial}{\partial \mu_i} (\ln \mathcal{L}) &amp;= \dfrac{\partial}{\partial \mu_i}  \sum_i y_i \ln \pi(\mu_i) + (1-y_i)\ln(1-\pi(\mu_i)) \nonumber \\
+\nonumber \\
+&amp;=y_i\frac{\pi&#39;(\mu_i)}{\pi(\mu_i)}-(1-y_i)\frac{\pi&#39;(\mu_i)}{1-\pi(\mu_i)} \nonumber \\
+\nonumber \\
+&amp;=y_i \frac{\pi(\mu_i)(1-\pi(\mu_i))}{\pi(\mu_i)}-(1-y_i)\frac{\pi(\mu_i)(1-\pi(\mu_i))}{1-\pi(\mu_i)} &amp; \small{\text{ (Sub. eq. \ref{logistprime} for $\pi&#39;(\mu_i)$)}} \nonumber \\
+\nonumber \\
+&amp;=y_i - \pi(\mu_i) \label{logistlikeprime}
+\end{align}\]</span></p>
+<p>Obtaining the second partial is again straightforward:</p>
+<p><span class="math display">\[\begin{align}
+\dfrac{\partial ^2}{\partial \mu_i^2}(\ln \mathcal{L}) &amp;= \dfrac{\partial}{\partial \mu} \left[y_i - \pi(\mu_i)\right] \nonumber \\
+\nonumber \\
+&amp;= -\pi(\mu_i)(1-\pi(\mu_i)) \label{logistlikeDprime}\\
+&amp;= -\pi&#39;(\mu_i) \nonumber 
+\end{align}\]</span></p>
+<p>Thus, for logistic regression, we have now derived <span class="math inline">\(f_{\mu_i}\)</span> and <span class="math inline">\(f_{\mu_i\mu_i}\)</span> as defined in equations \ref{grad} and \ref{hess}. Recalling the application of the chain-rule as discussed in the general derivation section, we then know that <span class="math inline">\(\nabla \boldsymbol{\beta}\)</span> and <span class="math inline">\(\mathcal{H}(\boldsymbol{\beta})\)</span> are defined as:</p>
+<p><span class="math display">\[\begin{align}
+\dfrac{\partial l}{\partial \boldsymbol{\beta}} &amp;= \sum_{i=1}^n\boldsymbol{x}_i^\top \left[y_i - \pi(\mu_i)\right] \nonumber \\
+\nonumber \\
+&amp; = \boldsymbol{X}^\top \left[\boldsymbol{y} - \pi(\boldsymbol{\mu})\right] \\
+&amp;= \boldsymbol{X}^\top \boldsymbol{\gamma }\nonumber
+\nonumber \\
+\nonumber \\
+\dfrac{\partial ^2 l}{\partial \boldsymbol{\beta}^2} &amp;= - \sum_{i=1}^n\boldsymbol{x}_i^\top \left[\pi(\mu_i)(1-\pi(\mu_i))\right] \boldsymbol{x}_i \nonumber \\
+\nonumber \\
+&amp;= - \boldsymbol{X}^\top \boldsymbol{W} \boldsymbol{X}
+\end{align}\]</span></p>
+<p>where all variables are defined as before, but the elements of <span class="math inline">\(\boldsymbol{\gamma}\)</span> are specifically <span class="math inline">\(\gamma_i=y_i-\pi(\mu_i)\)</span>, and diagonal elements of <span class="math inline">\(\boldsymbol{W}\)</span> are specifically <span class="math inline">\(w_{ii} = \pi&#39;(\mu_i) = \pi(\mu_i)(1-\pi(\mu_i))\)</span>.</p>
+<p>We thus have all of the moving parts required for estimating the coefficients (and standard errors) from logistic regression via IRLS (see equation \ref{irls} and its preceding derivation), and can proceed with programming the algorithm in R.</p>
+<p><br />
+</p>
+</div>
+<div id="programming-in-r" class="section level3">
+<h3>Programming in R</h3>
+<p>To get started with programming the IRLS algorithm for logistic regressin, I first define functions for the derivatives <span class="math inline">\(f_{\mu_i}\)</span> and <span class="math inline">\(f_{\mu_i\mu_i}\)</span>, as found in equations \ref{logistlikeprime} and \ref{logistlikeDprime}:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>fu_logistic =<span class="st"> </span><span class="cf">function</span>(y, X, b){</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>  pi =<span class="st"> </span><span class="kw">plogis</span>(X<span class="op">%*%</span>b)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>  y <span class="op">-</span><span class="st"> </span>pi</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>  </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>  }</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>fuu_logistic =<span class="st"> </span><span class="cf">function</span>(y, X, b){</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>  pi =<span class="st"> </span><span class="kw">plogis</span>(X<span class="op">%*%</span>b)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>  <span class="kw">return</span>(<span class="kw">as.vector</span>(<span class="op">-</span>pi<span class="op">*</span>(<span class="dv">1</span><span class="op">-</span>pi)))</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>  </span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>}</span></code></pre></div>
+<p>Now that we have the derivative functions, below I define the <code>irls</code> function for actually implementing the algorithm. It will take functions that return derivatives of the log-likelihood as arguments, <code>fu</code> and <code>fuu</code> from above, so that when we define other derivatives later on (i.e., for Poisson regression), we can simply input those functions to the already-existing <code>irls</code> function, rather than having to define another <code>irls</code> function. In other words, I’ve written the equivalent of a “general” IRLS function below that takes derivatives as arguments, derivatives which are functions themselves. We can then input any valid data and derivative functions to implement the algorithm.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="st">`</span><span class="dt">%!in%</span><span class="st">`</span> =<span class="st"> </span><span class="kw">Negate</span>(<span class="st">`</span><span class="dt">%in%</span><span class="st">`</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>irls =<span class="st"> </span><span class="cf">function</span>(fu, fuu, X, y, method, <span class="dt">starts=</span><span class="ot">NULL</span>, <span class="dt">itmax=</span><span class="dv">100</span>, <span class="dt">tol =</span> <span class="fl">1e-3</span>){</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>  <span class="cf">if</span>(method <span class="op">%!in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;logistic&quot;</span>,<span class="st">&quot;poisson&quot;</span>)) <span class="kw">stop</span>(<span class="st">&quot;`method` must be one of either `logistic`, or `poisson`&quot;</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>  </span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>  convergence =<span class="st"> </span><span class="dv">0</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>  iter =<span class="st"> </span><span class="dv">0</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>  </span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>  <span class="cf">if</span>(<span class="kw">is.null</span>(starts)){</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    b0 =<span class="st"> </span><span class="cf">switch</span>(method,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>                <span class="st">&quot;logistic&quot;</span> =<span class="st"> </span><span class="kw">rep</span>(<span class="dv">0</span>,<span class="kw">ncol</span>(X)),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>                <span class="st">&quot;poisson&quot;</span>  =<span class="st"> </span><span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">ncol</span>(X))</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>                )</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>  } <span class="cf">else</span> b0 =<span class="st"> </span>starts</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>  </span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>  <span class="cf">if</span>(<span class="kw">length</span>(b0) <span class="op">!=</span><span class="st"> </span><span class="kw">ncol</span>(X)) <span class="kw">stop</span>(<span class="st">&quot;Number of starting params is not equal to number of covariates.&quot;</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>  </span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>  <span class="cf">while</span>(iter <span class="op">&lt;=</span><span class="st"> </span>itmax){</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>  </span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>    iter =<span class="st"> </span>iter <span class="op">+</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>    <span class="cf">if</span>(iter <span class="op">%%</span><span class="st"> </span><span class="dv">10</span> <span class="op">==</span><span class="st"> </span><span class="dv">0</span>) <span class="kw">message</span>(<span class="st">&quot;Iterating...&quot;</span>, iter)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>    </span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>    </span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a>    gamma =<span class="st"> </span><span class="kw">fu</span>(y, X, b0) <span class="co"># gamma from equation above</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>    W =<span class="st"> </span><span class="kw">diag</span>(<span class="op">-</span><span class="kw">fuu</span>(y,X,b0)) </span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>    W_inv =<span class="st"> </span><span class="kw">diag</span>(<span class="op">-</span><span class="dv">1</span><span class="op">/</span><span class="kw">fuu</span>(y,X,b0)) <span class="co">#inverse of diag matrix, rather than solving explicitly for inverse.</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a>    z =<span class="st"> </span>X <span class="op">%*%</span><span class="st"> </span>b0 <span class="op">+</span><span class="st"> </span>W_inv <span class="op">%*%</span><span class="st"> </span>gamma</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a>    </span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a>    b1 =<span class="st"> </span><span class="kw">solve</span>( <span class="kw">crossprod</span>(X, W) <span class="op">%*%</span><span class="st"> </span>X ) <span class="op">%*%</span><span class="st"> </span><span class="kw">crossprod</span>(X, W) <span class="op">%*%</span><span class="st"> </span>z</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a>    </span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a>    <span class="cf">if</span>(<span class="kw">sqrt</span>(<span class="kw">crossprod</span>(b1<span class="op">-</span>b0)) <span class="op">&lt;</span><span class="st"> </span>tol) <span class="cf">break</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a>    <span class="cf">if</span>(iter <span class="op">==</span><span class="st"> </span>itmax){</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a>      <span class="kw">stop</span>(<span class="st">&quot;Maximum iterations reached prior to convergence.</span><span class="ch">\n</span><span class="st"> Retry using coefficients at termination as starting values:&quot;</span>, <span class="kw">paste0</span>(b1, <span class="dt">collapse=</span><span class="st">&quot;, &quot;</span>))</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a>    }</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a>    b0=b1</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a>    </span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a>  }</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true"></a>  </span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true"></a>  par =<span class="st"> </span><span class="kw">as.vector</span>(b1) <span class="co"># coefficient vector</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true"></a>  covmat =<span class="st"> </span><span class="kw">solve</span>(<span class="kw">crossprod</span>(X, W) <span class="op">%*%</span><span class="st"> </span>X) <span class="co"># covariance matrix</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true"></a>  se =<span class="st"> </span><span class="kw">sqrt</span>(<span class="kw">diag</span>(covmat)) <span class="co"># standard errors</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true"></a>  zscore  =<span class="st"> </span>par<span class="op">/</span>se</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true"></a>  pval    =<span class="st"> </span><span class="dv">2</span><span class="op">*</span><span class="kw">pnorm</span>(<span class="kw">abs</span>(zscore), <span class="dt">lower.tail =</span> F)</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true"></a>  coef=<span class="kw">cbind</span>(par,se,zscore,pval)</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true"></a>  <span class="kw">rownames</span>(coef) =<span class="st"> </span><span class="kw">colnames</span>(X)</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true"></a>  call =<span class="st"> </span><span class="kw">match.call</span>()</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true"></a>  obj =<span class="st"> &quot;Custom IRLS Function&quot;</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true"></a></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true"></a>  results =<span class="st"> </span><span class="kw">list</span>(<span class="dt">coef=</span>coef,</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true"></a>                 <span class="dt">par=</span>par,</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true"></a>                 <span class="dt">covmat=</span>covmat,</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true"></a>                 <span class="dt">se=</span>se,</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true"></a>                 <span class="dt">zscore=</span>zscore,</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true"></a>                 <span class="dt">pval=</span>pval,</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true"></a>                 <span class="dt">niterations =</span> iter,</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true"></a>                 <span class="dt">call=</span>call,</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true"></a>                 <span class="dt">obj=</span>obj)</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true"></a></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true"></a>  <span class="kw">class</span>(results) =<span class="st"> &quot;irls&quot;</span></span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true"></a>  <span class="kw">return</span>(results)</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true"></a>}</span></code></pre></div>
+<p>Although we now have a light function to implement IRLS, we have not defined the print method for <code>irls</code>-class objects. Therefore, in the lines below I define the print function for the <code>irls</code>-class object. Note that this is not an ideal print function, but it gets the job done for our purposes.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="st">&quot;print.irls&quot;</span> =<span class="st"> </span><span class="cf">function</span>(x){</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>  <span class="kw">cat</span>(<span class="st">&quot;&quot;</span>, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>  <span class="kw">cat</span>(x<span class="op">$</span>obj, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>  <span class="kw">cat</span>(<span class="st">&quot;</span><span class="ch">\n</span><span class="st">Call: &quot;</span>, <span class="kw">deparse</span>(x<span class="op">$</span>call), <span class="st">&quot;</span><span class="ch">\n\n</span><span class="st">&quot;</span>) </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>  <span class="kw">cat</span>(<span class="st">&quot;===============================================================&quot;</span>,<span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>  <span class="kw">printCoefmat</span>(x<span class="op">$</span>coef)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>  <span class="kw">cat</span>(<span class="st">&quot;===============================================================&quot;</span>, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>}</span></code></pre></div>
+<p>With the logistic derivative functions, <code>fu_logistic</code> and <code>fuu_logistic</code>, the <code>irls</code> function and its corresponding <code>print</code> function all now defined, we can generate some data, and fit the model and compare it to R’s canned <code>glm</code> function.</p>
+<p>Before generating the data, I set the seed for reproducibility. Next, I generate some binary outcome data. Specifically, the data on <code>X</code> are drawn from a multivariate normal distribution (<code>Sigma</code> below) via singular value decomposition. The data in <code>X</code> are then used to obtain <code>mu</code>, which is fed through the logistic c.d.f. (<code>plogis</code>) to obtain probabilities. These probabilities, <code>pi</code> below, are input to a Bernoulli distribution (i.e., a binomial with one draw, <code>rbinom</code> below), to obtain the binary outcome variable, <code>y</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">081360</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="co">####simulate some binary outcome data </span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a><span class="co">##drawing covariates X from multivariate normal via singular value decomposition.</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>n =<span class="st"> </span><span class="dv">1000</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>Sigma =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">0</span>, <span class="fl">1.5</span>, <span class="fl">1.5</span>, <span class="dv">0</span>), <span class="dt">nrow=</span><span class="dv">2</span>, <span class="dt">byrow=</span>T)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a><span class="kw">diag</span>(Sigma) =<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">1</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>svd_cov =<span class="st"> </span><span class="kw">svd</span>(Sigma)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>U =<span class="st"> </span>svd_cov<span class="op">$</span>u</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>D =<span class="st"> </span>svd_cov<span class="op">$</span>d</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>V =<span class="st"> </span>svd_cov<span class="op">$</span>v</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a>sqrt_Sigma =<span class="st"> </span>U<span class="op">%*%</span><span class="kw">sqrt</span>(<span class="kw">diag</span>(D))<span class="op">%*%</span><span class="kw">t</span>(U)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a>X =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n<span class="op">*</span><span class="dv">2</span>), <span class="dt">ncol=</span><span class="dv">2</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>X =<span class="st"> </span>X <span class="op">%*%</span><span class="st"> </span>sqrt_Sigma </span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>X =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</span>,X)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a><span class="kw">colnames</span>(X) =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;intercept&quot;</span>, <span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>B =<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>,<span class="op">-</span><span class="dv">3</span>,<span class="dv">3</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true"></a>mu =<span class="st"> </span>X<span class="op">%*%</span>B</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true"></a>pi =<span class="st"> </span><span class="kw">plogis</span>(mu)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true"></a>y=<span class="kw">rbinom</span>(n,<span class="dv">1</span>,pi)</span></code></pre></div>
+<p>And just for the sake of clarity, the empirical covariance structure does approximate the desired, theoretical structure:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="kw">list</span>(<span class="dt">theoretical_cov=</span>Sigma, <span class="dt">empirical_cov=</span><span class="kw">cov</span>(X[,<span class="op">-</span><span class="dv">1</span>]))</span></code></pre></div>
+<pre><code>## $theoretical_cov
+##      [,1] [,2]
+## [1,]  2.0  1.5
+## [2,]  1.5  1.0
+## 
+## $empirical_cov
+##          X1       X2
+## X1 2.073769 1.391791
+## X2 1.391791 1.046553</code></pre>
+<p>And finally, estimating the model using both the custom <code>irls</code> function, and the canned <code>glm</code> function below shows that indeed our function is identical up to rounding error:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">irls</span>(fu_logistic, fuu_logistic, X, y, <span class="dt">itmax=</span><span class="dv">50</span>, <span class="dt">method=</span><span class="st">&quot;logistic&quot;</span>)</span></code></pre></div>
+<pre><code>##  
+## Custom IRLS Function 
+## 
+## Call:  irls(fu = fu_logistic, fuu = fuu_logistic, X = X, y = y, method = &quot;logistic&quot;,      itmax = 50) 
+## 
+## =============================================================== 
+##                 par        se    zscore pval
+## intercept   2.11544   0.12974  16.30490    0
+## X1         -3.19486   0.26320 -12.13836    0
+## X2          3.28997   0.32808  10.02790    0
+## ===============================================================</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="kw">summary</span>(<span class="kw">glm</span>(y<span class="op">~</span>X <span class="op">+</span><span class="st"> </span><span class="dv">0</span>, <span class="dt">family=</span><span class="st">&quot;binomial&quot;</span>))</span></code></pre></div>
+<pre><code>## 
+## Call:
+## glm(formula = y ~ X + 0, family = &quot;binomial&quot;)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.7770   0.1085   0.3213   0.5828   1.8450  
+## 
+## Coefficients:
+##            Estimate Std. Error z value Pr(&gt;|z|)    
+## Xintercept   2.1154     0.1297   16.30   &lt;2e-16 ***
+## XX1         -3.1949     0.2632  -12.14   &lt;2e-16 ***
+## XX2          3.2900     0.3281   10.03   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1386.29  on 1000  degrees of freedom
+## Residual deviance:  722.79  on  997  degrees of freedom
+## AIC: 728.79
+## 
+## Number of Fisher Scoring iterations: 6</code></pre>
+<p><br />
+</p>
+</div>
+</div>
+<div id="poisson-regression" class="section level1">
+<h1>Poisson Regression</h1>
+<hr />
+<div id="derivation-1" class="section level3">
+<h3>Derivation</h3>
+<p>Poisson regression is typically used to model event counts, such as number of mutations, number of conflicts, number of calls, and occasionally times (e.g., wait times at a Doctor’s office, in minutes). Thus, the response is a non-negative integer, <span class="math inline">\(y \in \mathbb Z^{\ge 0}\)</span>. The Poisson mass function function (using the canonical link) is then given as:</p>
+<p><span class="math display">\[\begin{align*}
+  \Pr(Y=y_i) &amp;= \dfrac{\lambda^{y_i} e^{-\lambda_i}}{y_i!} &amp; \text{where} \quad \lambda = e^{\mu_i} = \mathbb{E}(Y)
+\end{align*}\]</span></p>
+<p>With the resulting likelihood, and log-likelihood being:</p>
+<p><span class="math display">\[\begin{align*}
+\mathcal{L}(\beta|\boldsymbol{x}_i, y_i) &amp;= \prod_{i=1}^n \Pr(Y=y_i) = \prod_{i=1}^n \dfrac{\lambda^y_i e^{-\lambda_i}}{y_i!} \\
+\\
+\ln\mathcal{L}(\beta|\boldsymbol{x}_i, y_i) &amp;= \sum_{i=1}^ny_i \ln \lambda - \lambda - \ln y_i!
+\end{align*}\]</span></p>
+<p>As with Logistic regression, in order to program the IRLS algorithm for Poisson regression, we will need both <span class="math inline">\(\partial l/\partial \mu_i\)</span> and <span class="math inline">\(\partial^2l / \partial\mu_i^2\)</span>. That is, the first and second partials of the log-likelhiood w.r.t <span class="math inline">\(\mu_i\)</span>. Deriving these:</p>
+<p><span class="math display">\[\begin{align*}
+\dfrac{\partial l}{\partial \mu_i}(\ln\mathcal{L}) &amp;= y_i\frac{\lambda}{\lambda} - \lambda \nonumber \\ 
+&amp;= y_i - e^{\mu_i} \\
+\nonumber \\ 
+\dfrac{\partial ^2l}{\partial \mu_i^2} &amp;= -\lambda \\
+&amp;= - e^{\mu_i}
+\end{align*}\]</span></p>
+<p>Now that we have these quantities, we can utilize equations \ref{grad} and \ref{hess} to get <span class="math inline">\(\partial l / \partial \boldsymbol{\beta}\)</span> and <span class="math inline">\(\partial^2 l / \partial \boldsymbol{\beta}^2\)</span>:</p>
+<p><span class="math display">\[\begin{align*}
+\dfrac{\partial l}{\partial \boldsymbol{\beta}} &amp;= \sum_{i=1}^n\boldsymbol{x}_i^\top(y_i-\lambda_i) \\
+\\
+&amp;= \boldsymbol{X}^\top(\boldsymbol{y} - \boldsymbol{\lambda}) \\
+&amp; = \boldsymbol{X}^\top \boldsymbol{\gamma }&amp;\text{where} \quad \gamma_i = y_i - e^{\mu_i} = f_{\mu_i}
+\\
+\\
+\dfrac{\partial ^2l}{\partial \boldsymbol{\beta}^2} &amp; = \sum_{i=1}^n-e^{\mu_i}\boldsymbol{x}_i^\top \boldsymbol{x}_i \\
+\\
+&amp; = -\boldsymbol{X}^\top\boldsymbol{WX} &amp;\text{where} \quad w_{ii} = e^{\mu_i} = -f_{\mu_i\mu_i}
+\end{align*}\]</span></p>
+<p><br />
+</p>
+</div>
+<div id="programming-in-r-1" class="section level3">
+<h3>Programming in R</h3>
+<p>Now that we have the general <code>irls</code> function defined, all we have to do in order to estimate the Poisson parameters is define the derivative functions that have just been derived, and then generate some data from a Poisson distribution.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a>y =<span class="st"> </span><span class="kw">rpois</span>(n, <span class="kw">exp</span>(mu))</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true"></a>fu_poisson =<span class="st"> </span><span class="cf">function</span>(y, X, b){</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true"></a>  lambda =<span class="st"> </span><span class="kw">exp</span>(X<span class="op">%*%</span>b)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true"></a>  </span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true"></a>  <span class="kw">as.vector</span>(y <span class="op">-</span><span class="st"> </span>lambda)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true"></a>  </span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true"></a>}</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true"></a>fuu_poisson =<span class="st"> </span><span class="cf">function</span>(y, X, b){</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true"></a>  lambda =<span class="st"> </span><span class="kw">exp</span>(X<span class="op">%*%</span>b)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true"></a>  </span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true"></a>  <span class="kw">as.vector</span>(<span class="op">-</span>lambda)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true"></a>}</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true"></a></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true"></a><span class="co">#Generate data</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true"></a>lambda =<span class="st"> </span><span class="kw">exp</span>(mu)</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true"></a>y =<span class="st"> </span><span class="kw">rpois</span>(n, lambda)</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true"></a></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true"></a><span class="kw">irls</span>(fu_poisson, fuu_poisson, X, y, <span class="dt">method =</span><span class="st">&quot;poisson&quot;</span>)</span></code></pre></div>
+<pre><code>## Iterating...10</code></pre>
+<pre><code>##  
+## Custom IRLS Function 
+## 
+## Call:  irls(fu = fu_poisson, fuu = fuu_poisson, X = X, y = y, method = &quot;poisson&quot;) 
+## 
+## =============================================================== 
+##                   par          se      zscore pval
+## intercept    2.011958    0.010842  185.564648    0
+## X1          -2.989356    0.011297 -264.613752    0
+## X2           2.989424    0.016388  182.410581    0
+## ===============================================================</code></pre>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a><span class="kw">summary</span>(<span class="kw">glm</span>(y <span class="op">~</span><span class="st"> </span>X <span class="op">+</span><span class="st"> </span><span class="dv">0</span>, <span class="dt">family=</span><span class="st">&quot;poisson&quot;</span>))</span></code></pre></div>
+<pre><code>## 
+## Call:
+## glm(formula = y ~ X + 0, family = &quot;poisson&quot;)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -3.9108  -0.8295  -0.1604   0.5905   2.7817  
+## 
+## Coefficients:
+##            Estimate Std. Error z value Pr(&gt;|z|)    
+## Xintercept  2.01196    0.01084   185.6   &lt;2e-16 ***
+## XX1        -2.98936    0.01130  -264.6   &lt;2e-16 ***
+## XX2         2.98942    0.01639   182.4   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for poisson family taken to be 1)
+## 
+##     Null deviance: 303117.10  on 1000  degrees of freedom
+## Residual deviance:    988.45  on  997  degrees of freedom
+## AIC: 4673.1
+## 
+## Number of Fisher Scoring iterations: 4</code></pre>
+<p>And again, we see that the custom <code>irls</code> function is identical to that of the canned <code>glm</code> function, up to rounding error.</p>
+<p><br />
+</p>
+</div>
+</div>
+<div id="references-and-footnotes" class="section level1">
+<h1>References and Footnotes</h1>
+<hr />
+<div id="refs" class="references hanging-indent">
+<div id="ref-ESL">
+<p>Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. 2009. <em>The Elements of Statistical Learning</em>. Springer series in statistics New York.</p>
+</div>
+<div id="ref-hilbe2011negative">
+<p>Hilbe, Joseph M. 2011. <em>Negative Binomial Regression</em>. Cambridge University Press.</p>
+</div>
+<div id="ref-jorgensen2006iteratively">
+<p>Jorgensen, Murray. 2006. “Iteratively Reweighted Least Squares.” <em>Encyclopedia of Environmetrics</em> 3.</p>
+</div>
+<div id="ref-long1997">
+<p>Long, J Scott. 1997. “Regression Models for Categorical and Limited Dependent Variables.” <em>Advanced Quantitative Techniques in the Social Sciences</em> 7.</p>
+</div>
+<div id="ref-nelder1972generalized">
+<p>Nelder, John Ashworth, and Robert WM Wedderburn. 1972. “Generalized Linear Models.” <em>Journal of the Royal Statistical Society: Series A (General)</em> 135 (3): 370–84.</p>
+</div>
+<div id="ref-stirling1984iteratively">
+<p>Stirling, W Douglas. 1984. “Iteratively Reweighted Least Squares for Models with a Linear Part.” <em>Journal of the Royal Statistical Society: Series C (Applied Statistics)</em> 33 (1): 7–17.</p>
+</div>
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>It is also used in robust regression, and has other applications in numerical optimization. Depending on the loss function chosen, this can amount to minimizing the residuals over the <span class="math inline">\(l_1\)</span>-norm rather than <span class="math inline">\(l_2\)</span> (or any other norm, technically).<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>The difference between Newton-Raphson and Fisher scoring is the use of the observed Hessian in the former, while the latter relies on the expected Hessian, thereby reducing the number of computations required for Fisher scoring. The reason for this difference in computations is because we can write the Fisher information as the product of first derivatives. As there are two equivalent definitions of the Fisher information, one being the expectation of the product of first derivatives, the other being the negative expectation of the second derivatives, Fisher scoring can rely only on first derivatives.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>This graphic does not actually include all tangent lines for clarity, as the graph gets cluttered very quickly. However, the code for these plots is available on github if anyone would like to see the actual numerical results.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>This is typically referred to as the linear predictor in a GLM, often denoted <span class="math inline">\(\eta\)</span>, elsewhere.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

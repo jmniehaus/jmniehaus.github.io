@@ -1,0 +1,32 @@
+name: "my-website"
+output_dir: "."
+navbar:
+  title: "John M. Niehaus"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "CV"
+      href: "./files/niehaus_cv_S2020_online.pdf"
+      class: "download"
+    - text: "Programming & Derivations"
+      menu:
+        - text: "Iteratively Reweighted Least Squares for GLMs"
+          href: irls.html
+        - text: "COMING SOON:"
+        - text: "Multivariate Normal Draws"
+        - text: "Efficient, Reproducible Monte Carlo Analyses"
+        - text: "Bias of MLE for Gamma Rate Parameter" 
+        - text: "Programming a Heckman Model in R"
+        - text: "Derivation of Negative Binomial Regression"
+        - text: "Spurious Regression Problem in Time Series"
+        - text: "Omitted Variables Bias in Probit Models"
+  right:
+    - icon: fa-github fa-lg
+      text: "Github"
+      href: http://github.com/jmniehaus
+output: 
+  html_document:
+    theme: yeti
+    highlight: zenburn
+    codefolding: show
+

@@ -1,0 +1,35 @@
+---
+---
+<img src="images/headshot_tamu.jpg" style="width:30%; border:10px solid; margin-right: 40px; margin-top: 20px" align="left">
+
+<style type="text/css">
+
+  body{ /* Normal  */
+      font-size: 21px;
+    }
+  
+</style>
+
+
+
+\
+
+I am a Master's student at Texas A\&M University's Department of Statistics starting in the Fall of 2020. I received my M.A. in Political Science from Texas A\&M University in 2020, and my B.A. in both political science and psychology from the University of Missouri in 2014. During my time in political science, I published papers on both human rights and political methodology, as well as assisted with teaching graduate-level time series analysis. Methodologically, I am interested in time series analysis and machine learning, and applying both to the prediction of state violence. 
+
+\
+
+\
+
+For my CV, please see the link above. For all code on this website and more, please visit my github page, linked above. 
+
+\
+
+To contact me via email, copy and paste the following code into R and run it. For those unfamiliar with R, please copy and paste the code into [this](https://rdrr.io/snippets/) site, and press run.
+
+```{r, echo=T, eval=F, results='hide'}
+paste(paste(c("j", paste(paste(rev(c("us", "a", "eh", "ni")), collapse=""), 
+             paste(rev(c(7,25, 2)), collapse=""), sep="")), collapse=""),
+      "@",paste0("g", paste(rev(c("l", "ai", "m")), collapse=""), sep="."),
+      sub("@", "", paste0("@", "com", collapse=""),
+          paste0(rev(c("ya","a",c("h", "oo"))), collapse="")) , collapse = "", sep="")
+```
