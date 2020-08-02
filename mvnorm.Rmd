@@ -1,0 +1,496 @@
+---
+title: "Drawing from the Multivariate Normal Distribution"
+subtitle: Derivation, and Programming in R
+header-includes:
+- \usepackage{mathtools}
+- \usepackage{amsmath}
+output:
+  html_document:
+    toc: yes
+    number_sections: no
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+bibliography: bibliography.bib
+link-citations: yes
+editor_options: 
+  chunk_output_type: console
+---
+    
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { 
+      equationNumbers: { 
+            autoNumber: "AMS",
+      } 
+  }
+});
+</script>
+
+
+
+<style type="text/css">
+
+  body{ /* Normal  */
+      font-size: 16px;
+    }
+    
+  p {
+  line-height: 1.75em;
+  margin-bottom: 1.5em;
+  }
+  
+</style>
+
+\
+
+<style type="text/css">
+#proofid{
+ background-color: white;
+ color: #034f84;
+ font-family: 'Arial';
+ font-size: 16px;
+ text-decoration: none;
+ border: none;
+}
+</style>
+
+<script type="text/javascript">
+function proof(id) {
+  var x = document.getElementById(id);
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+</script>
+
+\newcommand{\L}{\mathcal{L}}
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+\newcommand{\argmax}[1]{\mathop{\arg \max}_#1}
+\newcommand{\pder}[1]{\dfrac{\partial}{\partial #1}}
+\newcommand{\pdertwo}[2]{\dfrac{\partial #1}{\partial #2}}
+\newcommand{\d}{\mathrm{d}}
+\newcommand{\sumin}{\sum_{i=1}^n}
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\var}{\mathrm{Var}}
+\newcommand{\mrm}{\mathrm}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Cov}{\mathrm{Cov}}
+
+# Summary
+***
+
+To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can approximate any desired parameterization of the multivariate normal distriubtion. 
+
+\
+
+# Transformations of Normal RVs
+***
+
+
+
+
+### The Univariate Case 
+
+In order to understand how to take draws from a multivariate normal distribution, it is first important to know that linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters. In other words if $X \sim \mathcal{N}(\mu, \sigma^2)$ and $Y = cX + k$, then $Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)$. 
+<button id="proofid" onclick="proof('univariate')">Proof</button>
+<div id="univariate" style="display:none">
+
+&nbsp;
+
+First, proving that the location and scale parameters are known in the univariate case is a straightforward application of the fact that expectations are a linear operator:
+
+\begin{align}
+&\text{Let:} \nonumber \\
+\nonumber \\
+& \quad X \sim \mathcal{N}(\mu,\sigma^2) \nonumber \\[1ex]
+& \quad Y = cX + k \quad \text{for constants $c$ and $k$} \nonumber \\
+\nonumber \\
+&\text{Then:}\nonumber \\
+\nonumber \\
+&\quad \E(Y) = c\E(X) + k = c\mu + k \nonumber  \\[1ex]
+&\quad \var(Y) = c^2\var(X) = c^2\sigma^2 \nonumber 
+\end{align}
+
+And second, to show that the resulting distribution is univariate normal, let $F(\cdot)$ be the (normal) CDF of $X$ and $G(\cdot)$ be the CDF of $Y$. Then the CDF of Y is:
+
+\begin{align}
+G_Y(y) &= \Pr(Y \leq y) \nonumber \\[2ex]
+&= \Pr(cX + k \leq y)  \nonumber \\[2ex]
+&= \Pr\left(X \leq \frac{y-k}{c}\right) \nonumber \\[2ex]
+&= F_X\left(\frac{y-k}{c}\right) \\[2ex]
+\end{align}
+
+And differentiating to obtain the pdf of $Y$:
+\begin{align}
+\implies g_Y(y) &= \pder{y} F_X\left(\frac{y-k}{c}\right)  \nonumber \\[2ex]
+&= f_X\left(\frac{y-k}{c}\right)\frac{1}{c} \nonumber \\[2ex]
+\implies f_X\left(\frac{y-k}{c}\right)\frac{1}{c} &= \frac{1}{\sqrt{2\pi}c\sigma} e^{\dfrac{1}{2}\left(\dfrac{\frac{y-k}{c}-\mu}{\sigma}\right)^2} \nonumber \\[2ex]
+&=\frac{1}{\sqrt{2\pi}c\sigma} e^{\dfrac{1}{2}\left(\frac{\frac{(cx+k)-k}{c}-\mu}{\sigma}\right)^2}\nonumber \\[2ex]
+&=\frac{1}{\sqrt{2\pi}c\sigma} e^{\frac{\left[(cx+k)-(k+c\mu)\right]^2}{2c^2\sigma^2}} \label{pdf.y}
+\end{align}
+
+Where \\ref{pdf.y} is clearly a $\mathcal{N}(c\mu+k, c^2\sigma^2)$ distribution, which concludes the proof. 
+
+[$\blacksquare$]{style="float:right"}
+
+&nbsp;
+
+</div>
+
+&nbsp;
+
+Thus, if we multiply $X$ by the standard deviation that we desire our transformed variable to have, and then add on a constant, we arrive at any desired normally distributed random variable. Although this is somewhat trivial in the univariate case due to software implementations easily drawing from arbitrary univariate normals, this understanding proves useful when trying to draw from a multivariate normal distribution.
+
+### The Multivariate Case
+
+The next step is to extend the univariate case to the multivariate case. First, let
+
+\begin{align}
+\bm X &\sim \mrm{MVN}(\bm\mu_x, \bm\Sigma_x) \nonumber \\[1ex]
+\bm Y &= \bm{CX} + \bm k \nonumber
+\end{align} 
+
+Then, it follows that $$\bm Y \sim \mrm{MVN}(\bm{C\mu_x} + \bm k, \bm{ C\Sigma_x C^\top})$$
+
+where:
+
+* $\bm X$ is a $p \times 1$ MVN random vector
+* $\bm C$ is a $n \times p$  matrix of constants
+* $\bm k$ is a $n \times 1$ vector of constants
+* $\bm \mu_x$ is the $p \times 1$ mean vector of $\bm X$ 
+* $\bm \Sigma_x$ is the $p \times p$ covariance matrix of $\bm X$
+* **Note** that $p$ can be equal to $n$ 
+
+
+<button id="proofid" onclick="proof('MGF')">Proof</button>
+<div id="MGF" style="display:none">
+
+For proof, recall that the MGF of the MV normal distribution is $$M_X(t): \R^p \rightarrow \R = \E(e^{t^\top X}) = e^{t^\top \bm \mu + \frac{1}{2}t^\top \bm \Sigma t}$$ for $t \in \R^p$. 
+
+Then for $t \in \R^n$ (dropping bold for matrices and vectors), the joint MGF of $Y$, $M_Y(t): \R^n \rightarrow \R$, is:
+
+\begin{align}
+M_Y(t) &= \E(e^{t^\top Y}) \\[2ex]
+       &= \E\left(e^{t^\top(CX + k)}\right) \nonumber \\[2ex]
+&=  \E\left(e^{t^\top CX}e^{t^\top k}\right) \nonumber \\[2ex]
+&= e^{t^\top k}\E\left(e^{t^\top CX}\right) \nonumber \\[2ex]
+&= e^{t^\top k} M_X(tC) \nonumber \\[2ex]
+&= e^{t^\top k} e^{t^\top C \mu + \frac{1}{2}t^\top C \Sigma C^\top t} \nonumber \\[2ex]
+&= e^{ t^\top k + t^\top C \mu  + \frac{1}{2}t^\top C \Sigma C^\top t} \nonumber \\[2ex]
+&= e^{t^\top (C \mu + k) + \frac{1}{2}t^\top C \Sigma C^\top t} \label{mgf}
+\end{align}
+
+And, equation \\ref{mgf} is clearly the MGF of a $\mrm{MVN}(\bm{C\mu + k}, \bm{C\Sigma C^\top})$ distribution, which by the MGF Uniqueness Theorem implies that $Y$ has this distribution, which concludes the proof. 
+
+[$\blacksquare$]{style="float:right"}
+
+</div>
+
+\
+
+
+
+# Generating from the MV Normal
+***
+
+**Note**: The exposition here relies on a bivariate normal, although this readily extends to arbitrarily large dimensions. 
+
+
+From the above result regarding transformations of MVN random variables, it is clear that if we first generate independent univariate normals, and then choose a matrix $\bm C$ and vector $\bm k$ carefully, we can generate any arbitrary multivariate normal sample. First, to obtain the desired mean, we can simply add a vector of constants to $\bm X$, eg $\bm X + \bm k$. However, to get the desired covariance structure is a bit more involved. From the above proof we have that
+
+\begin{align}
+\bm X &\sim \mrm{MVN}(\bm\mu_x, \bm\Sigma_x) \nonumber \\[1ex]
+\bm Y &= \bm{CX} + \bm k \nonumber \\[1.5ex]
+\implies \bm Y &\sim \mrm{MVN}(\bm{C\mu_x} + \bm k, \bm{ C\Sigma_x C^\top})
+\end{align} 
+
+Now, suppose we generate the observations on $\bm X$ as i.i.d. standard normal random variables:
+\begin{align}
+\bm \mu &= (0,0) \nonumber \\[1.5ex]
+\bm\Sigma &= \begin{bmatrix}
+1 & 0 \\
+0 & 1 
+\end{bmatrix} \nonumber 
+\end{align}
+
+Then we have that $\bm \Sigma_x = \bm I$, so to obtain multivariate normal samples with any desired covariance structure, we simply have to find a suitable matrix $\bm C$ by which we can multiply the i.i.d. standard normal variables in $\bm X$. Doing so will yield the random vector $\bm Y$ with covariance $$\Cov(\bm Y) = \bm{C\Sigma_x C}^\top = \bm{CIC}^\top = \bm{CC}^\top$$ as already proven. Importantly, note that the matrix square- root of a matrix $\bm A$ is any matrix $\bm B$ such that $BB^\top = A$.[^1] This implies that the matrix of constants, $\bm C$, by which we multiply $\bm X$ is in fact the matrix square-root of $\bm \Sigma_y$, directly analogous to the univariate case in which we multiplied $X$ by the standard deviation of our desired covariance.  
+
+Thus, the steps to generate from any multivariate normal distribution are:
+
+1. Decide on a desired covariance matrix, $\bm \Sigma_y$
+
+2. Decide on a desired mean vector, $\bm \mu_y = \bm k$
+
+3. Generate $\bm X$ as independent standard normal $(0,1)$ random variables
+
+4. Obtain the matrix square-root, $\bm C$, of $\bm \Sigma_y$ (so that $\bm{CC}^\top = \bm\Sigma_y$)
+
+5. Multiply $\bm{CX}$ and add $\bm{CX} + \bm k$
+
+To find the matrix square-root of $\bm\Sigma_y$ which will serve as the matrix of constants, $\bm C$, by which we multiply $\bm X$, two factorizations of $\bm \Sigma_y = \bm{CC^\top}$ immediately come to mind, although several others can also work:
+
+1. **Cholesky decomposition** -- $LL^\top$ where $L$ is lower-triangular. This is unique for positive definite matrices, which all valid covariance matrices are. 
+
+2. **Singular values decomposition** (SVD) -- $UDV^\top$, where $U$ and $V$ are orthogonal matrices whose columns are the left and right singular vectors, and $D$ is a diagonal matrix containing the singular values. Because of the orthogonal and diagonal matrices, this is geometrically a rotation, dilation, and rotation. **Note** that for real, symmetric, positive-definite matrices, this is identical to the spectral decomposition.
+
+\
+
+### Via Cholesky
+***
+To obtain the matrix square-root, $\bm C$, via the Cholesky decomposition decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{LL}^\top$$ and multiply $$\bm{LX}$$ which yields $$\bm Y \sim (\bm 0, \bm{LL^\top})$$ which has exactly the covariance structure that we wanted, as $\bm L$ is equivalent to the matrix $\bm C$ that we were looking for. 
+
+\
+
+### Via SVD
+***
+For the SVD, decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{UDV}^\top = \bm{UDU}^\top$$ The last equality follows in this case because $\Sigma_y$ is a symmetric, positive definite matrix. 
+<button id="proofid" onclick="proof('SVD')">Proof</button>
+<div id="SVD" style="display:none">
+
+\
+
+Suppose we take the SVD of a symmetric matrix $A$. Then the left singluar vectors, $U$, are the eigenvectors of $AA^\top$, while the right singular vectors, $V$, are the eigenvectors of $A^\top A$ (see [this](https://math.mit.edu/classes/18.095/2016IAP/lec2/SVD_Notes.pdf) link for proof). However, since $A$ is symmetric, $$A = A^\top \implies AA^\top = A^\top A \implies U = V$$
+
+[$\blacksquare$]{style="float:right"}
+
+
+</div>
+
+\
+
+Finally, pre-multiplying the univariate normals in $X$ by the matrix square-root, $C$, of $\Sigma_y$ yields (dropping bolding)
+
+\begin{align}
+Y= CX &= UD^{1/2} X \nonumber \\[1ex]
+\implies Y &\sim \left(\bm 0, UD^{1/2}\bm\Sigma (UD^{1/2})^\top \right) \nonumber \\[1ex]
+& \sim \left(\bm 0, UD^{1/2}\bm I (UD^{1/2})^\top \right) \nonumber \\[1ex]
+& \sim \left(\bm 0, UD^{1/2}D^{1/2}U^\top\right) \nonumber \\[1ex]
+& \sim \left(\bm 0 , UDU^\top\right) \nonumber \\[1ex]
+& \sim \left(\bm 0 , \bm \Sigma_y\right) \nonumber \\[1ex]
+\end{align}
+
+So to obtain the desired covariance $\bm\Sigma_y$ from $X$ we simply set $\bm C = \bm{UD}^{1/2}$ and premultiply $\bm{CX}$.[^2] 
+
+\
+
+# Programming in R
+***
+
+To do this in R, we follow the steps outlined previously. Thus, we first decide on the desired mean vector, $\bm \mu_y$, and covariance matrix, $\bm \Sigma_y$. Recall also that a valid, full-rank covariance matrix is positive-definite.[^3]
+
+```{r, echo=T,class.output="bg-success"}
+mu.y = c(-.246, -1.3, 1.645)
+
+sigma.y = matrix(c(2,    .66, -1.2,
+                   .66,  .75, -.75,
+                  -1.2, -.75,  2.5),
+                 nrow = 3, byrow=T)
+#desired cov
+sigma.y
+
+#check pos def
+all(eigen(sigma.y)$values > 0)
+```
+
+\ 
+
+Second, we'll simulate some i.i.d. multivariate standard normal data in 3 dimensions. 
+
+```{r, echo=T}
+#simulate trivariate iid standard normal 
+n = 10000
+x = matrix(rnorm(n*3), nrow=3)
+```
+
+\
+
+And then finally we take the Cholesky and SVD of the desired covariance, multiply $\bm X$ by the appropriate matrix $\bm C$, and then add on the constant to get the desired mean. 
+
+```{r, echo=T,class.output="bg-success"}
+#Via cholesky
+chol.sig.y = chol.default(sigma.y)
+y.chol = t(chol.sig.y) %*% x # R returns the upper-triangular, L^t by default
+
+#Via svd
+svd.sig.y = svd(sigma.y)
+u = svd.sig.y$u
+d = svd.sig.y$d
+svd.sig.y = u%*%diag(d)^(1/2)
+y.svd =  svd.sig.y %*% x 
+
+# add on mean 
+#(transpose for taking the covariance of a matrix in R on next lines)
+y.svd = t(y.svd + mu.y)
+y.chol = t(y.chol + mu.y)
+
+# results 
+list(chol = list(mean=apply(y.chol, 2, mean),
+                 cov=cov(y.chol)),
+     svd  = list(mean=apply(y.svd, 2, mean),
+                 cov=cov(y.svd)),
+     desired = sigma.y)
+```
+
+\
+
+From the above output, it is clear that the desired covariance structure is approximated fairly well. 
+
+\
+
+### Which is better 
+
+We've learned that two factorizations work, but which one is "better," numerically? This may depend on how we define "better," but lets try and find out. First, for simplicity we will only look at the accuracy of the covariance. Second, lets say that a factorization is better if it minimizes $max_{ij} |Cov(x_{i}, x_{j}) - D_{ij}|$ where $D_{ij}$ is each element of the desired covariance matrix. That is, which method minimizes the maximum absolute deviation from the desired covariance structure.  
+
+Taking this objective in mind, we can explore this by the monte carlo method. We'll first define a function that returns the value of the objective, as well as the sample size, and decomposition used, and then compare the loss after several iterations for each sample size. 
+
+```{r, echo=T, class.output="bg-success"}
+mv.loss = function(n, sigma.y){
+  n = n
+  x = matrix(rnorm(n*3), nrow=3)
+
+
+  # chol
+  chol.sig.y = chol.default(sigma.y)
+  y.chol = t(chol.sig.y) %*% x 
+
+  loss.chol = max( abs( cov(t(y.chol)) - sigma.y) )
+
+  # Via svd
+  svd.sig.y = svd(sigma.y)
+  u = svd.sig.y$u
+  d = svd.sig.y$d
+  svd.sig.y = u%*%diag(d)^(1/2)
+  y.svd =  svd.sig.y %*% x 
+
+  loss.svd = max( abs( cov(t(y.svd)) - sigma.y) )
+
+return(c(chol = loss.chol, svd = loss.svd, n=n))
+
+}
+
+```
+
+\
+
+And lets make sure its working as expected, using the desired covariance previously defined:
+
+```{r,echo=T,class.output="bg-success"}
+mv.loss(n = 100, sigma.y = sigma.y)
+
+```
+
+\
+
+And finally, now that we know the function works, we can do several iterations at each sample size to see which method converges fastest. 
+
+```{r, echo=T, message=F, cache=T}
+# get things ready for parallel run, plotting
+pks = c("parallel", "dplyr", "ggplot2", "reshape2")
+invisible(sapply(pks, library, character.only=T))
+
+RNGkind("L'Ecuyer-CMRG") # for parallel reproducibility
+set.seed(167492)
+
+#Grid of sample sizes
+niter = 10000
+n = c(30, 60, 125, 250, 500, 750, 1000, 2500, 5000, 7500, 10000)
+n.grid = rep(n, each = niter)
+
+# run sims, summarize, plot
+res = mclapply(n.grid, mv.loss, sigma.y=sigma.y, 
+               mc.preschedule=T,
+               mc.cores = (parallel::detectCores()-1))
+
+dat = as.data.frame(do.call(rbind, res))
+
+summaries = dat %>% 
+  group_by(n) %>% 
+  summarise(mean.chol = mean(chol),
+            mean.svd  = mean(svd))
+
+summaries = melt(summaries, 
+                 id.vars="n", 
+                 measure.vars = c("mean.chol",
+                                  "mean.svd"))
+
+summaries$n = as.factor(summaries$n)
+
+ggplot(data=summaries, aes(x=n)) +
+  geom_point(aes(y = value, color=variable, shape=variable),
+             position=position_dodge(width=.5),
+             size=3) +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1", labels = c("Cholesky", "SVD")) +
+  scale_shape_discrete(labels=c("Cholesky", "SVD")) +
+  labs(title="Average of Max Absolute Deviation for Covariance of MVN",
+       subtitle = "Cholesky vs. SVD",
+       x= "N",
+       y= "Max Absolute Deviation",
+       color = "Method",
+       shape = "Method") +
+  theme(panel.grid.major = element_blank(),
+        legend.position = c(.85,.85)) 
+
+```
+
+\
+
+From these results, it appears as though the two perform roughly the same in terms of max absolute deviations from the desired covariance structure, on average. However, it looks like they may be slightly different in small samples, so lets take a look to be sure. 
+
+\
+
+```{r, echo=F, cache=T, warning=F, message=F}
+pks = c("parallel", "dplyr", "ggplot2", "reshape2")
+invisible(sapply(pks, library, character.only=T))
+
+#Grid of sample sizes
+n = seq(10, 60)
+n.grid = rep(n, each = niter)
+
+# run sims, summarize, plot
+res = mclapply(n.grid, mv.loss, sigma.y=sigma.y, 
+               mc.preschedule=T,
+               mc.cores = (parallel::detectCores()-1))
+
+dat = as.data.frame(do.call(rbind, res))
+
+summaries = dat %>% 
+  group_by(n) %>% 
+  summarise(mean.chol = mean(chol),
+            mean.svd  = mean(svd))
+
+summaries = melt(summaries, 
+                 id.vars="n", 
+                 measure.vars = c("mean.chol",
+                                  "mean.svd"))
+
+
+ggplot(data=summaries, aes(x=n)) +
+  geom_line(aes(y = value, color=variable)) +
+  theme_bw() +
+  scale_color_brewer(palette = "Set1", labels = c("Cholesky", "SVD")) +
+  scale_shape_discrete(labels=c("Cholesky", "SVD")) +
+  labs(title="Average of Max Absolute Deviation for Covariance of MVN",
+       subtitle = "Cholesky vs. SVD",
+       x= "N",
+       y= "Max Absolute Deviation",
+       color = "Method") +
+  theme(panel.grid.major = element_blank(),
+        legend.position = c(.85,.85)) 
+
+```
+
+Lastly, then, the two approaches are equal on average, even in small samples.
+
+
+# Endnotes 
+
+[^1]: This is an alternative definition of the matrix square-root. More often, it is defined as $A=BB$ instead of $A=BB^\top$
+
+[^2]: We could also use $\bm{UD^{1/2}U^\top}$ as the matrix square-root, although this requires more computations.
+
+[^3]: An interesting way to understand why (other than mathematical necessity) is that the correlation between some of the variables would be $\geq 1$ or $\leq -1$ if this did not hold, which is not a valid correlation. 

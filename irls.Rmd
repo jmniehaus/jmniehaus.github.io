@@ -51,7 +51,9 @@ MathJax.Hub.Config({
 \newcommand{\sumin}{\sum_{i=1}^n}
 \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
 
-**NOTE:** *The material presented here is not original in the sense that others have already researched this. I am simply reiterating work that has already been done. Please see the the end of the document for supporting references.*
+**Note:** *The material presented here is a consolidation and re-statement of work that has already been done. See supporting references.*
+
+**Note also:** *The programming in R follows the math as presented; however, it would* never *be a good idea to implement IRLS in this way, as the computation presented here is very inefficient (e.g., taking the inverse of a matrix without a factorization).*
 
 \
 
@@ -104,7 +106,7 @@ y-f(x_0) &= f'(x_0)(x-x_0) \nonumber \\
 
 Alternatively, we could look at this as a Taylor series expansion of $f(x)$ about the point $x_0$, where we simply drop the higher order polynomials altogether. The Taylor Series view will become important when applying the above to ML estimation. 
 
-Graphically, suppose we select an arbitrary point $x_0$, and draw its corresponding linear approximation to the $f(x)$ as in the process just described:
+Graphically, suppose we select an arbitrary point $x_0$, and draw its corresponding linear approximation to $f(x)$ as in the process just described:
 
 ```{r, echo=F, eval=T, results="show", message=F}
 ###first plot 
@@ -446,7 +448,7 @@ Expanding on this last point,
 &= \frac{1}{1+e^{-\mu_i}}
 \end{align}
 
-With this log-likelihood in hand, it becomes clear that in order to find $\partial l/\partial \mu_i$, we will need to find $\partial \pi / partial \mu_i$. The math will be a bit neater if we find $\partial \pi / partial \mu_i$ first, then just substitute this in when finding the partials of the likelihood. For $\pi(\mu_i)$, it is a straightforward application of the chain and product rules:
+With this log-likelihood in hand, it becomes clear that in order to find $\partial l/\partial \mu_i$, we will need to find $\partial \pi \partial \mu_i$. The math will be a bit neater if we find $\partial \pi / partial \mu_i$ first, then just substitute this in when finding the partials of the likelihood. For $\pi(\mu_i)$, it is a straightforward application of the chain and product rules:
 
 \begin{align}
 \frac{\mathrm{d}}{\mathrm{d}\mu_i} (\pi(\mu_i)) &= \frac{\mathrm{d}}{\mathrm{d}\mu_i} \frac{e^{\mu_i}}{1+e^{\mu_i}} \nonumber \\

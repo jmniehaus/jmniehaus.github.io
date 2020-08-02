@@ -12,8 +12,10 @@ navbar:
       menu:
         - text: "Iteratively Reweighted Least Squares for GLMs"
           href: irls.html
-        - text: "COMING SOON:"
         - text: "Multivariate Normal Draws"
+          href: mvnorm.html
+        - text: "COMING SOON:"
+        - text: "Programming Zero Inflated Count Models in R"
         - text: "Efficient, Reproducible Monte Carlo Analyses"
         - text: "Bias of MLE for Gamma Rate Parameter" 
         - text: "Programming a Heckman Model in R"

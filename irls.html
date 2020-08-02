@@ -440,8 +440,11 @@ div.tocify {
     <li>
       <a href="irls.html">Iteratively Reweighted Least Squares for GLMs</a>
     </li>
+    <li>
+      <a href="mvnorm.html">Multivariate Normal Draws</a>
+    </li>
     <li class="dropdown-header">COMING SOON:</li>
-    <li class="dropdown-header">Multivariate Normal Draws</li>
+    <li class="dropdown-header">Programming Zero Inflated Count Models in R</li>
     <li class="dropdown-header">Efficient, Reproducible Monte Carlo Analyses</li>
     <li class="dropdown-header">Bias of MLE for Gamma Rate Parameter</li>
     <li class="dropdown-header">Programming a Heckman Model in R</li>
@@ -497,7 +500,8 @@ MathJax.Hub.Config({
 </style>
 <p><br />
 </p>
-<p><strong>NOTE:</strong> <em>The material presented here is not original in the sense that others have already researched this. I am simply reiterating work that has already been done. Please see the the end of the document for supporting references.</em></p>
+<p><strong>Note:</strong> <em>The material presented here is a consolidation and re-statement of work that has already been done. See supporting references.</em></p>
+<p><strong>Note also:</strong> <em>The programming in R follows the math as presented; however, it would</em> never <em>be a good idea to implement IRLS in this way, as the computation presented here is very inefficient (e.g., taking the inverse of a matrix without a factorization).</em></p>
 <p><br />
 </p>
 <div id="motivation" class="section level1">
@@ -534,7 +538,7 @@ y-f(x_0) &amp;= f&#39;(x_0)(x-x_0) \nonumber \\
 \implies y &amp;= f(x_0) + f&#39;(x_0)(x-x_0) \label{newton} \\
 \end{align}\]</span></p>
 <p>Alternatively, we could look at this as a Taylor series expansion of <span class="math inline">\(f(x)\)</span> about the point <span class="math inline">\(x_0\)</span>, where we simply drop the higher order polynomials altogether. The Taylor Series view will become important when applying the above to ML estimation.</p>
-<p>Graphically, suppose we select an arbitrary point <span class="math inline">\(x_0\)</span>, and draw its corresponding linear approximation to the <span class="math inline">\(f(x)\)</span> as in the process just described:</p>
+<p>Graphically, suppose we select an arbitrary point <span class="math inline">\(x_0\)</span>, and draw its corresponding linear approximation to <span class="math inline">\(f(x)\)</span> as in the process just described:</p>
 <p><img src="irls_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <p>Glancing at the plot, it looks like the point at which the red tangent intersects the x-axis is somewhat closer to the function’s zero than is the initial guess, <span class="math inline">\(x_0\)</span>. So, what if we updated our guess about where the zero is, from <span class="math inline">\(x_0\)</span> to <span class="math inline">\(x_1\)</span>, where <span class="math inline">\(x_1\)</span> is the point where the original red tangent intersects the x-axis? Lets find out.</p>
 <p>First, we have the equation for the red line; thus, we can obtain the x-intercept by solving for <span class="math inline">\(x=x_1\)</span> in equation \ref{newton}:</p>
@@ -719,7 +723,7 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 \nonumber \\
 &amp;= \frac{1}{1+e^{-\mu_i}}
 \end{align}\]</span></p>
-<p>With this log-likelihood in hand, it becomes clear that in order to find <span class="math inline">\(\partial l/\partial \mu_i\)</span>, we will need to find <span class="math inline">\(\partial \pi / partial \mu_i\)</span>. The math will be a bit neater if we find <span class="math inline">\(\partial \pi / partial \mu_i\)</span> first, then just substitute this in when finding the partials of the likelihood. For <span class="math inline">\(\pi(\mu_i)\)</span>, it is a straightforward application of the chain and product rules:</p>
+<p>With this log-likelihood in hand, it becomes clear that in order to find <span class="math inline">\(\partial l/\partial \mu_i\)</span>, we will need to find <span class="math inline">\(\partial \pi \partial \mu_i\)</span>. The math will be a bit neater if we find <span class="math inline">\(\partial \pi / partial \mu_i\)</span> first, then just substitute this in when finding the partials of the likelihood. For <span class="math inline">\(\pi(\mu_i)\)</span>, it is a straightforward application of the chain and product rules:</p>
 <p><span class="math display">\[\begin{align}
 \frac{\mathrm{d}}{\mathrm{d}\mu_i} (\pi(\mu_i)) &amp;= \frac{\mathrm{d}}{\mathrm{d}\mu_i} \frac{e^{\mu_i}}{1+e^{\mu_i}} \nonumber \\
 \nonumber \\
