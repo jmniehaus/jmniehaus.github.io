@@ -1,6 +1,7 @@
 ---
 title: "Iteratively Re-weighted Least Squares (IRLS):"
 subtitle: "Motivation, Derivation, and Programming in R"
+pagetitle: "IRLS in R"
 header-includes:
    - \usepackage{mathtools}
    - \usepackage{amsmath}
