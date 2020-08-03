@@ -211,14 +211,14 @@ From the above result regarding transformations of MVN random variables, it is c
 
 Now, suppose we generate the observations on $\bm X$ as i.i.d. standard normal random variables:
 \begin{align}
-\bm \mu &= (0,0) \nonumber \\[1.5ex]
-\bm\Sigma &= \begin{bmatrix}
+\bm \mu_x &= (0,0) \nonumber \\[1.5ex]
+\bm\Sigma_x &= \begin{bmatrix}
 1 & 0 \\
 0 & 1 
 \end{bmatrix} \nonumber 
 \end{align}
 
-Then we have that $\bm \Sigma_x = \bm I$, so to obtain multivariate normal samples with any desired covariance structure, we simply have to find a suitable matrix $\bm C$ by which we can multiply the i.i.d. standard normal variables in $\bm X$. Doing so will yield the random vector $\bm Y$ with covariance $$\Cov(\bm Y) = \bm{C\Sigma_x C}^\top = \bm{CIC}^\top = \bm{CC}^\top$$ as already proven. Importantly, note that the matrix square- root of a matrix $\bm A$ is any matrix $\bm B$ such that $BB^\top = A$.[^1] This implies that the matrix of constants, $\bm C$, by which we multiply $\bm X$ is in fact the matrix square-root of $\bm \Sigma_y$, directly analogous to the univariate case in which we multiplied $X$ by the standard deviation of our desired covariance.  
+Then we have that $\bm \Sigma_x = \bm I$, so to obtain multivariate normal samples, $\bm Y$, with any desired covariance structure, $\bm\Sigma_y$, we simply have to find a suitable matrix $\bm C$ by which we can multiply the i.i.d. standard normal variables in $\bm X$. Doing so will yield the random vector $\bm Y$ with covariance $$\Cov(\bm Y) = \bm{C\Sigma_x C}^\top = \bm{CIC}^\top = \bm{CC}^\top$$ as already proven. Importantly, note that the matrix square- root of a matrix $\bm A$ is any matrix $\bm B$ such that $BB^\top = A$.[^1] This implies that the matrix of constants, $\bm C$, by which we multiply $\bm X$ is in fact the matrix square-root of $\bm \Sigma_y$, directly analogous to the univariate case in which we multiplied $X$ by the standard deviation of our desired covariance.  
 
 Thus, the steps to generate from any multivariate normal distribution are:
 
@@ -248,7 +248,7 @@ To obtain the matrix square-root, $\bm C$, via the Cholesky decomposition decomp
 
 ### Via SVD
 ***
-For the SVD, decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{UDV}^\top = \bm{UDU}^\top$$ The last equality follows in this case because $\Sigma_y$ is a symmetric, positive definite matrix. 
+For the SVD, decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{UDV}^\top = \bm{UDU}^\top$$ The last equality follows in this case because $\bm\Sigma_y$ is a symmetric, positive definite matrix. 
 <button id="proofid" onclick="proof('SVD')">Proof</button>
 <div id="SVD" style="display:none">
 
@@ -263,15 +263,15 @@ Suppose we take the SVD of a symmetric matrix $A$. Then the left singluar vector
 
 \
 
-Finally, pre-multiplying the univariate normals in $X$ by the matrix square-root, $C$, of $\Sigma_y$ yields (dropping bolding)
+Finally, pre-multiplying the univariate normals in $X$ by the matrix square-root, $\bm C$, of $\bm\Sigma_y$ yields (dropping bolding)
 
 \begin{align}
 Y= CX &= UD^{1/2} X \nonumber \\[1ex]
-\implies Y &\sim \left(\bm 0, UD^{1/2}\bm\Sigma (UD^{1/2})^\top \right) \nonumber \\[1ex]
-& \sim \left(\bm 0, UD^{1/2}\bm I (UD^{1/2})^\top \right) \nonumber \\[1ex]
+\implies Y &\sim \left(\bm 0, UD^{1/2}\Sigma_x (UD^{1/2})^\top \right) \nonumber \\[1ex]
+& \sim \left(\bm 0, UD^{1/2} I (UD^{1/2})^\top \right) \nonumber \\[1ex]
 & \sim \left(\bm 0, UD^{1/2}D^{1/2}U^\top\right) \nonumber \\[1ex]
 & \sim \left(\bm 0 , UDU^\top\right) \nonumber \\[1ex]
-& \sim \left(\bm 0 , \bm \Sigma_y\right) \nonumber \\[1ex]
+& \sim \left(\bm 0 , \Sigma_y\right) \nonumber \\[1ex]
 \end{align}
 
 So to obtain the desired covariance $\bm\Sigma_y$ from $X$ we simply set $\bm C = \bm{UD}^{1/2}$ and premultiply $\bm{CX}$.[^2] 
@@ -364,8 +364,8 @@ mv.loss = function(n, sigma.y){
   svd.sig.y = svd(sigma.y)
   u = svd.sig.y$u
   d = svd.sig.y$d
-  svd.sig.y = u%*%diag(d)^(1/2)
-  y.svd =  svd.sig.y %*% x 
+  sig.sqrt = u%*%diag(d)^(1/2)
+  y.svd =  sig.sqrt %*% x 
 
   loss.svd = max( abs( cov(t(y.svd)) - sigma.y) )
 

@@ -619,13 +619,13 @@ M_Y(t) &amp;= \mathbb{E}(e^{t^\top Y}) \\[2ex]
 \implies \boldsymbol{Y} &amp;\sim \mathrm{MVN}(\boldsymbol{C\mu_x} + \boldsymbol{k}, \boldsymbol{ C\Sigma_x C^\top})
 \end{align}\]</span></p>
 <p>Now, suppose we generate the observations on <span class="math inline">\(\boldsymbol{X}\)</span> as i.i.d. standard normal random variables: <span class="math display">\[\begin{align}
-\boldsymbol{\mu }&amp;= (0,0) \nonumber \\[1.5ex]
-\boldsymbol{\Sigma }&amp;= \begin{bmatrix}
+\boldsymbol{\mu}_x &amp;= (0,0) \nonumber \\[1.5ex]
+\boldsymbol{\Sigma}_x &amp;= \begin{bmatrix}
 1 &amp; 0 \\
 0 &amp; 1 
 \end{bmatrix} \nonumber 
 \end{align}\]</span></p>
-<p>Then we have that <span class="math inline">\(\boldsymbol{\Sigma}_x = \boldsymbol{I}\)</span>, so to obtain multivariate normal samples with any desired covariance structure, we simply have to find a suitable matrix <span class="math inline">\(\boldsymbol{C}\)</span> by which we can multiply the i.i.d. standard normal variables in <span class="math inline">\(\boldsymbol{X}\)</span>. Doing so will yield the random vector <span class="math inline">\(\boldsymbol{Y}\)</span> with covariance <span class="math display">\[\mathrm{Cov}(\boldsymbol{Y}) = \boldsymbol{C\Sigma_x C}^\top = \boldsymbol{CIC}^\top = \boldsymbol{CC}^\top\]</span> as already proven. Importantly, note that the matrix square- root of a matrix <span class="math inline">\(\boldsymbol{A}\)</span> is any matrix <span class="math inline">\(\boldsymbol{B}\)</span> such that <span class="math inline">\(BB^\top = A\)</span>.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This implies that the matrix of constants, <span class="math inline">\(\boldsymbol{C}\)</span>, by which we multiply <span class="math inline">\(\boldsymbol{X}\)</span> is in fact the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, directly analogous to the univariate case in which we multiplied <span class="math inline">\(X\)</span> by the standard deviation of our desired covariance.</p>
+<p>Then we have that <span class="math inline">\(\boldsymbol{\Sigma}_x = \boldsymbol{I}\)</span>, so to obtain multivariate normal samples, <span class="math inline">\(\boldsymbol{Y}\)</span>, with any desired covariance structure, <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, we simply have to find a suitable matrix <span class="math inline">\(\boldsymbol{C}\)</span> by which we can multiply the i.i.d. standard normal variables in <span class="math inline">\(\boldsymbol{X}\)</span>. Doing so will yield the random vector <span class="math inline">\(\boldsymbol{Y}\)</span> with covariance <span class="math display">\[\mathrm{Cov}(\boldsymbol{Y}) = \boldsymbol{C\Sigma_x C}^\top = \boldsymbol{CIC}^\top = \boldsymbol{CC}^\top\]</span> as already proven. Importantly, note that the matrix square- root of a matrix <span class="math inline">\(\boldsymbol{A}\)</span> is any matrix <span class="math inline">\(\boldsymbol{B}\)</span> such that <span class="math inline">\(BB^\top = A\)</span>.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This implies that the matrix of constants, <span class="math inline">\(\boldsymbol{C}\)</span>, by which we multiply <span class="math inline">\(\boldsymbol{X}\)</span> is in fact the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, directly analogous to the univariate case in which we multiplied <span class="math inline">\(X\)</span> by the standard deviation of our desired covariance.</p>
 <p>Thus, the steps to generate from any multivariate normal distribution are:</p>
 <ol style="list-style-type: decimal">
 <li><p>Decide on a desired covariance matrix, <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span></p></li>
@@ -651,7 +651,7 @@ M_Y(t) &amp;= \mathbb{E}(e^{t^\top Y}) \\[2ex]
 <div id="via-svd" class="section level3">
 <h3>Via SVD</h3>
 <hr />
-For the SVD, decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{UDV}^\top = \boldsymbol{UDU}^\top\]</span> The last equality follows in this case because <span class="math inline">\(\Sigma_y\)</span> is a symmetric, positive definite matrix. <button id="proofid" onclick="proof('SVD')">Proof</button>
+For the SVD, decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{UDV}^\top = \boldsymbol{UDU}^\top\]</span> The last equality follows in this case because <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> is a symmetric, positive definite matrix. <button id="proofid" onclick="proof('SVD')">Proof</button>
 <div id="SVD" style="display:none">
 <p><br />
 </p>
@@ -660,14 +660,14 @@ For the SVD, decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span
 </div>
 <p><br />
 </p>
-<p>Finally, pre-multiplying the univariate normals in <span class="math inline">\(X\)</span> by the matrix square-root, <span class="math inline">\(C\)</span>, of <span class="math inline">\(\Sigma_y\)</span> yields (dropping bolding)</p>
+<p>Finally, pre-multiplying the univariate normals in <span class="math inline">\(X\)</span> by the matrix square-root, <span class="math inline">\(\boldsymbol{C}\)</span>, of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> yields (dropping bolding)</p>
 <p><span class="math display">\[\begin{align}
 Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
-\implies Y &amp;\sim \left(\boldsymbol{0}, UD^{1/2}\boldsymbol{\Sigma }(UD^{1/2})^\top \right) \nonumber \\[1ex]
-&amp; \sim \left(\boldsymbol{0}, UD^{1/2}\boldsymbol{I} (UD^{1/2})^\top \right) \nonumber \\[1ex]
+\implies Y &amp;\sim \left(\boldsymbol{0}, UD^{1/2}\Sigma_x (UD^{1/2})^\top \right) \nonumber \\[1ex]
+&amp; \sim \left(\boldsymbol{0}, UD^{1/2} I (UD^{1/2})^\top \right) \nonumber \\[1ex]
 &amp; \sim \left(\boldsymbol{0}, UD^{1/2}D^{1/2}U^\top\right) \nonumber \\[1ex]
 &amp; \sim \left(\boldsymbol{0} , UDU^\top\right) \nonumber \\[1ex]
-&amp; \sim \left(\boldsymbol{0} , \boldsymbol{\Sigma}_y\right) \nonumber \\[1ex]
+&amp; \sim \left(\boldsymbol{0} , \Sigma_y\right) \nonumber \\[1ex]
 \end{align}\]</span></p>
 <p>So to obtain the desired covariance <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> from <span class="math inline">\(X\)</span> we simply set <span class="math inline">\(\boldsymbol{C} = \boldsymbol{UD}^{1/2}\)</span> and premultiply <span class="math inline">\(\boldsymbol{CX}\)</span>.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></p>
 <p><br />
@@ -774,8 +774,8 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 <span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a>  svd.sig.y =<span class="st"> </span><span class="kw">svd</span>(sigma.y)</span>
 <span id="cb8-14"><a href="#cb8-14" aria-hidden="true"></a>  u =<span class="st"> </span>svd.sig.y<span class="op">$</span>u</span>
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true"></a>  d =<span class="st"> </span>svd.sig.y<span class="op">$</span>d</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a>  svd.sig.y =<span class="st"> </span>u<span class="op">%*%</span><span class="kw">diag</span>(d)<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a>  y.svd =<span class="st">  </span>svd.sig.y <span class="op">%*%</span><span class="st"> </span>x </span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a>  sig.sqrt =<span class="st"> </span>u<span class="op">%*%</span><span class="kw">diag</span>(d)<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a>  y.svd =<span class="st">  </span>sig.sqrt <span class="op">%*%</span><span class="st"> </span>x </span>
 <span id="cb8-18"><a href="#cb8-18" aria-hidden="true"></a></span>
 <span id="cb8-19"><a href="#cb8-19" aria-hidden="true"></a>  loss.svd =<span class="st"> </span><span class="kw">max</span>( <span class="kw">abs</span>( <span class="kw">cov</span>(<span class="kw">t</span>(y.svd)) <span class="op">-</span><span class="st"> </span>sigma.y) )</span>
 <span id="cb8-20"><a href="#cb8-20" aria-hidden="true"></a></span>
