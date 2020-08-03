@@ -320,8 +320,8 @@ y.chol = t(chol.sig.y) %*% x # R returns the upper-triangular, L^t by default
 svd.sig.y = svd(sigma.y)
 u = svd.sig.y$u
 d = svd.sig.y$d
-svd.sig.y = u%*%diag(d)^(1/2)
-y.svd =  svd.sig.y %*% x 
+sqrt.sig = u%*%diag(d)^(1/2)
+y.svd =  sqrt.sig %*% x 
 
 # add on mean 
 #(transpose for taking the covariance of a matrix in R on next lines)
