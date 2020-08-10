@@ -96,11 +96,10 @@ To take draws from the multivariate normal distribution, we leverage the fact th
 
 ### The Univariate Case 
 
-In order to understand how to take draws from a multivariate normal distribution, it is first important to know that linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters. In other words if $X \sim \mathcal{N}(\mu, \sigma^2)$ and $Y = cX + k$, then $Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)$. 
+In order to understand how to take draws from a multivariate normal distribution, it is first important to know that linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters. In other words if $X \sim \mathcal{N}(\mu, \sigma^2)$ and $Y = cX + k$, then $Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)$ follows. 
+
 <button id="proofid" onclick="proof('univariate')">Proof</button>
 <div id="univariate" style="display:none">
-
-&nbsp;
 
 First, proving that the location and scale parameters are known in the univariate case is a straightforward application of the fact that expectations are a linear operator:
 
@@ -147,24 +146,29 @@ Where \\ref{pdf.y} is clearly a $\mathcal{N}(c\mu+k, c^2\sigma^2)$ distribution,
 Thus, if we multiply $X$ by the standard deviation that we desire our transformed variable to have, and then add on a constant, we arrive at any desired normally distributed random variable. Although this is somewhat trivial in the univariate case due to software implementations easily drawing from arbitrary univariate normals, this understanding proves useful when trying to draw from a multivariate normal distribution.
 
 ### The Multivariate Case
+***
 
-The next step is to extend the univariate case to the multivariate case. First, let
+The next step is to extend the univariate case to the multivariate context by demonstrating that linear transformations of multivariate normal random vectors are also multivariate normal. First, let
 
 \begin{align}
 \bm X &\sim \mrm{MVN}(\bm\mu_x, \bm\Sigma_x) \nonumber \\[1ex]
 \bm Y &= \bm{CX} + \bm k \nonumber
 \end{align} 
 
-Then, it follows that $$\bm Y \sim \mrm{MVN}(\bm{C\mu_x} + \bm k, \bm{ C\Sigma_x C^\top})$$
+Then, it follows that 
+\begin{align}
+\bm Y \sim \mrm{MVN}(\bm{C\mu_x} + \bm k, \bm{ C\Sigma_x C^\top}) \label{mvres}
+\end{align}
 
 where:
 
+* $\bm Y$ is a $n \times 1$ MVN random vector
 * $\bm X$ is a $p \times 1$ MVN random vector
-* $\bm C$ is a $n \times p$  matrix of constants
+* $\bm C$ is a $n \times p$ matrix of constants
 * $\bm k$ is a $n \times 1$ vector of constants
 * $\bm \mu_x$ is the $p \times 1$ mean vector of $\bm X$ 
 * $\bm \Sigma_x$ is the $p \times p$ covariance matrix of $\bm X$
-* **Note** that $p$ can be equal to $n$ 
+* **Note that $p$ can be equal to $n$**
 
 
 <button id="proofid" onclick="proof('MGF')">Proof</button>
@@ -175,7 +179,7 @@ For proof, recall that the MGF of the MV normal distribution is $$M_X(t): \R^p \
 Then for $t \in \R^n$ (dropping bold for matrices and vectors), the joint MGF of $Y$, $M_Y(t): \R^n \rightarrow \R$, is:
 
 \begin{align}
-M_Y(t) &= \E(e^{t^\top Y}) \\[2ex]
+M_Y(t) &= \E(e^{t^\top Y}) \nonumber \\[2ex]
        &= \E\left(e^{t^\top(CX + k)}\right) \nonumber \\[2ex]
 &=  \E\left(e^{t^\top CX}e^{t^\top k}\right) \nonumber \\[2ex]
 &= e^{t^\top k}\E\left(e^{t^\top CX}\right) \nonumber \\[2ex]
@@ -198,29 +202,9 @@ And, equation \\ref{mgf} is clearly the MGF of a $\mrm{MVN}(\bm{C\mu + k}, \bm{C
 # Generating from the MV Normal
 ***
 
-**Note**: The exposition here relies on a bivariate normal, although this readily extends to arbitrarily large dimensions. 
+**Note**: This exposition uses a bivariate normal, but readily extends to arbitrarily large dimensions. 
 
-
-From the above result regarding transformations of MVN random variables, it is clear that if we first generate independent univariate normals, and then choose a matrix $\bm C$ and vector $\bm k$ carefully, we can generate any arbitrary multivariate normal sample. First, to obtain the desired mean, we can simply add a vector of constants to $\bm X$, eg $\bm X + \bm k$. However, to get the desired covariance structure is a bit more involved. From the above proof we have that
-
-\begin{align}
-\bm X &\sim \mrm{MVN}(\bm\mu_x, \bm\Sigma_x) \nonumber \\[1ex]
-\bm Y &= \bm{CX} + \bm k \nonumber \\[1.5ex]
-\implies \bm Y &\sim \mrm{MVN}(\bm{C\mu_x} + \bm k, \bm{ C\Sigma_x C^\top})
-\end{align} 
-
-Now, suppose we generate the observations on $\bm X$ as i.i.d. standard normal random variables:
-\begin{align}
-\bm \mu_x &= (0,0) \nonumber \\[1.5ex]
-\bm\Sigma_x &= \begin{bmatrix}
-1 & 0 \\
-0 & 1 
-\end{bmatrix} \nonumber 
-\end{align}
-
-Then we have that $\bm \Sigma_x = \bm I$, so to obtain multivariate normal samples, $\bm Y$, with any desired covariance structure, $\bm\Sigma_y$, we simply have to find a suitable matrix $\bm C$ by which we can multiply the i.i.d. standard normal variables in $\bm X$. Doing so will yield the random vector $\bm Y$ with covariance $$\Cov(\bm Y) = \bm{C\Sigma_x C}^\top = \bm{CIC}^\top = \bm{CC}^\top$$ as already proven. Importantly, note that the matrix square- root of a matrix $\bm A$ is any matrix $\bm B$ such that $BB^\top = A$.[^1] This implies that the matrix of constants, $\bm C$, by which we multiply $\bm X$ is in fact the matrix square-root of $\bm \Sigma_y$, directly analogous to the univariate case in which we multiplied $X$ by the standard deviation of our desired covariance.  
-
-Thus, the steps to generate from any multivariate normal distribution are:
+In short, the steps to generate from any multivariate normal distribution are:
 
 1. Decide on a desired covariance matrix, $\bm \Sigma_y$
 
@@ -232,17 +216,37 @@ Thus, the steps to generate from any multivariate normal distribution are:
 
 5. Multiply $\bm{CX}$ and add $\bm{CX} + \bm k$
 
-To find the matrix square-root of $\bm\Sigma_y$ which will serve as the matrix of constants, $\bm C$, by which we multiply $\bm X$, two factorizations of $\bm \Sigma_y = \bm{CC^\top}$ immediately come to mind, although several others can also work:
+Assuming we've done *steps 1 and 2* already, in *step 3* we now need to generate independent univariate standard normal random variables. To see why, recall from above that we have
 
-1. **Cholesky decomposition** -- $LL^\top$ where $L$ is lower-triangular. This is unique for positive definite matrices, which all valid covariance matrices are. 
+\begin{align}
+\bm X &\sim \mrm{MVN}(\bm\mu_x, \bm\Sigma_x) \nonumber \\[1ex]
+\bm Y &= \bm{CX} + \bm k \nonumber \\[1.5ex]
+\implies \bm Y &\sim \mrm{MVN}(\bm{C\mu_x} + \bm k, \bm{ C\Sigma_x C^\top})
+\end{align} 
 
-2. **Singular values decomposition** (SVD) -- $UDV^\top$, where $U$ and $V$ are orthogonal matrices whose columns are the left and right singular vectors, and $D$ is a diagonal matrix containing the singular values. Because of the orthogonal and diagonal matrices, this is geometrically a rotation, dilation, and rotation. **Note** that for real, symmetric, positive-definite matrices, this is identical to the spectral decomposition.
+Interestingly, suppose we generate the observations on $\bm X$ as i.i.d. standard normal random variables:
+\begin{align}
+\bm \mu_x &= (0,0) \nonumber \\[2ex]
+\bm\Sigma_x &= \begin{bmatrix}
+1 & 0 \\
+0 & 1 
+\end{bmatrix} \nonumber 
+\end{align}
+
+Then it is true that $\bm \Sigma_x = \bm I$. This result lends nicely to *step 4* (find the matrix square-root of $\bm \Sigma_y$), because to obtain $\bm Y \sim \mrm{MVN}(\bm \mu_y, \bm\Sigma_y)$, we simply have to find a suitable matrix $\bm C$ such that multiplying $\bm{CX}$ yields$$\Cov(\bm Y) = \Cov(\bm{CX}) = \Cov(\bm Y) = \bm{C\Sigma}_x \bm C^\top = \bm{CIC}^\top = \bm{CC}^\top$$ as already proven. In order to arrive at this matrix of constants, note that the square-root of a matrix, $\bm A$, is any matrix, $\bm B$, such that $\bm{BB}^\top = \bm{A}$.[^1] This implies that the matrix of constants, $\bm C$, in $\bm{CX}$ is in fact the matrix square-root of $\bm \Sigma_y$, directly analogous to the univariate case in which we multiplied $X\sigma_y$. Thus, by generating i.i.d. standard normal variables in step 3, we then deduce that $\bm C$ must be the matrix square-root of $\bm \Sigma_y$ in order to get the desired structure for $\bm Y$. In *step 5*, we can finally add on a vector of constants, $\bm k = \bm \mu_y$, to get the desired mean vector for $\bm Y$, because $\bm \mu_x = \bm 0$.  
+
+
+To find the matrix square-root of $\bm\Sigma_y$, two factorizations of $\bm \Sigma_y = \bm{CC^\top}$ immediately come to mind, although several others can also work:
+
+1. **Cholesky decomposition** -- $\bm{LL}^\top$ where $\bm L$ is lower-triangular. This is unique for positive definite matrices, which all valid covariance matrices are. 
+
+2. **Singular values decomposition** (SVD) -- $\bm{UDV}^\top$, where $\bm U$ and $\bm V$ are orthogonal matrices whose columns are the left and right singular vectors, respectively, and $\bm D$ is a diagonal matrix containing the singular values. Because of the orthogonal and diagonal matrices, this is geometrically a rotation, elongation, and rotation. **Note** that for real, symmetric, positive-definite matrices, this is identical to the spectral decomposition.[^2]
 
 \
 
 ### Via Cholesky
 ***
-To obtain the matrix square-root, $\bm C$, via the Cholesky decomposition decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{LL}^\top$$ and multiply $$\bm{LX}$$ which yields $$\bm Y \sim (\bm 0, \bm{LL^\top})$$ which has exactly the covariance structure that we wanted, as $\bm L$ is equivalent to the matrix $\bm C$ that we were looking for. 
+To obtain the matrix square-root, $\bm C$, via the Cholesky decomposition decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{LL}^\top$$ and multiply $$\bm Y = \bm{LX}$$ which yields $$\bm Y \sim (\bm 0, \bm{LL^\top})$$ which has exactly the covariance structure that we wanted, as $\bm L$ is equivalent to the matrix $\bm C$ that we were looking for. 
 
 \
 
@@ -274,14 +278,14 @@ Y= CX &= UD^{1/2} X \nonumber \\[1ex]
 & \sim \left(\bm 0 , \Sigma_y\right) \nonumber \\[1ex]
 \end{align}
 
-So to obtain the desired covariance $\bm\Sigma_y$ from $X$ we simply set $\bm C = \bm{UD}^{1/2}$ and premultiply $\bm{CX}$.[^2] 
+So to obtain the desired covariance $\bm\Sigma_y$ from $X$ we simply set $\bm C = \bm{UD}^{1/2}$ and premultiply $\bm{CX}$.[^3]
 
 \
 
 # Programming in R
 ***
 
-To do this in R, we follow the steps outlined previously. Thus, we first decide on the desired mean vector, $\bm \mu_y$, and covariance matrix, $\bm \Sigma_y$. Recall also that a valid, full-rank covariance matrix is positive-definite.[^3]
+To do this in R, we follow the steps outlined previously. Thus, we first decide on the desired mean vector, $\bm \mu_y$, and covariance matrix, $\bm \Sigma_y$. Recall also that a valid, full-rank covariance matrix is positive-definite.[^4]
 
 ```{r, echo=T,class.output="bg-success"}
 mu.y = c(-.246, -1.3, 1.645)
@@ -338,7 +342,32 @@ list(chol = list(mean=apply(y.chol, 2, mean),
 
 \
 
-From the above output, it is clear that the desired covariance structure is approximated fairly well. 
+From the above output, it is clear that the desired covariance structure is approximated fairly well. So we can finally write our own little function that generates multivariate normal samples! (In fact, the function below is virtually indistinguishable from the [source-code](https://rdrr.io/cran/mvtnorm/src/R/mvnorm.R) for the `mvtnorm` package's `mvrnorm` function.)
+
+```{r, echo=T}
+my.mvrnorm = function(sigma.y, mu.y = rep(0, ncol(sigma.y)), n, method="svd"){
+  
+  method = match.arg(method, choices = c("svd", "cholesky"))
+  
+  pdef = all(eigen(sigma.y)$values > 0)
+  if(!pdef) stop("Desired covariance not positive definite.")
+  if(!isSymmetric(sigma.y)) stop("Covariance is not symmetric.")
+  if(ncol(sigma.y) != length(mu.y)) stop("Dimensions of mean and covariance inconsistent.")
+  
+  x = matrix(rnorm(n*length(mu.y)), nrow = length(mu.y))
+  
+  if(method == "svd"){
+    svd.sig = svd(sigma.y)
+    y = svd.sig$u %*% diag(svd.sig$d^(1/2)) %*% x + mu.y
+    return(t(y))
+  } else {
+    chol.sig = t(chol.default(sigma.y))
+    y = chol.sig %*% x + mu.y
+    return(t(y))
+  }
+}
+
+```
 
 \
 
@@ -430,7 +459,7 @@ ggplot(data=summaries, aes(x=n)) +
   labs(title="Average of Max Absolute Deviation for Covariance of MVN",
        subtitle = "Cholesky vs. SVD",
        x= "N",
-       y= "Max Absolute Deviation",
+       y= "Avg. Max Absolute Deviation",
        color = "Method",
        shape = "Method") +
   theme(panel.grid.major = element_blank(),
@@ -478,7 +507,7 @@ ggplot(data=summaries, aes(x=n)) +
   labs(title="Average of Max Absolute Deviation for Covariance of MVN",
        subtitle = "Cholesky vs. SVD",
        x= "N",
-       y= "Max Absolute Deviation",
+       y= "Avg. Max Absolute Deviation",
        color = "Method") +
   theme(panel.grid.major = element_blank(),
         legend.position = c(.85,.85)) 
@@ -489,9 +518,13 @@ Lastly, then, the two approaches are equal on average, even in small samples.
 
 
 # Endnotes 
+***
 
 [^1]: This is an alternative definition of the matrix square-root. More often, it is defined as $A=BB$ instead of $A=BB^\top$
 
-[^2]: We could also use $\bm{UD^{1/2}U^\top}$ as the matrix square-root, although this requires more computations.
+[^2]: One of the advantages of the SVD then is that it nests the well-known spectral decomposition, while always existing. In other words, there are no restrictions on the existence of the SVD, unlike the spectral decomposition. Moreover, the SVD tends to be more [numerically stable](https://cims.nyu.edu/~donev/Teaching/NMI-Fall2010/Lecture5.handout.pdf), at the cost of relative inefficiency.  
 
-[^3]: An interesting way to understand why (other than mathematical necessity) is that the correlation between some of the variables would be $\geq 1$ or $\leq -1$ if this did not hold, which is not a valid correlation. 
+[^3]: We could also use $\bm{UD^{1/2}U^\top}$ as the matrix square-root, although this requires more computations.
+
+[^4]: An interesting way to understand why (other than mathematical necessity) is that the correlation between some of the variables would be $\geq 1$ or $\leq -1$ if this did not hold, suggesting either an invalid correlation, or perfectly colinear variables. 
+
