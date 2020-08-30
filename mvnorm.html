@@ -13,7 +13,7 @@
 
 <title>MV Norm Draws</title>
 
-<script src="site_libs/header-attrs-2.2/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.3/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
@@ -148,6 +148,7 @@ h6 {
 }
 </style>
 
+<link rel="stylesheet" href="styles.css" type="text/css" />
 
 
 
@@ -443,14 +444,16 @@ div.tocify {
     <li>
       <a href="mvnorm.html">Multivariate Normal Draws</a>
     </li>
+    <li class="dropdown-header">Monte Carlos, the Right Way (in R)</li>
     <li class="dropdown-header">COMING SOON:</li>
     <li class="dropdown-header">Programming Zero Inflated Count Models in R</li>
-    <li class="dropdown-header">Efficient, Reproducible Monte Carlo Analyses</li>
+    <li class="dropdown-header">Copulas and Copula Regression</li>
     <li class="dropdown-header">Bias of MLE for Gamma Rate Parameter</li>
     <li class="dropdown-header">Programming a Heckman Model in R</li>
     <li class="dropdown-header">Derivation of Negative Binomial Regression</li>
     <li class="dropdown-header">Spurious Regression Problem in Time Series</li>
     <li class="dropdown-header">Omitted Variables Bias in Probit Models</li>
+    <li class="dropdown-header">Building this Website</li>
   </ul>
 </li>
       </ul>
@@ -473,6 +476,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Drawing from the Multivariate Normal Distribution</h1>
 <h3 class="subtitle">Derivation, and Programming in R</h3>
+<h4 class="date">Updated: 29 Aug, 2020</h4>
 
 </div>
 
@@ -486,57 +490,24 @@ MathJax.Hub.Config({
   }
 });
 </script>
-<style type="text/css">
-
-  body{ /* Normal  */
-      font-size: 16px;
-    }
-    
-  p {
-  line-height: 1.75em;
-  margin-bottom: 1.5em;
-  }
-  
-</style>
 <p><br />
 </p>
-<style type="text/css">
-#proofid{
- background-color: white;
- color: #034f84;
- font-family: 'Arial';
- font-size: 16px;
- text-decoration: none;
- border: none;
-}
-</style>
-<script type="text/javascript">
-function proof(id) {
-  var x = document.getElementById(id);
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
-  }
-}
-</script>
 <div id="summary" class="section level1">
 <h1>Summary</h1>
 <hr />
-<p>To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can approximate any desired parameterization of the multivariate normal distriubtion.</p>
-<p><br />
-</p>
+<p>To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can approximate any desired parameterization of the multivariate normal distribution. Some of what is presented here came as a result of taking <a href="https://darrenho.github.io/">Darren Homrighausen’s</a> class on multivariate statistics. However, two additional references were consulted, and are available <a href="https://www.math.kent.edu/~reichel/courses/monte.carlo/alt4.7c.pdf">here</a> and <a href="http://users.stat.umn.edu/~gary/classes/5401/handouts/09.mvn.handout.pdf">here</a>.</p>
 </div>
-<div id="transformations-of-normal-rvs" class="section level1">
-<h1>Transformations of Normal RVs</h1>
+<div id="transformations-of-normal-rvs" class="section level1 tabset tabset-fade tabset-pills">
+<h1 class="tabset tabset-fade tabset-pills">Transformations of Normal RVs</h1>
 <hr />
-<div id="the-univariate-case" class="section level3">
-<h3>The Univariate Case</h3>
-<p>In order to understand how to take draws from a multivariate normal distribution, it is first important to know that linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters. In other words if <span class="math inline">\(X \sim \mathcal{N}(\mu, \sigma^2)\)</span> and <span class="math inline">\(Y = cX + k\)</span>, then <span class="math inline">\(Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)\)</span> follows.</p>
-<button id="proofid" onclick="proof(&#39;univariate&#39;)">
-Proof
-</button>
-<div id="univariate" style="display:none">
+<div id="the-univariate-case" class="section level2">
+<h2>The Univariate Case</h2>
+<hr />
+In order to understand how to take draws from a multivariate normal distribution, it is first important to know that linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters. In other words if <span class="math inline">\(X \sim \mathcal{N}(\mu, \sigma^2)\)</span> and <span class="math inline">\(Y = cX + k\)</span>, then <span class="math inline">\(Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)\)</span>.
+<details>
+<summary>
+<span style="color: #0888a8;">Proof</span>
+</summary>
 <p>First, proving that the location and scale parameters are known in the univariate case is a straightforward application of the fact that expectations are a linear operator:</p>
 <p><span class="math display">\[\begin{align}
 &amp;\text{Let:} \nonumber \\
@@ -566,12 +537,13 @@ G_Y(y) &amp;= \Pr(Y \leq y) \nonumber \\[2ex]
 <p>Where \ref{pdf.y} is clearly a <span class="math inline">\(\mathcal{N}(c\mu+k, c^2\sigma^2)\)</span> distribution, which concludes the proof.</p>
 <p><span style="float:right"><span class="math inline">\(\blacksquare\)</span></span></p>
 <p> </p>
-</div>
-<p> </p>
+</details>
+<div style="margin-top:15px; margin-bottom:60px;">
 <p>Thus, if we multiply <span class="math inline">\(X\)</span> by the standard deviation that we desire our transformed variable to have, and then add on a constant, we arrive at any desired normally distributed random variable. Although this is somewhat trivial in the univariate case due to software implementations easily drawing from arbitrary univariate normals, this understanding proves useful when trying to draw from a multivariate normal distribution.</p>
 </div>
-<div id="the-multivariate-case" class="section level3">
-<h3>The Multivariate Case</h3>
+</div>
+<div id="the-multivariate-case" class="section level2">
+<h2>The Multivariate Case</h2>
 <hr />
 <p>The next step is to extend the univariate case to the multivariate context by demonstrating that linear transformations of multivariate normal random vectors are also multivariate normal. First, let</p>
 <p><span class="math display">\[\begin{align}
@@ -591,10 +563,11 @@ G_Y(y) &amp;= \Pr(Y \leq y) \nonumber \\[2ex]
 <li><span class="math inline">\(\boldsymbol{\Sigma}_x\)</span> is the <span class="math inline">\(p \times p\)</span> covariance matrix of <span class="math inline">\(\boldsymbol{X}\)</span></li>
 <li><strong>Note that <span class="math inline">\(p\)</span> can be equal to <span class="math inline">\(n\)</span></strong></li>
 </ul>
-<button id="proofid" onclick="proof(&#39;MGF&#39;)">
-Proof
-</button>
-<div id="MGF" style="display:none">
+<details>
+<summary>
+<span style="color: #0888a8;">Proof</span>
+</summary>
+<p>This proof calls directly on <span class="citation">Taboga (<a href="#ref-statlect" role="doc-biblioref">2012</a>, 447)</span>, which is also a great book for all things math-stat.</p>
 <p>For proof, recall that the MGF of the MV normal distribution is <span class="math display">\[M_X(t): \mathbb{R}^p \rightarrow \mathbb{R}= \mathbb{E}(e^{t^\top X}) = e^{t^\top \boldsymbol{\mu }+ \frac{1}{2}t^\top \boldsymbol{\Sigma }t}\]</span> for <span class="math inline">\(t \in \mathbb{R}^p\)</span>.</p>
 <p>Then for <span class="math inline">\(t \in \mathbb{R}^n\)</span> (dropping bold for matrices and vectors), the joint MGF of <span class="math inline">\(Y\)</span>, <span class="math inline">\(M_Y(t): \mathbb{R}^n \rightarrow \mathbb{R}\)</span>, is:</p>
 <p><span class="math display">\[\begin{align}
@@ -609,15 +582,18 @@ M_Y(t) &amp;= \mathbb{E}(e^{t^\top Y}) \nonumber \\[2ex]
 \end{align}\]</span></p>
 <p>And, equation \ref{mgf} is clearly the MGF of a <span class="math inline">\(\mathrm{MVN}(\boldsymbol{C\mu + k}, \boldsymbol{C\Sigma C^\top})\)</span> distribution, which by the MGF Uniqueness Theorem implies that <span class="math inline">\(Y\)</span> has this distribution, which concludes the proof.</p>
 <p><span style="float:right"><span class="math inline">\(\blacksquare\)</span></span></p>
-</div>
+</details>
 <p><br />
 </p>
 </div>
 </div>
-<div id="generating-from-the-mv-normal" class="section level1">
-<h1>Generating from the MV Normal</h1>
+<div id="generating-from-the-mv-normal" class="section level1 tabset tabset-fade tabset-pills">
+<h1 class="tabset tabset-fade tabset-pills">Generating from the MV Normal</h1>
 <hr />
-<p><strong>Note</strong>: This exposition uses a bivariate normal, but readily extends to arbitrarily large dimensions.</p>
+<div id="general-steps" class="section level2">
+<h2>General Steps</h2>
+<hr />
+<p><strong>Note</strong>: <em>This exposition uses a bivariate normal, but readily extends to arbitrarily large dimensions.</em></p>
 <p>In short, the steps to generate from any multivariate normal distribution are:</p>
 <ol style="list-style-type: decimal">
 <li><p>Decide on a desired covariance matrix, <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span></p></li>
@@ -639,7 +615,7 @@ M_Y(t) &amp;= \mathbb{E}(e^{t^\top Y}) \nonumber \\[2ex]
 0 &amp; 1 
 \end{bmatrix} \nonumber 
 \end{align}\]</span></p>
-<p>Then it is true that <span class="math inline">\(\boldsymbol{\Sigma}_x = \boldsymbol{I}\)</span>. This result lends nicely to <em>step 4</em> (find the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>), because to obtain <span class="math inline">\(\boldsymbol{Y} \sim \mathrm{MVN}(\boldsymbol{\mu}_y, \boldsymbol{\Sigma}_y)\)</span>, we simply have to find a suitable matrix <span class="math inline">\(\boldsymbol{C}\)</span> such that multiplying <span class="math inline">\(\boldsymbol{CX}\)</span> yields<span class="math display">\[\mathrm{Cov}(\boldsymbol{Y}) = \mathrm{Cov}(\boldsymbol{CX}) = \mathrm{Cov}(\boldsymbol{Y}) = \boldsymbol{C\Sigma}_x \boldsymbol{C}^\top = \boldsymbol{CIC}^\top = \boldsymbol{CC}^\top\]</span> as already proven. In order to arrive at this matrix of constants, note that the square-root of a matrix, <span class="math inline">\(\boldsymbol{A}\)</span>, is any matrix, <span class="math inline">\(\boldsymbol{B}\)</span>, such that <span class="math inline">\(\boldsymbol{BB}^\top = \boldsymbol{A}\)</span>.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This implies that the matrix of constants, <span class="math inline">\(\boldsymbol{C}\)</span>, in <span class="math inline">\(\boldsymbol{CX}\)</span> is in fact the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, directly analogous to the univariate case in which we multiplied <span class="math inline">\(X\sigma_y\)</span>. Thus, by generating i.i.d. standard normal variables in step 3, we then deduce that <span class="math inline">\(\boldsymbol{C}\)</span> must be the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> in order to get the desired structure for <span class="math inline">\(\boldsymbol{Y}\)</span>. In <em>step 5</em>, we can finally add on a vector of constants, <span class="math inline">\(\boldsymbol{k} = \boldsymbol{\mu}_y\)</span>, to get the desired mean vector for <span class="math inline">\(\boldsymbol{Y}\)</span>, because <span class="math inline">\(\boldsymbol{\mu}_x = \boldsymbol{0}\)</span>.</p>
+<p>Then it is true that <span class="math inline">\(\boldsymbol{\Sigma}_x = \boldsymbol{I}\)</span>. This result lends nicely to <em>step 4</em> (find the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>), because to obtain <span class="math inline">\(\boldsymbol{Y} \sim \mathrm{MVN}(\boldsymbol{\mu}_y, \boldsymbol{\Sigma}_y)\)</span>, we simply have to find a suitable matrix <span class="math inline">\(\boldsymbol{C}\)</span> such that multiplying <span class="math inline">\(\boldsymbol{CX}\)</span> yields<span class="math display">\[\mathrm{Cov}(\boldsymbol{Y}) = \mathrm{Cov}(\boldsymbol{CX}) = \boldsymbol{C\Sigma}_x \boldsymbol{C}^\top = \boldsymbol{CIC}^\top = \boldsymbol{CC}^\top\]</span> as already proven. In order to arrive at this matrix of constants, note that the square-root of a matrix, <span class="math inline">\(\boldsymbol{A}\)</span>, is any matrix, <span class="math inline">\(\boldsymbol{B}\)</span>, such that <span class="math inline">\(\boldsymbol{BB}^\top = \boldsymbol{A}\)</span>.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This implies that the matrix of constants, <span class="math inline">\(\boldsymbol{C}\)</span>, in <span class="math inline">\(\boldsymbol{CX}\)</span> is in fact the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, directly analogous to the univariate case in which we multiplied <span class="math inline">\(X\sigma_y\)</span>. Thus, by generating i.i.d. standard normal variables in step 3, we then deduce that <span class="math inline">\(\boldsymbol{C}\)</span> must be the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> in order to get the desired structure for <span class="math inline">\(\boldsymbol{Y}\)</span>. In <em>step 5</em>, we can finally add on a vector of constants, <span class="math inline">\(\boldsymbol{k} = \boldsymbol{\mu}_y\)</span>, to get the desired mean vector for <span class="math inline">\(\boldsymbol{Y}\)</span>, because <span class="math inline">\(\boldsymbol{\mu}_x = \boldsymbol{0}\)</span>.</p>
 <p>To find the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, two factorizations of <span class="math inline">\(\boldsymbol{\Sigma}_y = \boldsymbol{CC^\top}\)</span> immediately come to mind, although several others can also work:</p>
 <ol style="list-style-type: decimal">
 <li><p><strong>Cholesky decomposition</strong> – <span class="math inline">\(\boldsymbol{LL}^\top\)</span> where <span class="math inline">\(\boldsymbol{L}\)</span> is lower-triangular. This is unique for positive definite matrices, which all valid covariance matrices are.</p></li>
@@ -647,23 +623,27 @@ M_Y(t) &amp;= \mathbb{E}(e^{t^\top Y}) \nonumber \\[2ex]
 </ol>
 <p><br />
 </p>
-<div id="via-cholesky" class="section level3">
-<h3>Via Cholesky</h3>
+</div>
+<div id="via-cholesky" class="section level2">
+<h2>Via Cholesky</h2>
 <hr />
 <p>To obtain the matrix square-root, <span class="math inline">\(\boldsymbol{C}\)</span>, via the Cholesky decomposition decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{LL}^\top\]</span> and multiply <span class="math display">\[\boldsymbol{Y} = \boldsymbol{LX}\]</span> which yields <span class="math display">\[\boldsymbol{Y} \sim (\boldsymbol{0}, \boldsymbol{LL^\top})\]</span> which has exactly the covariance structure that we wanted, as <span class="math inline">\(\boldsymbol{L}\)</span> is equivalent to the matrix <span class="math inline">\(\boldsymbol{C}\)</span> that we were looking for.</p>
 <p><br />
 </p>
 </div>
-<div id="via-svd" class="section level3">
-<h3>Via SVD</h3>
+<div id="via-svd" class="section level2">
+<h2>Via SVD</h2>
 <hr />
-For the SVD, decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{UDV}^\top = \boldsymbol{UDU}^\top\]</span> The last equality follows in this case because <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> is a symmetric, positive definite matrix. <button id="proofid" onclick="proof('SVD')">Proof</button>
-<div id="SVD" style="display:none">
+For the SVD, decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{UDV}^\top = \boldsymbol{UDU}^\top\]</span> The last equality follows in this case because <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> is a symmetric, positive definite matrix.
+<details>
+<summary>
+<span style="color: #0888a8;">Proof</span>
+</summary>
 <p><br />
 </p>
 <p>Suppose we take the SVD of a symmetric matrix <span class="math inline">\(A\)</span>. Then the left singluar vectors, <span class="math inline">\(U\)</span>, are the eigenvectors of <span class="math inline">\(AA^\top\)</span>, while the right singular vectors, <span class="math inline">\(V\)</span>, are the eigenvectors of <span class="math inline">\(A^\top A\)</span> (see <a href="https://math.mit.edu/classes/18.095/2016IAP/lec2/SVD_Notes.pdf">this</a> link for proof). However, since <span class="math inline">\(A\)</span> is symmetric, <span class="math display">\[A = A^\top \implies AA^\top = A^\top A \implies U = V\]</span></p>
 <p><span style="float:right"><span class="math inline">\(\blacksquare\)</span></span></p>
-</div>
+</details>
 <p><br />
 </p>
 <p>Finally, pre-multiplying the univariate normals in <span class="math inline">\(X\)</span> by the matrix square-root, <span class="math inline">\(\boldsymbol{C}\)</span>, of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> yields (dropping bolding)</p>
@@ -680,55 +660,53 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 </p>
 </div>
 </div>
-<div id="programming-in-r" class="section level1">
-<h1>Programming in R</h1>
+<div id="programming-in-r" class="section level1 tabset tabset-fade tabset-pills">
+<h1 class="tabset tabset-fade tabset-pills">Programming in R</h1>
+<hr />
+<div id="the-function" class="section level2">
+<h2>The function</h2>
 <hr />
 <p>To do this in R, we follow the steps outlined previously. Thus, we first decide on the desired mean vector, <span class="math inline">\(\boldsymbol{\mu}_y\)</span>, and covariance matrix, <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>. Recall also that a valid, full-rank covariance matrix is positive-definite.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>mu.y =<span class="st"> </span><span class="kw">c</span>(<span class="op">-</span>.<span class="dv">246</span>, <span class="fl">-1.3</span>, <span class="fl">1.645</span>)</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>mu.y =<span class="st"> </span><span class="kw">c</span>(<span class="op">-</span><span class="fl">0.246</span>, <span class="fl">-1.3</span>, <span class="fl">1.645</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>sigma.y =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">2</span>,    <span class="fl">.66</span>, <span class="fl">-1.2</span>,</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>                   <span class="fl">.66</span>,  <span class="fl">.75</span>, <span class="fl">-.75</span>,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>                  <span class="fl">-1.2</span>, <span class="fl">-.75</span>,  <span class="fl">2.5</span>),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>                 <span class="dt">nrow =</span> <span class="dv">3</span>, <span class="dt">byrow=</span>T)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="co">#desired cov</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>sigma.y</span></code></pre></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>sigma.y =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">2</span>, <span class="fl">0.66</span>, <span class="fl">-1.2</span>, <span class="fl">0.66</span>, <span class="fl">0.75</span>, <span class="fl">-0.75</span>, <span class="fl">-1.2</span>, <span class="fl">-0.75</span>, <span class="fl">2.5</span>), <span class="dt">nrow =</span> <span class="dv">3</span>, </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>    <span class="dt">byrow =</span> T)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="co"># desired cov</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>sigma.y</span></code></pre></div>
 <pre class="bg-success"><code>##       [,1]  [,2]  [,3]
 ## [1,]  2.00  0.66 -1.20
 ## [2,]  0.66  0.75 -0.75
 ## [3,] -1.20 -0.75  2.50</code></pre>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="co">#check pos def</span></span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="co"># check pos def</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">all</span>(<span class="kw">eigen</span>(sigma.y)<span class="op">$</span>values <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p> </p>
 <p>Second, we’ll simulate some i.i.d. multivariate standard normal data in 3 dimensions.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="co">#simulate trivariate iid standard normal </span></span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="co"># simulate trivariate iid standard normal</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>n =<span class="st"> </span><span class="dv">10000</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>x =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n<span class="op">*</span><span class="dv">3</span>), <span class="dt">nrow=</span><span class="dv">3</span>)</span></code></pre></div>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>x =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n <span class="op">*</span><span class="st"> </span><span class="dv">3</span>), <span class="dt">nrow =</span> <span class="dv">3</span>)</span></code></pre></div>
 <p><br />
 </p>
 <p>And then finally we take the Cholesky and SVD of the desired covariance, multiply <span class="math inline">\(\boldsymbol{X}\)</span> by the appropriate matrix <span class="math inline">\(\boldsymbol{C}\)</span>, and then add on the constant to get the desired mean.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co">#Via cholesky</span></span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co"># Via cholesky</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>chol.sig.y =<span class="st"> </span><span class="kw">chol.default</span>(sigma.y)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>y.chol =<span class="st"> </span><span class="kw">t</span>(chol.sig.y) <span class="op">%*%</span><span class="st"> </span>x <span class="co"># R returns the upper-triangular, L^t by default</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>y.chol =<span class="st"> </span><span class="kw">t</span>(chol.sig.y) <span class="op">%*%</span><span class="st"> </span>x  <span class="co"># R returns the upper-triangular, L^t by default</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="co">#Via svd</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a><span class="co"># Via svd</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>svd.sig.y =<span class="st"> </span><span class="kw">svd</span>(sigma.y)</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>u =<span class="st"> </span>svd.sig.y<span class="op">$</span>u</span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>d =<span class="st"> </span>svd.sig.y<span class="op">$</span>d</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>sqrt.sig =<span class="st"> </span>u<span class="op">%*%</span><span class="kw">diag</span>(d)<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>y.svd =<span class="st">  </span>sqrt.sig <span class="op">%*%</span><span class="st"> </span>x </span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>sqrt.sig =<span class="st"> </span>u <span class="op">%*%</span><span class="st"> </span><span class="kw">diag</span>(d)<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>y.svd =<span class="st"> </span>sqrt.sig <span class="op">%*%</span><span class="st"> </span>x</span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a><span class="co"># add on mean </span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a><span class="co">#(transpose for taking the covariance of a matrix in R on next lines)</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a><span class="co"># add on mean (transpose for taking the covariance of a matrix in R on next</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a><span class="co"># lines)</span></span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>y.svd =<span class="st"> </span><span class="kw">t</span>(y.svd <span class="op">+</span><span class="st"> </span>mu.y)</span>
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>y.chol =<span class="st"> </span><span class="kw">t</span>(y.chol <span class="op">+</span><span class="st"> </span>mu.y)</span>
 <span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a><span class="co"># results </span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a><span class="kw">list</span>(<span class="dt">chol =</span> <span class="kw">list</span>(<span class="dt">mean=</span><span class="kw">apply</span>(y.chol, <span class="dv">2</span>, mean),</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>                 <span class="dt">cov=</span><span class="kw">cov</span>(y.chol)),</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>     <span class="dt">svd  =</span> <span class="kw">list</span>(<span class="dt">mean=</span><span class="kw">apply</span>(y.svd, <span class="dv">2</span>, mean),</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a>                 <span class="dt">cov=</span><span class="kw">cov</span>(y.svd)),</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>     <span class="dt">desired =</span> sigma.y)</span></code></pre></div>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a><span class="co"># results</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a><span class="kw">list</span>(<span class="dt">chol =</span> <span class="kw">list</span>(<span class="dt">mean =</span> <span class="kw">apply</span>(y.chol, <span class="dv">2</span>, mean), <span class="dt">cov =</span> <span class="kw">cov</span>(y.chol)), <span class="dt">svd =</span> <span class="kw">list</span>(<span class="dt">mean =</span> <span class="kw">apply</span>(y.svd, </span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>    <span class="dv">2</span>, mean), <span class="dt">cov =</span> <span class="kw">cov</span>(y.svd)), <span class="dt">desired_cov =</span> sigma.y, <span class="dt">desired_mean =</span> mu.y)</span></code></pre></div>
 <pre class="bg-success"><code>## $chol
 ## $chol$mean
 ## [1] -0.2699079 -1.3100494  1.6686996
@@ -751,132 +729,132 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 ## [3,] -1.217348 -0.7317470  2.479384
 ## 
 ## 
-## $desired
+## $desired_cov
 ##       [,1]  [,2]  [,3]
 ## [1,]  2.00  0.66 -1.20
 ## [2,]  0.66  0.75 -0.75
-## [3,] -1.20 -0.75  2.50</code></pre>
+## [3,] -1.20 -0.75  2.50
+## 
+## $desired_mean
+## [1] -0.246 -1.300  1.645</code></pre>
 <p><br />
 </p>
-<p>From the above output, it is clear that the desired covariance structure is approximated fairly well. So we can finally write our own little function that generates multivariate normal samples! (In fact, the function below is virtually indistinguishable from the <a href="https://rdrr.io/cran/mvtnorm/src/R/mvnorm.R">source-code</a> for the <code>mvtnorm</code> package’s <code>mvrnorm</code> function.)</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>my.mvrnorm =<span class="st"> </span><span class="cf">function</span>(sigma.y, <span class="dt">mu.y =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="kw">ncol</span>(sigma.y)), n, <span class="dt">method=</span><span class="st">&quot;svd&quot;</span>){</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>  </span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>  method =<span class="st"> </span><span class="kw">match.arg</span>(method, <span class="dt">choices =</span> <span class="kw">c</span>(<span class="st">&quot;svd&quot;</span>, <span class="st">&quot;cholesky&quot;</span>))</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>  </span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a>  pdef =<span class="st"> </span><span class="kw">all</span>(<span class="kw">eigen</span>(sigma.y)<span class="op">$</span>values <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>  <span class="cf">if</span>(<span class="op">!</span>pdef) <span class="kw">stop</span>(<span class="st">&quot;Desired covariance not positive definite.&quot;</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a>  <span class="cf">if</span>(<span class="op">!</span><span class="kw">isSymmetric</span>(sigma.y)) <span class="kw">stop</span>(<span class="st">&quot;Covariance is not symmetric.&quot;</span>)</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>  <span class="cf">if</span>(<span class="kw">ncol</span>(sigma.y) <span class="op">!=</span><span class="st"> </span><span class="kw">length</span>(mu.y)) <span class="kw">stop</span>(<span class="st">&quot;Dimensions of mean and covariance inconsistent.&quot;</span>)</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a>  </span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a>  x =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n<span class="op">*</span><span class="kw">length</span>(mu.y)), <span class="dt">nrow =</span> <span class="kw">length</span>(mu.y))</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a>  </span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a>  <span class="cf">if</span>(method <span class="op">==</span><span class="st"> &quot;svd&quot;</span>){</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a>    svd.sig =<span class="st"> </span><span class="kw">svd</span>(sigma.y)</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true"></a>    y =<span class="st"> </span>svd.sig<span class="op">$</span>u <span class="op">%*%</span><span class="st"> </span><span class="kw">diag</span>(svd.sig<span class="op">$</span>d<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)) <span class="op">%*%</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>mu.y</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true"></a>    <span class="kw">return</span>(<span class="kw">t</span>(y))</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a>  } <span class="cf">else</span> {</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a>    chol.sig =<span class="st"> </span><span class="kw">t</span>(<span class="kw">chol.default</span>(sigma.y))</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true"></a>    y =<span class="st"> </span>chol.sig <span class="op">%*%</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>mu.y</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true"></a>    <span class="kw">return</span>(<span class="kw">t</span>(y))</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true"></a>  }</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true"></a>}</span></code></pre></div>
+<p>From the above output, it is clear that the desired covariance structure is approximated fairly well. So we can finally write our own little function that generates multivariate normal samples! In fact, the function below is virtually indistinguishable from the <a href="https://rdrr.io/cran/MASS/src/R/mvrnorm.R">source-code</a> for the <code>MASS</code> package’s <code>mvrnorm</code> function.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>my.mvrnorm =<span class="st"> </span><span class="cf">function</span>(sigma.y, <span class="dt">mu.y =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="kw">ncol</span>(sigma.y)), n, <span class="dt">method =</span> <span class="st">&quot;svd&quot;</span>) {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a>    </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>    method =<span class="st"> </span><span class="kw">match.arg</span>(method, <span class="dt">choices =</span> <span class="kw">c</span>(<span class="st">&quot;svd&quot;</span>, <span class="st">&quot;cholesky&quot;</span>))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>    </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a>    pdef =<span class="st"> </span><span class="kw">all</span>(<span class="kw">eigen</span>(sigma.y)<span class="op">$</span>values <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a>    <span class="cf">if</span> (<span class="op">!</span>pdef) </span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a>        <span class="kw">stop</span>(<span class="st">&quot;Desired covariance not positive definite.&quot;</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>    <span class="cf">if</span> (<span class="op">!</span><span class="kw">isSymmetric</span>(sigma.y)) </span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a>        <span class="kw">stop</span>(<span class="st">&quot;Covariance is not symmetric.&quot;</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a>    <span class="cf">if</span> (<span class="kw">ncol</span>(sigma.y) <span class="op">!=</span><span class="st"> </span><span class="kw">length</span>(mu.y)) </span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a>        <span class="kw">stop</span>(<span class="st">&quot;Dimensions of mean and covariance inconsistent.&quot;</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a>    </span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a>    x =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n <span class="op">*</span><span class="st"> </span><span class="kw">length</span>(mu.y)), <span class="dt">nrow =</span> <span class="kw">length</span>(mu.y))</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true"></a>    </span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true"></a>    <span class="cf">if</span> (method <span class="op">==</span><span class="st"> &quot;svd&quot;</span>) {</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a>        svd.sig =<span class="st"> </span><span class="kw">svd</span>(sigma.y)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a>        y =<span class="st"> </span>svd.sig<span class="op">$</span>u <span class="op">%*%</span><span class="st"> </span><span class="kw">diag</span>(svd.sig<span class="op">$</span>d<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)) <span class="op">%*%</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>mu.y</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true"></a>        <span class="kw">return</span>(<span class="kw">t</span>(y))</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true"></a>    } <span class="cf">else</span> {</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true"></a>        chol.sig =<span class="st"> </span><span class="kw">t</span>(<span class="kw">chol.default</span>(sigma.y))</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true"></a>        y =<span class="st"> </span>chol.sig <span class="op">%*%</span><span class="st"> </span>x <span class="op">+</span><span class="st"> </span>mu.y</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true"></a>        <span class="kw">return</span>(<span class="kw">t</span>(y))</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true"></a>    }</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true"></a>}</span></code></pre></div>
 <p><br />
 </p>
-<div id="which-is-better" class="section level3">
-<h3>Which is better</h3>
+</div>
+<div id="which-method-is-better" class="section level2">
+<h2>Which method is better?</h2>
+<hr />
 <p>We’ve learned that two factorizations work, but which one is “better,” numerically? This may depend on how we define “better,” but lets try and find out. First, for simplicity we will only look at the accuracy of the covariance. Second, lets say that a factorization is better if it minimizes <span class="math inline">\(max_{ij} |Cov(x_{i}, x_{j}) - D_{ij}|\)</span> where <span class="math inline">\(D_{ij}\)</span> is each element of the desired covariance matrix. That is, which method minimizes the maximum absolute deviation from the desired covariance structure.</p>
 <p>Taking this objective in mind, we can explore this by the monte carlo method. We’ll first define a function that returns the value of the objective, as well as the sample size, and decomposition used, and then compare the loss after several iterations for each sample size.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a>mv.loss =<span class="st"> </span><span class="cf">function</span>(n, sigma.y){</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  n =<span class="st"> </span>n</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>  x =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n<span class="op">*</span><span class="dv">3</span>), <span class="dt">nrow=</span><span class="dv">3</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>  <span class="co"># chol</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>  chol.sig.y =<span class="st"> </span><span class="kw">chol.default</span>(sigma.y)</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>  y.chol =<span class="st"> </span><span class="kw">t</span>(chol.sig.y) <span class="op">%*%</span><span class="st"> </span>x </span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>  loss.chol =<span class="st"> </span><span class="kw">max</span>( <span class="kw">abs</span>( <span class="kw">cov</span>(<span class="kw">t</span>(y.chol)) <span class="op">-</span><span class="st"> </span>sigma.y) )</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>  <span class="co"># Via svd</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>  svd.sig.y =<span class="st"> </span><span class="kw">svd</span>(sigma.y)</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a>  u =<span class="st"> </span>svd.sig.y<span class="op">$</span>u</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a>  d =<span class="st"> </span>svd.sig.y<span class="op">$</span>d</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a>  sig.sqrt =<span class="st"> </span>u<span class="op">%*%</span><span class="kw">diag</span>(d)<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>  y.svd =<span class="st">  </span>sig.sqrt <span class="op">%*%</span><span class="st"> </span>x </span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a>  loss.svd =<span class="st"> </span><span class="kw">max</span>( <span class="kw">abs</span>( <span class="kw">cov</span>(<span class="kw">t</span>(y.svd)) <span class="op">-</span><span class="st"> </span>sigma.y) )</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true"></a></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true"></a><span class="kw">return</span>(<span class="kw">c</span>(<span class="dt">chol =</span> loss.chol, <span class="dt">svd =</span> loss.svd, <span class="dt">n=</span>n))</span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true"></a></span>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a>mv.loss =<span class="st"> </span><span class="cf">function</span>(n, sigma.y) {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>    n =<span class="st"> </span>n</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    x =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n <span class="op">*</span><span class="st"> </span><span class="dv">3</span>), <span class="dt">nrow =</span> <span class="dv">3</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>    </span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>    </span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>    <span class="co"># chol</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>    chol.sig.y =<span class="st"> </span><span class="kw">chol.default</span>(sigma.y)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>    y.chol =<span class="st"> </span><span class="kw">t</span>(chol.sig.y) <span class="op">%*%</span><span class="st"> </span>x</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>    </span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>    loss.chol =<span class="st"> </span><span class="kw">max</span>(<span class="kw">abs</span>(<span class="kw">cov</span>(<span class="kw">t</span>(y.chol)) <span class="op">-</span><span class="st"> </span>sigma.y))</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>    </span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>    <span class="co"># Via svd</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a>    svd.sig.y =<span class="st"> </span><span class="kw">svd</span>(sigma.y)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a>    u =<span class="st"> </span>svd.sig.y<span class="op">$</span>u</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a>    d =<span class="st"> </span>svd.sig.y<span class="op">$</span>d</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a>    sig.sqrt =<span class="st"> </span>u <span class="op">%*%</span><span class="st"> </span><span class="kw">diag</span>(d)<span class="op">^</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>    y.svd =<span class="st"> </span>sig.sqrt <span class="op">%*%</span><span class="st"> </span>x</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a>    </span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a>    loss.svd =<span class="st"> </span><span class="kw">max</span>(<span class="kw">abs</span>(<span class="kw">cov</span>(<span class="kw">t</span>(y.svd)) <span class="op">-</span><span class="st"> </span>sigma.y))</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true"></a>    </span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true"></a>    <span class="kw">return</span>(<span class="kw">c</span>(<span class="dt">chol =</span> loss.chol, <span class="dt">svd =</span> loss.svd, <span class="dt">n =</span> n))</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true"></a>    </span>
 <span id="cb9-23"><a href="#cb9-23" aria-hidden="true"></a>}</span></code></pre></div>
 <p><br />
 </p>
 <p>And lets make sure its working as expected, using the desired covariance previously defined:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">mv.loss</span>(<span class="dt">n =</span> <span class="dv">100</span>, <span class="dt">sigma.y =</span> sigma.y)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="kw">mv.loss</span>(<span class="dt">n =</span> <span class="dv">100</span>, <span class="dt">sigma.y =</span> sigma.y)</span></code></pre></div>
 <pre class="bg-success"><code>##        chol         svd           n 
 ##   0.4774015   0.4609200 100.0000000</code></pre>
 <p><br />
 </p>
 <p>And finally, now that we know the function works, we can do several iterations at each sample size to see which method converges fastest.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="co"># get things ready for parallel run, plotting</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>pks =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;parallel&quot;</span>, <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;reshape2&quot;</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a><span class="kw">invisible</span>(<span class="kw">sapply</span>(pks, library, <span class="dt">character.only=</span>T))</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a><span class="kw">RNGkind</span>(<span class="st">&quot;L&#39;Ecuyer-CMRG&quot;</span>) <span class="co"># for parallel reproducibility</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">167492</span>)</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a><span class="co">#Grid of sample sizes</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true"></a>niter =<span class="st"> </span><span class="dv">10000</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true"></a>n =<span class="st"> </span><span class="kw">c</span>(<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">125</span>, <span class="dv">250</span>, <span class="dv">500</span>, <span class="dv">750</span>, <span class="dv">1000</span>, <span class="dv">2500</span>, <span class="dv">5000</span>, <span class="dv">7500</span>, <span class="dv">10000</span>)</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true"></a>n.grid =<span class="st"> </span><span class="kw">rep</span>(n, <span class="dt">each =</span> niter)</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true"></a></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true"></a><span class="co"># run sims, summarize, plot</span></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true"></a>res =<span class="st"> </span><span class="kw">mclapply</span>(n.grid, mv.loss, <span class="dt">sigma.y=</span>sigma.y, </span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true"></a>               <span class="dt">mc.preschedule=</span>T,</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true"></a>               <span class="dt">mc.cores =</span> (parallel<span class="op">::</span><span class="kw">detectCores</span>()<span class="op">-</span><span class="dv">1</span>))</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true"></a></span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true"></a>dat =<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">do.call</span>(rbind, res))</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true"></a></span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true"></a>summaries =<span class="st"> </span>dat <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true"></a><span class="st">  </span><span class="kw">group_by</span>(n) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true"></a><span class="st">  </span><span class="kw">summarise</span>(<span class="dt">mean.chol =</span> <span class="kw">mean</span>(chol),</span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true"></a>            <span class="dt">mean.svd  =</span> <span class="kw">mean</span>(svd))</span>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a>RhpcBLASctl<span class="op">::</span><span class="kw">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>RhpcBLASctl<span class="op">::</span><span class="kw">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a><span class="co"># get things ready for parallel run, plotting</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a>pks =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;parallel&quot;</span>, <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;reshape2&quot;</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a><span class="kw">invisible</span>(<span class="kw">sapply</span>(pks, library, <span class="dt">character.only =</span> T))</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a><span class="kw">RNGkind</span>(<span class="st">&quot;L&#39;Ecuyer-CMRG&quot;</span>)  <span class="co"># for parallel reproducibility</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">167492</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true"></a><span class="co"># Grid of sample sizes</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true"></a>niter =<span class="st"> </span><span class="dv">10000</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true"></a>n =<span class="st"> </span><span class="kw">c</span>(<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">125</span>, <span class="dv">250</span>, <span class="dv">500</span>, <span class="dv">750</span>, <span class="dv">1000</span>, <span class="dv">2500</span>, <span class="dv">5000</span>, <span class="dv">7500</span>, <span class="dv">10000</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true"></a>n.grid =<span class="st"> </span><span class="kw">rep</span>(n, <span class="dt">each =</span> niter)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true"></a><span class="co"># run sims, summarize, plot</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true"></a>res =<span class="st"> </span><span class="kw">mclapply</span>(n.grid, mv.loss, <span class="dt">sigma.y =</span> sigma.y, <span class="dt">mc.preschedule =</span> T, <span class="dt">mc.cores =</span> (parallel<span class="op">::</span><span class="kw">detectCores</span>() <span class="op">-</span><span class="st"> </span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true"></a><span class="st">    </span><span class="dv">1</span>))</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true"></a></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true"></a>dat =<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">do.call</span>(rbind, res))</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true"></a></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true"></a>summaries =<span class="st"> </span>dat <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(n) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(<span class="dt">mean.chol =</span> <span class="kw">mean</span>(chol), <span class="dt">mean.svd =</span> <span class="kw">mean</span>(svd))</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true"></a></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true"></a>summaries =<span class="st"> </span><span class="kw">melt</span>(summaries, <span class="dt">id.vars =</span> <span class="st">&quot;n&quot;</span>, <span class="dt">measure.vars =</span> <span class="kw">c</span>(<span class="st">&quot;mean.chol&quot;</span>, <span class="st">&quot;mean.svd&quot;</span>))</span>
 <span id="cb12-24"><a href="#cb12-24" aria-hidden="true"></a></span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true"></a>summaries =<span class="st"> </span><span class="kw">melt</span>(summaries, </span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true"></a>                 <span class="dt">id.vars=</span><span class="st">&quot;n&quot;</span>, </span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true"></a>                 <span class="dt">measure.vars =</span> <span class="kw">c</span>(<span class="st">&quot;mean.chol&quot;</span>,</span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true"></a>                                  <span class="st">&quot;mean.svd&quot;</span>))</span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true"></a></span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true"></a>summaries<span class="op">$</span>n =<span class="st"> </span><span class="kw">as.factor</span>(summaries<span class="op">$</span>n)</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true"></a></span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true"></a><span class="kw">ggplot</span>(<span class="dt">data=</span>summaries, <span class="kw">aes</span>(<span class="dt">x=</span>n)) <span class="op">+</span></span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true"></a><span class="st">  </span><span class="kw">geom_point</span>(<span class="kw">aes</span>(<span class="dt">y =</span> value, <span class="dt">color=</span>variable, <span class="dt">shape=</span>variable),</span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true"></a>             <span class="dt">position=</span><span class="kw">position_dodge</span>(<span class="dt">width=</span>.<span class="dv">5</span>),</span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true"></a>             <span class="dt">size=</span><span class="dv">3</span>) <span class="op">+</span></span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true"></a><span class="st">  </span><span class="kw">theme_bw</span>() <span class="op">+</span></span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true"></a><span class="st">  </span><span class="kw">scale_color_brewer</span>(<span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>, <span class="dt">labels =</span> <span class="kw">c</span>(<span class="st">&quot;Cholesky&quot;</span>, <span class="st">&quot;SVD&quot;</span>)) <span class="op">+</span></span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true"></a><span class="st">  </span><span class="kw">scale_shape_discrete</span>(<span class="dt">labels=</span><span class="kw">c</span>(<span class="st">&quot;Cholesky&quot;</span>, <span class="st">&quot;SVD&quot;</span>)) <span class="op">+</span></span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true"></a><span class="st">  </span><span class="kw">labs</span>(<span class="dt">title=</span><span class="st">&quot;Average of Max Absolute Deviation for Covariance of MVN&quot;</span>,</span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true"></a>       <span class="dt">subtitle =</span> <span class="st">&quot;Cholesky vs. SVD&quot;</span>,</span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true"></a>       <span class="dt">x=</span> <span class="st">&quot;N&quot;</span>,</span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true"></a>       <span class="dt">y=</span> <span class="st">&quot;Avg. Max Absolute Deviation&quot;</span>,</span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true"></a>       <span class="dt">color =</span> <span class="st">&quot;Method&quot;</span>,</span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true"></a>       <span class="dt">shape =</span> <span class="st">&quot;Method&quot;</span>) <span class="op">+</span></span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true"></a><span class="st">  </span><span class="kw">theme</span>(<span class="dt">panel.grid.major =</span> <span class="kw">element_blank</span>(),</span>
-<span id="cb12-46"><a href="#cb12-46" aria-hidden="true"></a>        <span class="dt">legend.position =</span> <span class="kw">c</span>(.<span class="dv">85</span>,.<span class="dv">85</span>)) </span></code></pre></div>
-<p><img src="mvnorm_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true"></a>summaries<span class="op">$</span>n =<span class="st"> </span><span class="kw">as.factor</span>(summaries<span class="op">$</span>n)</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true"></a></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true"></a><span class="kw">ggplot</span>(<span class="dt">data =</span> summaries, <span class="kw">aes</span>(<span class="dt">x =</span> n)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_point</span>(<span class="kw">aes</span>(<span class="dt">y =</span> value, <span class="dt">color =</span> variable, </span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true"></a>    <span class="dt">shape =</span> variable), <span class="dt">position =</span> <span class="kw">position_dodge</span>(<span class="dt">width =</span> <span class="fl">0.5</span>), <span class="dt">size =</span> <span class="dv">3</span>) <span class="op">+</span><span class="st"> </span><span class="kw">theme_bw</span>() <span class="op">+</span><span class="st"> </span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true"></a><span class="st">    </span><span class="kw">scale_color_brewer</span>(<span class="dt">palette =</span> <span class="st">&quot;Set1&quot;</span>, <span class="dt">labels =</span> <span class="kw">c</span>(<span class="st">&quot;Cholesky&quot;</span>, <span class="st">&quot;SVD&quot;</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">scale_shape_discrete</span>(<span class="dt">labels =</span> <span class="kw">c</span>(<span class="st">&quot;Cholesky&quot;</span>, </span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true"></a>    <span class="st">&quot;SVD&quot;</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">labs</span>(<span class="dt">title =</span> <span class="st">&quot;Average of Max Absolute Deviation for Covariance of MVN&quot;</span>, </span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true"></a>    <span class="dt">subtitle =</span> <span class="st">&quot;Cholesky vs. SVD&quot;</span>, <span class="dt">x =</span> <span class="st">&quot;N&quot;</span>, <span class="dt">y =</span> <span class="st">&quot;Avg. Max Absolute Deviation&quot;</span>, <span class="dt">color =</span> <span class="st">&quot;Method&quot;</span>, </span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true"></a>    <span class="dt">shape =</span> <span class="st">&quot;Method&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="kw">theme</span>(<span class="dt">panel.grid.major =</span> <span class="kw">element_blank</span>(), <span class="dt">legend.position =</span> <span class="kw">c</span>(<span class="fl">0.85</span>, </span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true"></a>    <span class="fl">0.85</span>))</span></code></pre></div>
+<p><img src="mvnorm_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p><br />
 </p>
 <p>From these results, it appears as though the two perform roughly the same in terms of max absolute deviations from the desired covariance structure, on average. However, it looks like they may be slightly different in small samples, so lets take a look to be sure.</p>
 <p><br />
 </p>
-<p><img src="mvnorm_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="mvnorm_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <p>Lastly, then, the two approaches are equal on average, even in small samples.</p>
 </div>
 </div>
-<div id="endnotes" class="section level1">
-<h1>Endnotes</h1>
+<div id="references-and-footnotes" class="section level1">
+<h1>References and Footnotes</h1>
 <hr />
+<div id="refs" class="references hanging-indent">
+<div id="ref-statlect">
+<p>Taboga, Marco. 2012. “Lectures on Probability and Statistics.” StatLect.</p>
+</div>
+</div>
 </div>
 <div class="footnotes">
 <hr />

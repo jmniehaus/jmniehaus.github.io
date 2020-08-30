@@ -13,7 +13,7 @@
 
 <title>John Niehaus</title>
 
-<script src="site_libs/header-attrs-2.2/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.3/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
@@ -21,6 +21,10 @@
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/clipboard-1.7.1/clipboard.min.js"></script>
+<link href="site_libs/primer-tooltips-1.4.0/build.css" rel="stylesheet" />
+<link href="site_libs/klippy-0.0.0.9500/css/klippy.min.css" rel="stylesheet" />
+<script src="site_libs/klippy-0.0.0.9500/js/klippy.min.js"></script>
 <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 
@@ -145,6 +149,7 @@ h6 {
 }
 </style>
 
+<link rel="stylesheet" href="styles.css" type="text/css" />
 
 
 
@@ -367,14 +372,16 @@ $(document).ready(function () {
     <li>
       <a href="mvnorm.html">Multivariate Normal Draws</a>
     </li>
+    <li class="dropdown-header">Monte Carlos, the Right Way (in R)</li>
     <li class="dropdown-header">COMING SOON:</li>
     <li class="dropdown-header">Programming Zero Inflated Count Models in R</li>
-    <li class="dropdown-header">Efficient, Reproducible Monte Carlo Analyses</li>
+    <li class="dropdown-header">Copulas and Copula Regression</li>
     <li class="dropdown-header">Bias of MLE for Gamma Rate Parameter</li>
     <li class="dropdown-header">Programming a Heckman Model in R</li>
     <li class="dropdown-header">Derivation of Negative Binomial Regression</li>
     <li class="dropdown-header">Spurious Regression Problem in Time Series</li>
     <li class="dropdown-header">Omitted Variables Bias in Probit Models</li>
+    <li class="dropdown-header">Building this Website</li>
   </ul>
 </li>
       </ul>
@@ -400,29 +407,15 @@ $(document).ready(function () {
 
 
 <p><img src="images/headshot_tamu.jpg" style="width:30%; border:10px solid; margin-right: 40px; margin-top: 20px" align="left"></p>
-<style type="text/css">
-
-  body{ /* Normal  */
-      font-size: 21px;
-    }
-  
-</style>
-<p><br />
-</p>
-<p>In the Fall of 2020, I will be a Master’s student in the Department of Statistics at Texas A&amp;M University. I received my M.A. in Political Science from Texas A&amp;M University in 2020, and my B.A. in both political science and psychology from the University of Missouri in 2014. During my time in political science, I published papers on both human rights and political methodology, as well as assisted with teaching graduate-level time series analysis. Methodologically, I am interested in time series analysis and machine learning, and applying both to the prediction of state violence.</p>
-<p><br />
-</p>
-<p><br />
-</p>
-<p>For my CV, please see the link above. For all code on this website and more, please visit my github page, linked above.</p>
-<p><br />
-</p>
-<p>To contact me via email, copy and paste the following code into R and run it. For those unfamiliar with R, please copy and paste the code into <a href="https://rdrr.io/snippets/">this</a> site, and press run.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">paste</span>(<span class="kw">paste</span>(<span class="kw">c</span>(<span class="st">&quot;j&quot;</span>, <span class="kw">paste</span>(<span class="kw">paste</span>(<span class="kw">rev</span>(<span class="kw">c</span>(<span class="st">&quot;us&quot;</span>, <span class="st">&quot;a&quot;</span>, <span class="st">&quot;eh&quot;</span>, <span class="st">&quot;ni&quot;</span>)), <span class="dt">collapse=</span><span class="st">&quot;&quot;</span>), </span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>             <span class="kw">paste</span>(<span class="kw">rev</span>(<span class="kw">c</span>(<span class="dv">7</span>,<span class="dv">25</span>, <span class="dv">2</span>)), <span class="dt">collapse=</span><span class="st">&quot;&quot;</span>), <span class="dt">sep=</span><span class="st">&quot;&quot;</span>)), <span class="dt">collapse=</span><span class="st">&quot;&quot;</span>),</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>      <span class="st">&quot;@&quot;</span>,<span class="kw">paste0</span>(<span class="st">&quot;g&quot;</span>, <span class="kw">paste</span>(<span class="kw">rev</span>(<span class="kw">c</span>(<span class="st">&quot;l&quot;</span>, <span class="st">&quot;ai&quot;</span>, <span class="st">&quot;m&quot;</span>)), <span class="dt">collapse=</span><span class="st">&quot;&quot;</span>), <span class="dt">sep=</span><span class="st">&quot;.&quot;</span>),</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>      <span class="kw">sub</span>(<span class="st">&quot;@&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="kw">paste0</span>(<span class="st">&quot;@&quot;</span>, <span class="st">&quot;com&quot;</span>, <span class="dt">collapse=</span><span class="st">&quot;&quot;</span>),</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>          <span class="kw">paste0</span>(<span class="kw">rev</span>(<span class="kw">c</span>(<span class="st">&quot;ya&quot;</span>,<span class="st">&quot;a&quot;</span>,<span class="kw">c</span>(<span class="st">&quot;h&quot;</span>, <span class="st">&quot;oo&quot;</span>))), <span class="dt">collapse=</span><span class="st">&quot;&quot;</span>)) , <span class="dt">collapse =</span> <span class="st">&quot;&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>)</span></code></pre></div>
+<p>I am currently a Master’s student in the Department of Statistics at Texas A&amp;M University. I received my M.A. in Political Science from Texas A&amp;M University in 2020, and my B.A. in both political science and psychology from the University of Missouri in 2014. During my time in political science, I co-authored peer-reviewed articles on both human rights and political methodology, as well as assisted with teaching graduate-level time series analysis. Methodologically, I am interested in time series analysis and machine learning, and applying both to the prediction of state violence.</p>
+<p>On this site you will find a set of posts on various topics which I wanted to learn (or had to, for one reason or another). I find that I learn best when I try to explain things to myself and others, and have therefore created an assortment of materials here. However, please note that none of the work is original in the sense that it has all been published on extensively. As such, appropriate citations are included for all content.</p>
+<p>For my CV, please see the link above. For all code on this website and more, please visit my github page, also linked above. To contact me via email, please run the following code in R. For those unfamiliar with R, please copy and paste the code into <a href="https://rdrr.io/snippets/">this</a> site, and press run.</p>
+<script>
+  addClassKlippyTo("pre.r, pre.markdown");
+  addKlippy('right', 'top', '#FFFFFF', '1', 'Click to copy', 'Done');
+</script>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r klippy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">paste</span>(<span class="kw">c</span>(<span class="kw">rev</span>(<span class="kw">c</span>(<span class="kw">paste</span>(<span class="kw">sort</span>(<span class="kw">c</span>(<span class="dv">5</span>,<span class="dv">2</span>,<span class="dv">7</span>,<span class="dv">2</span>)),<span class="dt">collapse=</span> <span class="st">&quot;&quot;</span>),<span class="kw">paste0</span>(<span class="kw">sort</span>(<span class="kw">c</span>(<span class="st">&quot;us&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;ha&quot;</span>)),<span class="dt">collapse=</span><span class="st">&quot;&quot;</span>),</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="st">&quot;jni&quot;</span>)),<span class="st">&quot;@gmail.com&quot;</span>,<span class="kw">sub</span>(<span class="st">&quot;@yahoo.com&quot;</span>,<span class="st">&quot;&quot;</span>, <span class="st">&quot;&quot;</span>),<span class="kw">sub</span>(<span class="st">&quot;@outlook.com&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;&quot;</span>)),<span class="dt">collapse=</span><span class="st">&quot;&quot;</span>)</span></code></pre></div>
 
 
 

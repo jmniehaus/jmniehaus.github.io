@@ -1,6 +1,7 @@
 ---
 title: "Drawing from the Multivariate Normal Distribution"
 subtitle: "Derivation, and Programming in R"
+date: "Updated: `r format(Sys.time(), '%d %b, %Y')`"
 pagetitle: "MV Norm Draws"
 header-includes:
 - \usepackage{mathtools}
@@ -27,45 +28,7 @@ MathJax.Hub.Config({
   }
 });
 </script>
-
-
-
-<style type="text/css">
-
-  body{ /* Normal  */
-      font-size: 16px;
-    }
     
-  p {
-  line-height: 1.75em;
-  margin-bottom: 1.5em;
-  }
-  
-</style>
-
-\
-
-<style type="text/css">
-#proofid{
- background-color: white;
- color: #034f84;
- font-family: 'Arial';
- font-size: 16px;
- text-decoration: none;
- border: none;
-}
-</style>
-
-<script type="text/javascript">
-function proof(id) {
-  var x = document.getElementById(id);
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
-  }
-}
-</script>
 
 \newcommand{\L}{\mathcal{L}}
 \newcommand{\bm}[1]{\boldsymbol{#1}}
@@ -81,26 +44,32 @@ function proof(id) {
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\Cov}{\mathrm{Cov}}
 
-# Summary
-***
+```{r, echo=F, eval=T}
+knitr::opts_chunk$set(class.output = "bg-success",
+                      class.source = "fold-show",
+                      tidy = T)
 
-To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can approximate any desired parameterization of the multivariate normal distriubtion. 
+```
 
 \
 
-# Transformations of Normal RVs
+# Summary
+***
+
+To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can approximate any desired parameterization of the multivariate normal distribution. Some of what is presented here came as a result of taking [Darren Homrighausen's](https://darrenho.github.io/) class on multivariate statistics. However, two additional references were consulted, and are available [here](https://www.math.kent.edu/~reichel/courses/monte.carlo/alt4.7c.pdf) and [here](http://users.stat.umn.edu/~gary/classes/5401/handouts/09.mvn.handout.pdf).
+
+# Transformations of Normal RVs {.tabset .tabset-fade .tabset-pills}
 ***
 
 
 
 
-### The Univariate Case 
+## The Univariate Case
+***
 
-In order to understand how to take draws from a multivariate normal distribution, it is first important to know that linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters. In other words if $X \sim \mathcal{N}(\mu, \sigma^2)$ and $Y = cX + k$, then $Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)$ follows. 
-
-<button id="proofid" onclick="proof('univariate')">Proof</button>
-<div id="univariate" style="display:none">
-
+In order to understand how to take draws from a multivariate normal distribution, it is first important to know that linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters. In other words if $X \sim \mathcal{N}(\mu, \sigma^2)$ and $Y = cX + k$, then $Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)$.<details>
+  <summary><span style="color: #0888a8;">Proof</span></summary>
+  
 First, proving that the location and scale parameters are known in the univariate case is a straightforward application of the fact that expectations are a linear operator:
 
 \begin{align}
@@ -139,14 +108,16 @@ Where \\ref{pdf.y} is clearly a $\mathcal{N}(c\mu+k, c^2\sigma^2)$ distribution,
 
 &nbsp;
 
+
+</details>
+
+<div style="margin-top:15px; margin-bottom:60px;">
+Thus, if we multiply $X$ by the standard deviation that we desire our transformed variable to have, and then add on a constant, we arrive at any desired normally distributed random variable. Although this is somewhat trivial in the univariate case due to software implementations easily drawing from arbitrary univariate normals, this understanding proves useful when trying to draw from a multivariate normal distribution.
 </div>
 
-&nbsp;
-
-Thus, if we multiply $X$ by the standard deviation that we desire our transformed variable to have, and then add on a constant, we arrive at any desired normally distributed random variable. Although this is somewhat trivial in the univariate case due to software implementations easily drawing from arbitrary univariate normals, this understanding proves useful when trying to draw from a multivariate normal distribution.
-
-### The Multivariate Case
+## The Multivariate Case
 ***
+
 
 The next step is to extend the univariate case to the multivariate context by demonstrating that linear transformations of multivariate normal random vectors are also multivariate normal. First, let
 
@@ -171,8 +142,10 @@ where:
 * **Note that $p$ can be equal to $n$**
 
 
-<button id="proofid" onclick="proof('MGF')">Proof</button>
-<div id="MGF" style="display:none">
+<details>
+  <summary><span style="color: #0888a8;">Proof</span></summary>
+
+This proof calls directly on @statlect [447], which is also a great book for all things math-stat. 
 
 For proof, recall that the MGF of the MV normal distribution is $$M_X(t): \R^p \rightarrow \R = \E(e^{t^\top X}) = e^{t^\top \bm \mu + \frac{1}{2}t^\top \bm \Sigma t}$$ for $t \in \R^p$. 
 
@@ -193,16 +166,19 @@ And, equation \\ref{mgf} is clearly the MGF of a $\mrm{MVN}(\bm{C\mu + k}, \bm{C
 
 [$\blacksquare$]{style="float:right"}
 
-</div>
+</details>
 
 \
 
 
 
-# Generating from the MV Normal
+# Generating from the MV Normal {.tabset .tabset-fade .tabset-pills}
 ***
 
-**Note**: This exposition uses a bivariate normal, but readily extends to arbitrarily large dimensions. 
+## General Steps
+***
+
+**Note**: *This exposition uses a bivariate normal, but readily extends to arbitrarily large dimensions.*
 
 In short, the steps to generate from any multivariate normal distribution are:
 
@@ -233,7 +209,7 @@ Interestingly, suppose we generate the observations on $\bm X$ as i.i.d. standar
 \end{bmatrix} \nonumber 
 \end{align}
 
-Then it is true that $\bm \Sigma_x = \bm I$. This result lends nicely to *step 4* (find the matrix square-root of $\bm \Sigma_y$), because to obtain $\bm Y \sim \mrm{MVN}(\bm \mu_y, \bm\Sigma_y)$, we simply have to find a suitable matrix $\bm C$ such that multiplying $\bm{CX}$ yields$$\Cov(\bm Y) = \Cov(\bm{CX}) = \Cov(\bm Y) = \bm{C\Sigma}_x \bm C^\top = \bm{CIC}^\top = \bm{CC}^\top$$ as already proven. In order to arrive at this matrix of constants, note that the square-root of a matrix, $\bm A$, is any matrix, $\bm B$, such that $\bm{BB}^\top = \bm{A}$.[^1] This implies that the matrix of constants, $\bm C$, in $\bm{CX}$ is in fact the matrix square-root of $\bm \Sigma_y$, directly analogous to the univariate case in which we multiplied $X\sigma_y$. Thus, by generating i.i.d. standard normal variables in step 3, we then deduce that $\bm C$ must be the matrix square-root of $\bm \Sigma_y$ in order to get the desired structure for $\bm Y$. In *step 5*, we can finally add on a vector of constants, $\bm k = \bm \mu_y$, to get the desired mean vector for $\bm Y$, because $\bm \mu_x = \bm 0$.  
+Then it is true that $\bm \Sigma_x = \bm I$. This result lends nicely to *step 4* (find the matrix square-root of $\bm \Sigma_y$), because to obtain $\bm Y \sim \mrm{MVN}(\bm \mu_y, \bm\Sigma_y)$, we simply have to find a suitable matrix $\bm C$ such that multiplying $\bm{CX}$ yields$$\Cov(\bm Y) = \Cov(\bm{CX}) = \bm{C\Sigma}_x \bm C^\top = \bm{CIC}^\top = \bm{CC}^\top$$ as already proven. In order to arrive at this matrix of constants, note that the square-root of a matrix, $\bm A$, is any matrix, $\bm B$, such that $\bm{BB}^\top = \bm{A}$.[^1] This implies that the matrix of constants, $\bm C$, in $\bm{CX}$ is in fact the matrix square-root of $\bm \Sigma_y$, directly analogous to the univariate case in which we multiplied $X\sigma_y$. Thus, by generating i.i.d. standard normal variables in step 3, we then deduce that $\bm C$ must be the matrix square-root of $\bm \Sigma_y$ in order to get the desired structure for $\bm Y$. In *step 5*, we can finally add on a vector of constants, $\bm k = \bm \mu_y$, to get the desired mean vector for $\bm Y$, because $\bm \mu_x = \bm 0$.  
 
 
 To find the matrix square-root of $\bm\Sigma_y$, two factorizations of $\bm \Sigma_y = \bm{CC^\top}$ immediately come to mind, although several others can also work:
@@ -244,17 +220,17 @@ To find the matrix square-root of $\bm\Sigma_y$, two factorizations of $\bm \Sig
 
 \
 
-### Via Cholesky
+## Via Cholesky
 ***
 To obtain the matrix square-root, $\bm C$, via the Cholesky decomposition decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{LL}^\top$$ and multiply $$\bm Y = \bm{LX}$$ which yields $$\bm Y \sim (\bm 0, \bm{LL^\top})$$ which has exactly the covariance structure that we wanted, as $\bm L$ is equivalent to the matrix $\bm C$ that we were looking for. 
 
 \
 
-### Via SVD
+## Via SVD
 ***
 For the SVD, decompose $\bm \Sigma_y$ as  $$\bm \Sigma_y = \bm{UDV}^\top = \bm{UDU}^\top$$ The last equality follows in this case because $\bm\Sigma_y$ is a symmetric, positive definite matrix. 
-<button id="proofid" onclick="proof('SVD')">Proof</button>
-<div id="SVD" style="display:none">
+<details>
+  <summary><span style="color: #0888a8;">Proof</span></summary>
 
 \
 
@@ -263,7 +239,7 @@ Suppose we take the SVD of a symmetric matrix $A$. Then the left singluar vector
 [$\blacksquare$]{style="float:right"}
 
 
-</div>
+</details>
 
 \
 
@@ -282,7 +258,11 @@ So to obtain the desired covariance $\bm\Sigma_y$ from $X$ we simply set $\bm C 
 
 \
 
-# Programming in R
+# Programming in R  {.tabset .tabset-fade .tabset-pills}
+***
+
+
+## The function
 ***
 
 To do this in R, we follow the steps outlined previously. Thus, we first decide on the desired mean vector, $\bm \mu_y$, and covariance matrix, $\bm \Sigma_y$. Recall also that a valid, full-rank covariance matrix is positive-definite.[^4]
@@ -337,12 +317,13 @@ list(chol = list(mean=apply(y.chol, 2, mean),
                  cov=cov(y.chol)),
      svd  = list(mean=apply(y.svd, 2, mean),
                  cov=cov(y.svd)),
-     desired = sigma.y)
+     desired_cov = sigma.y,
+     desired_mean = mu.y)
 ```
 
 \
 
-From the above output, it is clear that the desired covariance structure is approximated fairly well. So we can finally write our own little function that generates multivariate normal samples! (In fact, the function below is virtually indistinguishable from the [source-code](https://rdrr.io/cran/mvtnorm/src/R/mvnorm.R) for the `mvtnorm` package's `mvrnorm` function.)
+From the above output, it is clear that the desired covariance structure is approximated fairly well. So we can finally write our own little function that generates multivariate normal samples! In fact, the function below is virtually indistinguishable from the [source-code](https://rdrr.io/cran/MASS/src/R/mvrnorm.R) for the `MASS` package's `mvrnorm` function.
 
 ```{r, echo=T}
 my.mvrnorm = function(sigma.y, mu.y = rep(0, ncol(sigma.y)), n, method="svd"){
@@ -371,7 +352,8 @@ my.mvrnorm = function(sigma.y, mu.y = rep(0, ncol(sigma.y)), n, method="svd"){
 
 \
 
-### Which is better 
+## Which method is better? 
+***
 
 We've learned that two factorizations work, but which one is "better," numerically? This may depend on how we define "better," but lets try and find out. First, for simplicity we will only look at the accuracy of the covariance. Second, lets say that a factorization is better if it minimizes $max_{ij} |Cov(x_{i}, x_{j}) - D_{ij}|$ where $D_{ij}$ is each element of the desired covariance matrix. That is, which method minimizes the maximum absolute deviation from the desired covariance structure.  
 
@@ -418,6 +400,8 @@ mv.loss(n = 100, sigma.y = sigma.y)
 And finally, now that we know the function works, we can do several iterations at each sample size to see which method converges fastest. 
 
 ```{r, echo=T, message=F, cache=T}
+RhpcBLASctl::blas_set_num_threads(1)
+RhpcBLASctl::omp_set_num_threads(1)
 # get things ready for parallel run, plotting
 pks = c("parallel", "dplyr", "ggplot2", "reshape2")
 invisible(sapply(pks, library, character.only=T))
@@ -517,8 +501,9 @@ ggplot(data=summaries, aes(x=n)) +
 Lastly, then, the two approaches are equal on average, even in small samples.
 
 
-# Endnotes 
+# References and Footnotes
 ***
+
 
 [^1]: This is an alternative definition of the matrix square-root. More often, it is defined as $A=BB$ instead of $A=BB^\top$
 

@@ -14,14 +14,16 @@ navbar:
           href: irls.html
         - text: "Multivariate Normal Draws"
           href: mvnorm.html
+        - text: "Monte Carlos, the Right Way (in R)"
         - text: "COMING SOON:"
         - text: "Programming Zero Inflated Count Models in R"
-        - text: "Efficient, Reproducible Monte Carlo Analyses"
+        - text: "Copulas and Copula Regression"
         - text: "Bias of MLE for Gamma Rate Parameter" 
         - text: "Programming a Heckman Model in R"
         - text: "Derivation of Negative Binomial Regression"
         - text: "Spurious Regression Problem in Time Series"
         - text: "Omitted Variables Bias in Probit Models"
+        - text: "Building this Website"
   right:
     - icon: fa-github fa-lg
       text: "Github"
@@ -30,5 +32,6 @@ output:
   html_document:
     theme: yeti
     highlight: zenburn
-    codefolding: show
+    css: "styles.css"
+
 
