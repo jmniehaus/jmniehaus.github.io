@@ -14,8 +14,8 @@ navbar:
           href: irls.html
         - text: "Multivariate Normal Draws"
           href: mvnorm.html
-        - text: "Monte Carlos, the Right Way (in R)"
         - text: "COMING SOON:"
+        - text: "Monte Carlos, the Right Way (in R)"
         - text: "Programming Zero Inflated Count Models in R"
         - text: "Copulas and Copula Regression"
         - text: "Bias of MLE for Gamma Rate Parameter" 
