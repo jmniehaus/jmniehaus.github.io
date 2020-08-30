@@ -16,7 +16,6 @@ output:
     code_folding: show
 bibliography: bibliography.bib
 link-citations: yes
-clean: true
 ---
     
 <script type="text/x-mathjax-config">
