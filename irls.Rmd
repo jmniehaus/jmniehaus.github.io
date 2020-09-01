@@ -54,6 +54,7 @@ knitr::opts_chunk$set(class.output="bg-success",
 
 **Note:** *The programming in R follows the math as presented; however, it would* never *be a good idea to implement IRLS in this way, as the computation presented here is very inefficient.*
 
+**Note also:** *If you are unable to view the math properly, e.g. you see a bunch of raw latex code, ensure that any browser extensions (ublock, privacy badger, etc) are not blocking access to mathjax.js, as this site requires mathjax to display correctly.*
 \
 
 # Motivation {.tabset .tabset-fade .tabset-pills}
@@ -76,13 +77,13 @@ In studying the source-code of the `glm()` function, I found that it was not usi
 
 \
 
-# General Derivation {.tabset .tabset-fade .tabset-pills}
+# General Derivation
 ***
+### Understanding Newton's Method
 
-## Understanding Newton's Method
-***
-
+<div style="margin-top:25px;">
 As has already been discussed, the underlying machinery of IRLS is the Newton-Raphson algorithm. Due to this fact, I first review Newton's method for finding the zeros of a function, the results of which are easily ported over to a general derivation of the IRLS algorithm.  
+</div>
 
 Suppose we have the following function: 
 
@@ -280,7 +281,7 @@ newt(x0, fn=fn, fprime=fprime)
 
 \
 
-## Putting the "Iterative" in IRLS
+### Putting the "Iterative" in IRLS
 ***
 
 Now that we've reviewed Newton's method (a.k.a., Newton-Raphson), we might wonder why this is useful for maximum likelihood estimation. In MLE we want to find the parameter vector that maximizes the log-likelihood function (i.e., $\mathop{\arg \max}_\theta\ln\mathcal{L}(\theta|X)$). From basic calculus we know that to do so we simply take the first derivative of the likelihood function, set this equal to zero, and solve this first order condition for $\theta$. However, in most instances of estimating generalized linear models, a closed form solution does not exist due to the presence of transcendental functions. Thus, a non-analytic solution is required, and Newton's method provides one means of arriving at such a solution.
@@ -347,11 +348,11 @@ Recalling from the previous example of Newton's method, $\bm\beta$ in \\ref{newt
 \bm b_1 &= \bm b_0 - [\bm{\mathcal{H}}(\bm b_0)]^{-1} \cdot \nabla l(\bm b_0)
 \end{align}
 
-And lastly, as with the previous example of Newton's method, we simply iterate until the old and new guesses differ by less than some constant. Because the guesses are often vectors, this difference takes the form of the Euclidean distance between the two vectors. That is, if $\left\lVert \bm b_{i} - \bm b_{i-1} \right\rVert$, is less than some tolerance limit, the algorithm has converged, where $i$ indexes the iteration number of Newton's procedure, and "$||$" denotes the $l_2$ norm of a vector.
+And lastly, as with the previous example of Newton's method, we simply iterate until the old and new guesses differ by less than some constant. Because the guesses are often vectors, this difference takes the form of the Euclidean distance between the two vectors. That is, if $\left\lVert \bm b_{p} - \bm b_{p-1} \right\rVert$, is less than some tolerance limit, the algorithm has converged, where $p$ indexes the iteration number of Newton's procedure, and $||$ denotes the $l_2$ norm of a vector.
 
 \
 
-## Putting the "Least Squares" in IRLS
+### Putting the "Least Squares" in IRLS
 ***
 
 
@@ -404,9 +405,9 @@ And equation \\ref{irls} is clearly a weighted least squares estimator, $\bm b_1
 
 Summing up, in order to go from this general IRLS derivation to IRLS for specific probability distributions, we need two quantities:
 
-1. $\pder2{l}{\mu_i}$ where $\mu_i = \bm x_i%^\top \bm \beta$ 
+1. $\pdertwo{l}{\mu_i}$ where $\mu_i = \bm x_i^\top \bm \beta$ 
 
-2. $\pder2{^2l}{\mu_i^2}$ 
+2. $\pdertwo{^2l}{\mu_i^2}$ 
 
 As such, for each of the methods considered below, both of these quantities are derived.
 
@@ -697,7 +698,7 @@ Now that we have these quantities, we can utilize equations \\ref{grad} and \\re
 ## Programming in R
 ***
 
-Now that we have the general `irls` function defined, all we have to do in order to estimate the Poisson parameters is define the derivative functions that have just been derived, and then generate some data from a Poisson distribution.
+Now that we have the general `irls` function defined (see section on logistic regression programming in R), all we have to do in order to estimate the Poisson parameters is define the derivative functions that have just been derived, and then generate some data from a Poisson distribution (using the same covariates as were used in the section on logistic regression).
 
 ```{r, echo=T, eval=T}
 y = rpois(n, exp(mu))

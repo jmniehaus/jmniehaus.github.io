@@ -497,7 +497,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Iteratively Re-weighted Least Squares (IRLS):</h1>
 <h3 class="subtitle">Motivation, Derivation, and Programming in R</h3>
-<h4 class="date">Updated: 30 Aug, 2020</h4>
+<h4 class="date">Updated: 31 Aug, 2020</h4>
 
 </div>
 
@@ -514,7 +514,7 @@ MathJax.Hub.Config({
 <p><br />
 </p>
 <p><strong>Note:</strong> <em>The programming in R follows the math as presented; however, it would</em> never <em>be a good idea to implement IRLS in this way, as the computation presented here is very inefficient.</em></p>
-<p><br />
+<p><strong>Note also:</strong> <em>If you are unable to view the math properly, e.g. you see a bunch of raw latex code, ensure that any browser extensions (ublock, privacy badger, etc) are not blocking access to mathjax.js, as this site requires mathjax to display correctly.</em><br />
 </p>
 <div id="motivation" class="section level1 tabset tabset-fade tabset-pills">
 <h1 class="tabset tabset-fade tabset-pills">Motivation</h1>
@@ -533,13 +533,14 @@ MathJax.Hub.Config({
 </p>
 </div>
 </div>
-<div id="general-derivation" class="section level1 tabset tabset-fade tabset-pills">
-<h1 class="tabset tabset-fade tabset-pills">General Derivation</h1>
+<div id="general-derivation" class="section level1">
+<h1>General Derivation</h1>
 <hr />
-<div id="understanding-newtons-method" class="section level2">
-<h2>Understanding Newton’s Method</h2>
-<hr />
+<div id="understanding-newtons-method" class="section level3">
+<h3>Understanding Newton’s Method</h3>
+<div style="margin-top:25px;">
 <p>As has already been discussed, the underlying machinery of IRLS is the Newton-Raphson algorithm. Due to this fact, I first review Newton’s method for finding the zeros of a function, the results of which are easily ported over to a general derivation of the IRLS algorithm.</p>
+</div>
 <p>Suppose we have the following function:</p>
 <p><img src="irls_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <p>and we want to approximate the location at which it crosses the x-axis. That is, we want to find the zero, or root of the function, preferably without having to use the quadratic equation or some other analytic method (indeed, we often <em>cannot</em> find a closed-form solution in the case of GLMs). We can turn to Newton’s method to do so.</p>
@@ -611,8 +612,8 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <p><br />
 </p>
 </div>
-<div id="putting-the-iterative-in-irls" class="section level2">
-<h2>Putting the “Iterative” in IRLS</h2>
+<div id="putting-the-iterative-in-irls" class="section level3">
+<h3>Putting the “Iterative” in IRLS</h3>
 <hr />
 <p>Now that we’ve reviewed Newton’s method (a.k.a., Newton-Raphson), we might wonder why this is useful for maximum likelihood estimation. In MLE we want to find the parameter vector that maximizes the log-likelihood function (i.e., <span class="math inline">\(\mathop{\arg \max}_\theta\ln\mathcal{L}(\theta|X)\)</span>). From basic calculus we know that to do so we simply take the first derivative of the likelihood function, set this equal to zero, and solve this first order condition for <span class="math inline">\(\theta\)</span>. However, in most instances of estimating generalized linear models, a closed form solution does not exist due to the presence of transcendental functions. Thus, a non-analytic solution is required, and Newton’s method provides one means of arriving at such a solution.</p>
 <p>Proceeding with the general derivation, suppose we have a likelihood function for a generalized linear model, and we take its natural logarithm:</p>
@@ -657,12 +658,12 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <p><span class="math display">\[\begin{align}
 \boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 - [\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)]^{-1} \cdot \nabla l(\boldsymbol{b}_0)
 \end{align}\]</span></p>
-<p>And lastly, as with the previous example of Newton’s method, we simply iterate until the old and new guesses differ by less than some constant. Because the guesses are often vectors, this difference takes the form of the Euclidean distance between the two vectors. That is, if <span class="math inline">\(\left\lVert \boldsymbol{b}_{i} - \boldsymbol{b}_{i-1} \right\rVert\)</span>, is less than some tolerance limit, the algorithm has converged, where <span class="math inline">\(i\)</span> indexes the iteration number of Newton’s procedure, and “<span class="math inline">\(||\)</span>” denotes the <span class="math inline">\(l_2\)</span> norm of a vector.</p>
+<p>And lastly, as with the previous example of Newton’s method, we simply iterate until the old and new guesses differ by less than some constant. Because the guesses are often vectors, this difference takes the form of the Euclidean distance between the two vectors. That is, if <span class="math inline">\(\left\lVert \boldsymbol{b}_{p} - \boldsymbol{b}_{p-1} \right\rVert\)</span>, is less than some tolerance limit, the algorithm has converged, where <span class="math inline">\(p\)</span> indexes the iteration number of Newton’s procedure, and <span class="math inline">\(||\)</span> denotes the <span class="math inline">\(l_2\)</span> norm of a vector.</p>
 <p><br />
 </p>
 </div>
-<div id="putting-the-least-squares-in-irls" class="section level2">
-<h2>Putting the “Least Squares” in IRLS</h2>
+<div id="putting-the-least-squares-in-irls" class="section level3">
+<h3>Putting the “Least Squares” in IRLS</h3>
 <hr />
 <p>So far we have seen the “iterative” part of IRLS from Newton’s method; what about the “weighted least squares” part? In order to get from Newton’s method to least squares, a bit more information is required. First, recall from calculus that the chain rule can be shown as <span class="math display">\[\frac{\mathrm{d}}{\mathrm{d}x}[f(g(x)] = \frac{\mathrm{d}f}{\mathrm{d}g}\frac{\mathrm{d}g}{\mathrm{d}x}\]</span> Then, suppose we have a log-likelihood as defined in equation \ref{like}, denoted as <span class="math inline">\(l\)</span>, and let <span class="math inline">\(\boldsymbol{x}_{i}\boldsymbol{\beta }\equiv \mu_i\)</span>.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> Then it follows from the chain rule and this likelihood that the first and second derivatives with respect to a single parameter, <span class="math inline">\(\beta_j\)</span>, are:</p>
 <p><span class="math display">\[\begin{align}
@@ -703,8 +704,8 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <p>And equation \ref{irls} is clearly a weighted least squares estimator, <span class="math inline">\(\boldsymbol{b}_1\)</span>. Thus, we’ve transformed the Newton-Raphson algorithm to one in which each iteration can be solved using weighted least squares. Accordingly, <span class="math inline">\(\boldsymbol{b}\)</span> is the equivalent of the <span class="math inline">\(x\)</span>-intercepts in the previous section on Newton’s method. Each estimated parameter vector, <span class="math inline">\(\boldsymbol{b}_p\)</span>, with <span class="math inline">\(p \in \mathbb{Z}^{\geq 0}\)</span> being the iteration number, is arrived at using weighted least squares. The next iteration uses this vector in updating to a new guess. Thus, the “hats” over the matrix <span class="math inline">\(\hat{\boldsymbol{W}}\)</span>, and the vectors <span class="math inline">\(\hat{\boldsymbol{\gamma}}\)</span> and <span class="math inline">\(\hat{\boldsymbol{z}}\)</span> denote that these quantities rely on estimates <span class="math inline">\(\boldsymbol{b}_{p-1}\)</span> from the previous iteration, and are therefore estimates themselves.</p>
 <p>Summing up, in order to go from this general IRLS derivation to IRLS for specific probability distributions, we need two quantities:</p>
 <ol style="list-style-type: decimal">
-<li><p><span class="math inline">\(\dfrac{\partial}{\partial 2}{l}{\mu_i}\)</span> where <span class="math inline">\(\mu_i = \boldsymbol{x}_i%^\top \bm \beta\)</span></p></li>
-<li><p><span class="math inline">\(\dfrac{\partial}{\partial 2}{^2l}{\mu_i^2}\)</span></p></li>
+<li><p><span class="math inline">\(\dfrac{\partial l}{\partial \mu_i}\)</span> where <span class="math inline">\(\mu_i = \boldsymbol{x}_i^\top \boldsymbol{\beta}\)</span></p></li>
+<li><p><span class="math inline">\(\dfrac{\partial ^2l}{\partial \mu_i^2}\)</span></p></li>
 </ol>
 <p>As such, for each of the methods considered below, both of these quantities are derived.</p>
 <p><br />
@@ -984,7 +985,7 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <div id="programming-in-r-1" class="section level2">
 <h2>Programming in R</h2>
 <hr />
-<p>Now that we have the general <code>irls</code> function defined, all we have to do in order to estimate the Poisson parameters is define the derivative functions that have just been derived, and then generate some data from a Poisson distribution.</p>
+<p>Now that we have the general <code>irls</code> function defined (see section on logistic regression programming in R), all we have to do in order to estimate the Poisson parameters is define the derivative functions that have just been derived, and then generate some data from a Poisson distribution (using the same covariates as were used in the section on logistic regression).</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>y =<span class="st"> </span><span class="kw">rpois</span>(n, <span class="kw">exp</span>(mu))</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>fu_poisson =<span class="st"> </span><span class="cf">function</span>(y, X, b) {</span>
