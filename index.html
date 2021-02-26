@@ -13,7 +13,7 @@
 
 <title>John Niehaus</title>
 
-<script src="site_libs/header-attrs-2.3/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.6/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
@@ -28,12 +28,22 @@
 <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -148,6 +158,7 @@ h6 {
   text-align: left;
 }
 </style>
+
 
 <link rel="stylesheet" href="styles.css" type="text/css" />
 
@@ -357,7 +368,7 @@ $(document).ready(function () {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="./files/niehaus_cv_S2020_online.pdf">CV</a>
+  <a href="./files/niehaus_cv_S2021_online.pdf">CV</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -388,7 +399,7 @@ $(document).ready(function () {
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="http://github.com/jmniehaus">
-    <span class="fa fa-github fa-lg"></span>
+    <span class="fas fa-github fa-lg"></span>
      
     Github
   </a>
@@ -407,15 +418,16 @@ $(document).ready(function () {
 
 
 <p><img src="images/headshot_tamu.jpg" style="width:30%; border:10px solid; margin-right: 40px; margin-top: 20px" align="left"></p>
-<p>I am currently a Master’s student in the Department of Statistics at Texas A&amp;M University. I received my M.A. in Political Science from Texas A&amp;M University in 2020, and my B.A. in both political science and psychology from the University of Missouri in 2014. During my time in political science, I co-authored peer-reviewed articles on both human rights and political methodology, as well as assisted with teaching graduate-level time series analysis. Methodologically, I am interested in time series analysis and machine learning, and applying both to the prediction of state violence.</p>
-<p>On this site you will find a set of posts on various topics which I wanted to learn (or had to, for one reason or another). I find that I learn best when I try to explain things to myself and others, and have therefore created an assortment of materials here. However, please note that none of the work is original in the sense that it has all been published on extensively. As such, appropriate citations are included for all content.</p>
-<p>For my CV, please see the link above. For all code on this website and more, please visit my github page, also linked above. To contact me via email, please run the following code in R. For those unfamiliar with R, please copy and paste the code into <a href="https://rdrr.io/snippets/">this</a> site, and press run.</p>
+<p>I am currently a Master’s student in the Department of Statistics at Texas A&amp;M University. I received my M.A. in political science from Texas A&amp;M University in 2020, and my B.A. in both political science and psychology from the University of Missouri in 2014. On this site you will find a set of posts on various topics which I wanted to learn, as I find that I learn best when trying to explain things. However, please note that all topics have been published on extensively, with appropriate citations included for all content.</p>
+<p>For my CV, or to visit my GitHub page, see the links above. To contact me via email please run the following code in R, or for those unfamiliar with R, please copy and paste the code into <a href="https://rdrr.io/snippets/">this</a> site and press run.</p>
 <script>
   addClassKlippyTo("pre.r, pre.markdown");
   addKlippy('right', 'top', '#FFFFFF', '1', 'Click to copy', 'Done');
 </script>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r klippy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">paste</span>(<span class="kw">c</span>(<span class="kw">rev</span>(<span class="kw">c</span>(<span class="kw">paste</span>(<span class="kw">sort</span>(<span class="kw">c</span>(<span class="dv">5</span>,<span class="dv">2</span>,<span class="dv">7</span>,<span class="dv">2</span>)),<span class="dt">collapse=</span> <span class="st">&quot;&quot;</span>),<span class="kw">paste0</span>(<span class="kw">sort</span>(<span class="kw">c</span>(<span class="st">&quot;us&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;ha&quot;</span>)),<span class="dt">collapse=</span><span class="st">&quot;&quot;</span>),</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="st">&quot;jni&quot;</span>)),<span class="st">&quot;@gmail.com&quot;</span>,<span class="kw">sub</span>(<span class="st">&quot;@yahoo.com&quot;</span>,<span class="st">&quot;&quot;</span>, <span class="st">&quot;&quot;</span>),<span class="kw">sub</span>(<span class="st">&quot;@outlook.com&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;&quot;</span>)),<span class="dt">collapse=</span><span class="st">&quot;&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r klippy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span>(<span class="fu">c</span>(<span class="fu">rev</span>(<span class="fu">c</span>(<span class="fu">paste</span>(<span class="fu">sort</span>(<span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">2</span>,<span class="dv">7</span>,<span class="dv">2</span>)),<span class="at">collapse=</span> <span class="st">&quot;&quot;</span>),</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>              <span class="fu">paste0</span>(<span class="fu">sort</span>(<span class="fu">c</span>(<span class="st">&quot;us&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;ha&quot;</span>)),<span class="at">collapse=</span><span class="st">&quot;&quot;</span>),</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>              <span class="st">&quot;jni&quot;</span>)),<span class="st">&quot;@gmail.com&quot;</span>,<span class="fu">sub</span>(<span class="st">&quot;@yahoo.com&quot;</span>,<span class="st">&quot;&quot;</span>, <span class="st">&quot;&quot;</span>),</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sub</span>(<span class="st">&quot;@outlook.com&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;&quot;</span>)),<span class="at">collapse=</span><span class="st">&quot;&quot;</span>)</span></code></pre></div>
 
 
 
@@ -426,7 +438,7 @@ $(document).ready(function () {
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();

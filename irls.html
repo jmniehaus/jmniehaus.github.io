@@ -13,7 +13,7 @@
 
 <title>IRLS in R</title>
 
-<script src="site_libs/header-attrs-2.3/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.6/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
@@ -28,12 +28,22 @@
 <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
@@ -155,6 +165,29 @@ h6 {
 }
 .table th:not([align]) {
   text-align: left;
+}
+</style>
+
+<style type="text/css">
+/* for pandoc --citeproc since 2.11 */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
 }
 </style>
 
@@ -442,7 +475,7 @@ div.tocify {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="./files/niehaus_cv_S2020_online.pdf">CV</a>
+  <a href="./files/niehaus_cv_S2021_online.pdf">CV</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -473,7 +506,7 @@ div.tocify {
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="http://github.com/jmniehaus">
-    <span class="fa fa-github fa-lg"></span>
+    <span class="fas fa-github fa-lg"></span>
      
     Github
   </a>
@@ -497,7 +530,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Iteratively Re-weighted Least Squares (IRLS):</h1>
 <h3 class="subtitle">Motivation, Derivation, and Programming in R</h3>
-<h4 class="date">Updated: 31 Aug, 2020</h4>
+<h4 class="date">Updated: 26 Feb, 2021</h4>
 
 </div>
 
@@ -522,7 +555,7 @@ MathJax.Hub.Config({
 <div id="what-is-it" class="section level2">
 <h2>What is it?</h2>
 <hr />
-<p>When reading about GLMs, authors often state that the MLEs of the parameters are found by iteratively reweighted least squares (IRLS). However, texts vary in their mathematical treatment of the process, with some stating that Newton’s method is used, while others give a bit more derivation than others <span class="citation">(for some examples, see: Friedman, Hastie, and Tibshirani <a href="#ref-ESL" role="doc-biblioref">2009</a>, 121; Hilbe <a href="#ref-hilbe2011negative" role="doc-biblioref">2011</a>, Ch. 4; Jorgensen <a href="#ref-jorgensen2006iteratively" role="doc-biblioref">2006</a>; Long <a href="#ref-long1997" role="doc-biblioref">1997</a>; Nelder and Wedderburn <a href="#ref-nelder1972generalized" role="doc-biblioref">1972</a>, 372–74; Stirling <a href="#ref-stirling1984iteratively" role="doc-biblioref">1984</a>)</span>. Thus, the purpose of this page is to consolidate several sources on IRLS into a general derivation, followed by specific derivations for logistic and Poisson regression, both with example programming in R.</p>
+<p>When reading about GLMs, authors often state that the MLEs of the parameters are found by iteratively reweighted least squares (IRLS). However, texts vary in their mathematical treatment of the process, with some stating that Newton’s method is used, while others give a bit more derivation than others <span class="citation">(for some examples, see: <a href="#ref-ESL" role="doc-biblioref">Friedman, Hastie, and Tibshirani 2009, 121</a>; <a href="#ref-hilbe2011negative" role="doc-biblioref">Hilbe 2011</a>, Ch. 4; <a href="#ref-jorgensen2006iteratively" role="doc-biblioref">Jorgensen 2006</a>; <a href="#ref-long1997" role="doc-biblioref">Long 1997</a>; <a href="#ref-nelder1972generalized" role="doc-biblioref">Nelder and Wedderburn 1972, 372–74</a>; <a href="#ref-stirling1984iteratively" role="doc-biblioref">Stirling 1984</a>)</span>. Thus, the purpose of this page is to consolidate several sources on IRLS into a general derivation, followed by specific derivations for logistic and Poisson regression, both with example programming in R.</p>
 <p>For a bit of background, IRLS is an iterative method that can (among other things) be used to find the coefficients of a generalized linear model.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> At each iteration, it utilizes weighted least squares until convergence to the vector of maximum likelihood estimates (MLEs). The method relies on the Newton-Raphson algorithm, but is equivalent to Fisher scoring when using the canonical link (e.g., logit for logistic regression, and log for Poisson).<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> However, at each iteration of the Newton-Raphson algorithm, IRLS computes the closed-form solution to a weighted least squares problem. Interestingly, then, it takes an optimization problem without a closed-form solution, and turns it into one that does have a solution at each iteration.</p>
 </div>
 <div id="why-study-it" class="section level2">
@@ -567,42 +600,42 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <p>Now a pattern is emerging. The <span class="math inline">\(x\)</span>-intercepts of the tangent lines seem to be moving closer to the <span class="math inline">\(x\)</span>-intercept of <span class="math inline">\(f(x)\)</span>, which is what we ultimately want to find. Perhaps if we continue this process—finding tangents, finding their <span class="math inline">\(x\)</span>-intercepts, and using these <span class="math inline">\(x\)</span>-intercepts to find new tangents—until the <span class="math inline">\(x\)</span>-intercepts stop changing by some tolerance limit, we will converge to the zero of the function. Graphically, carrying this process (nearly)<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> to its limit yields the following set of points:</p>
 <p><img src="irls_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>To verify that the algorithm converges, the function here is <span class="math inline">\(f(x) = -e^x + 4\)</span>. Solving for the zero analytically yields <span class="math inline">\(\ln(4) = 1.3862944\)</span>. The below R-code shows that the Newton Method correctly arrives at this solution:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co"># fns</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>fn =<span class="st"> </span><span class="cf">function</span>(x) <span class="op">-</span><span class="kw">exp</span>(x) <span class="op">+</span><span class="st"> </span><span class="dv">4</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>fprime =<span class="st"> </span><span class="cf">function</span>(x) <span class="op">-</span><span class="kw">exp</span>(x)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="co"># function that returns x-intercepts at successive newton iterations.  Wont work</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="co"># on multi-dimensional problems</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>newt =<span class="st"> </span><span class="cf">function</span>(x0, fn, fprime, <span class="dt">itmax =</span> <span class="dv">10</span>, <span class="dt">tol =</span> <span class="fl">0.001</span>) {</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    xint =<span class="st"> </span><span class="cf">function</span>(x) x <span class="op">-</span><span class="st"> </span><span class="kw">fn</span>(x)<span class="op">/</span><span class="kw">fprime</span>(x)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>    res =<span class="st"> </span><span class="kw">vector</span>()</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>    res[<span class="dv">1</span>] =<span class="st"> </span>x0</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>    i =<span class="st"> </span><span class="dv">1</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>    </span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>    <span class="cf">while</span> (i <span class="op">&lt;=</span><span class="st"> </span>itmax) {</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>        i =<span class="st"> </span>i <span class="op">+</span><span class="st"> </span><span class="dv">1</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>        <span class="cf">if</span> (i<span class="op">%%</span><span class="dv">5</span> <span class="op">==</span><span class="st"> </span><span class="dv">0</span>) </span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>            <span class="kw">message</span>(<span class="st">&quot;Iterating...&quot;</span>, i, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>        </span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>        res[i] =<span class="st"> </span><span class="kw">xint</span>(res[i <span class="op">-</span><span class="st"> </span><span class="dv">1</span>])</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>        </span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a>        <span class="cf">if</span> (<span class="kw">abs</span>(res[i] <span class="op">-</span><span class="st"> </span>res[i <span class="op">-</span><span class="st"> </span><span class="dv">1</span>]) <span class="op">&lt;</span><span class="st"> </span>tol) </span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>            <span class="cf">break</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a>        </span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a>        <span class="cf">if</span> (i <span class="op">==</span><span class="st"> </span>itmax) {</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a>            <span class="kw">warning</span>(<span class="st">&quot;Stopping value of intercept:&quot;</span>, res[i], <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>            <span class="kw">stop</span>(<span class="st">&quot;Maximum iterations reached prior to convergence.&quot;</span>)</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>        }</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a>        </span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>    }</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a>    </span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a>    <span class="kw">return</span>(<span class="kw">list</span>(<span class="dt">all_ints =</span> res, <span class="dt">final_val =</span> <span class="kw">tail</span>(res, <span class="dv">1</span>)))</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>}</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true"></a><span class="co"># point</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true"></a>x0 =<span class="st"> </span><span class="fl">0.35</span></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true"></a></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true"></a><span class="kw">newt</span>(x0, <span class="dt">fn =</span> fn, <span class="dt">fprime =</span> fprime)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># fns</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>fn <span class="ot">=</span> <span class="cf">function</span>(x) <span class="sc">-</span><span class="fu">exp</span>(x) <span class="sc">+</span> <span class="dv">4</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>fprime <span class="ot">=</span> <span class="cf">function</span>(x) <span class="sc">-</span><span class="fu">exp</span>(x)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># function that returns x-intercepts at successive newton iterations.  Wont work</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># on multi-dimensional problems</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>newt <span class="ot">=</span> <span class="cf">function</span>(x0, fn, fprime, <span class="at">itmax =</span> <span class="dv">10</span>, <span class="at">tol =</span> <span class="fl">0.001</span>) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    xint <span class="ot">=</span> <span class="cf">function</span>(x) x <span class="sc">-</span> <span class="fu">fn</span>(x)<span class="sc">/</span><span class="fu">fprime</span>(x)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">=</span> <span class="fu">vector</span>()</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    res[<span class="dv">1</span>] <span class="ot">=</span> x0</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> (i <span class="sc">&lt;=</span> itmax) {</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        i <span class="ot">=</span> i <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (i<span class="sc">%%</span><span class="dv">5</span> <span class="sc">==</span> <span class="dv">0</span>) </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>            <span class="fu">message</span>(<span class="st">&quot;Iterating...&quot;</span>, i, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        res[i] <span class="ot">=</span> <span class="fu">xint</span>(res[i <span class="sc">-</span> <span class="dv">1</span>])</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="fu">abs</span>(res[i] <span class="sc">-</span> res[i <span class="sc">-</span> <span class="dv">1</span>]) <span class="sc">&lt;</span> tol) </span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (i <span class="sc">==</span> itmax) {</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>            <span class="fu">warning</span>(<span class="st">&quot;Stopping value of intercept:&quot;</span>, res[i], <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>            <span class="fu">stop</span>(<span class="st">&quot;Maximum iterations reached prior to convergence.&quot;</span>)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">all_ints =</span> res, <span class="at">final_val =</span> <span class="fu">tail</span>(res, <span class="dv">1</span>)))</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># point</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>x0 <span class="ot">=</span> <span class="fl">0.35</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="fu">newt</span>(x0, <span class="at">fn =</span> fn, <span class="at">fprime =</span> fprime)</span></code></pre></div>
 <pre><code>## Iterating...5</code></pre>
 <pre class="bg-success"><code>## $all_ints
 ## [1] 0.350000 2.168752 1.626033 1.412866 1.386644 1.386294
@@ -797,109 +830,109 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <h2>Programming in R</h2>
 <hr />
 <p>To get started with programming the IRLS algorithm for logistic regressin, I first define functions for the derivatives <span class="math inline">\(f_{\mu_i}\)</span> and <span class="math inline">\(f_{\mu_i\mu_i}\)</span>, as found in equations \ref{logistlikeprime} and \ref{logistlikeDprime}:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>fu_logistic =<span class="st"> </span><span class="cf">function</span>(y, X, b) {</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>    pi =<span class="st"> </span><span class="kw">plogis</span>(X <span class="op">%*%</span><span class="st"> </span>b)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    y <span class="op">-</span><span class="st"> </span>pi</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    </span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>}</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>fuu_logistic =<span class="st"> </span><span class="cf">function</span>(y, X, b) {</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>    pi =<span class="st"> </span><span class="kw">plogis</span>(X <span class="op">%*%</span><span class="st"> </span>b)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="kw">return</span>(<span class="kw">as.vector</span>(<span class="op">-</span>pi <span class="op">*</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">-</span><span class="st"> </span>pi)))</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>    </span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fu_logistic <span class="ot">=</span> <span class="cf">function</span>(y, X, b) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    pi <span class="ot">=</span> <span class="fu">plogis</span>(X <span class="sc">%*%</span> b)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    y <span class="sc">-</span> pi</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>fuu_logistic <span class="ot">=</span> <span class="cf">function</span>(y, X, b) {</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    pi <span class="ot">=</span> <span class="fu">plogis</span>(X <span class="sc">%*%</span> b)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">as.vector</span>(<span class="sc">-</span>pi <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> pi)))</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Now that we have the derivative functions, below I define the <code>irls</code> function for actually implementing the algorithm. It will take functions that return derivatives of the log-likelihood as arguments, <code>fu</code> and <code>fuu</code> from above, so that when we define other derivatives later on (i.e., for Poisson regression), we can simply input those functions to the already-existing <code>irls</code> function, rather than having to define another <code>irls</code> function. In other words, I’ve written the equivalent of a “general” IRLS function below that takes derivatives as arguments, derivatives which are functions themselves. We can then input any valid data and derivative functions to implement the algorithm.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a>irls =<span class="st"> </span><span class="cf">function</span>(fu, fuu, X, y, <span class="dt">method =</span> <span class="st">&quot;logistic&quot;</span>, <span class="dt">starts =</span> <span class="ot">NULL</span>, <span class="dt">itmax =</span> <span class="dv">100</span>, <span class="dt">tol =</span> <span class="fl">0.001</span>) {</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>    method =<span class="st"> </span><span class="kw">match.arg</span>(method, <span class="dt">choices =</span> <span class="kw">c</span>(<span class="st">&quot;logistic&quot;</span>, <span class="st">&quot;poisson&quot;</span>))</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>    </span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>    convergence =<span class="st"> </span><span class="dv">0</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>    iter =<span class="st"> </span><span class="dv">0</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>    </span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>    <span class="cf">if</span> (<span class="kw">is.null</span>(starts)) {</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>        b0 =<span class="st"> </span><span class="cf">switch</span>(method, <span class="dt">logistic =</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="kw">ncol</span>(X)), <span class="dt">poisson =</span> <span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">ncol</span>(X)))</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    } <span class="cf">else</span> b0 =<span class="st"> </span>starts</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    </span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>    <span class="cf">if</span> (<span class="kw">length</span>(b0) <span class="op">!=</span><span class="st"> </span><span class="kw">ncol</span>(X)) </span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>        <span class="kw">stop</span>(<span class="st">&quot;Number of starting params is not equal to number of covariates.&quot;</span>)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    </span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>    <span class="cf">while</span> (iter <span class="op">&lt;=</span><span class="st"> </span>itmax) {</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>        </span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>        iter =<span class="st"> </span>iter <span class="op">+</span><span class="st"> </span><span class="dv">1</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>        <span class="cf">if</span> (iter<span class="op">%%</span><span class="dv">10</span> <span class="op">==</span><span class="st"> </span><span class="dv">0</span>) </span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>            <span class="kw">message</span>(<span class="st">&quot;Iterating...&quot;</span>, iter)</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>        </span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>        </span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>        gamma =<span class="st"> </span><span class="kw">fu</span>(y, X, b0)  <span class="co"># gamma from equation above</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>        W =<span class="st"> </span><span class="kw">diag</span>(<span class="op">-</span><span class="kw">fuu</span>(y, X, b0))</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a>        W_inv =<span class="st"> </span><span class="kw">diag</span>(<span class="op">-</span><span class="dv">1</span><span class="op">/</span><span class="kw">fuu</span>(y, X, b0))  <span class="co">#inverse of diag matrix, rather than solving explicitly for inverse.</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>        z =<span class="st"> </span>X <span class="op">%*%</span><span class="st"> </span>b0 <span class="op">+</span><span class="st"> </span>W_inv <span class="op">%*%</span><span class="st"> </span>gamma</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>        </span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a>        b1 =<span class="st"> </span><span class="kw">solve</span>(<span class="kw">crossprod</span>(X, W) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span><span class="kw">crossprod</span>(X, W) <span class="op">%*%</span><span class="st"> </span>z</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a>        </span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a>        <span class="cf">if</span> (<span class="kw">sqrt</span>(<span class="kw">crossprod</span>(b1 <span class="op">-</span><span class="st"> </span>b0)) <span class="op">&lt;</span><span class="st"> </span>tol) </span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a>            <span class="cf">break</span></span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a>        <span class="cf">if</span> (iter <span class="op">==</span><span class="st"> </span>itmax) {</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a>            <span class="kw">stop</span>(<span class="st">&quot;Maximum iterations reached prior to convergence.</span><span class="ch">\n</span><span class="st"> Retry using coefficients at termination as starting values:&quot;</span>, </span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a>                <span class="kw">paste0</span>(b1, <span class="dt">collapse =</span> <span class="st">&quot;, &quot;</span>))</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a>        }</span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a>        b0 =<span class="st"> </span>b1</span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a>        </span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a>    }</span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true"></a>    </span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true"></a>    par =<span class="st"> </span><span class="kw">as.vector</span>(b1)  <span class="co"># coefficient vector</span></span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true"></a>    covmat =<span class="st"> </span><span class="kw">solve</span>(<span class="kw">crossprod</span>(X, W) <span class="op">%*%</span><span class="st"> </span>X)  <span class="co"># covariance matrix</span></span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true"></a>    se =<span class="st"> </span><span class="kw">sqrt</span>(<span class="kw">diag</span>(covmat))  <span class="co"># standard errors</span></span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true"></a>    zscore =<span class="st"> </span>par<span class="op">/</span>se</span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true"></a>    pval =<span class="st"> </span><span class="dv">2</span> <span class="op">*</span><span class="st"> </span><span class="kw">pnorm</span>(<span class="kw">abs</span>(zscore), <span class="dt">lower.tail =</span> F)</span>
-<span id="cb5-43"><a href="#cb5-43" aria-hidden="true"></a>    coefs =<span class="st"> </span><span class="kw">cbind</span>(par, se, zscore, pval)</span>
-<span id="cb5-44"><a href="#cb5-44" aria-hidden="true"></a>    <span class="kw">colnames</span>(coefs) =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Estimate&quot;</span>, <span class="st">&quot;Std. Error&quot;</span>, <span class="st">&quot;Z-score&quot;</span>, <span class="st">&quot;p-value&quot;</span>)</span>
-<span id="cb5-45"><a href="#cb5-45" aria-hidden="true"></a>    <span class="kw">rownames</span>(coefs) =<span class="st"> </span><span class="kw">colnames</span>(X)</span>
-<span id="cb5-46"><a href="#cb5-46" aria-hidden="true"></a>    call =<span class="st"> </span><span class="kw">match.call</span>()</span>
-<span id="cb5-47"><a href="#cb5-47" aria-hidden="true"></a>    obj =<span class="st"> &quot;Custom IRLS Function&quot;</span></span>
-<span id="cb5-48"><a href="#cb5-48" aria-hidden="true"></a>    </span>
-<span id="cb5-49"><a href="#cb5-49" aria-hidden="true"></a>    results =<span class="st"> </span><span class="kw">list</span>(<span class="dt">coefs =</span> coefs, <span class="dt">par =</span> par, <span class="dt">covmat =</span> covmat, <span class="dt">se =</span> se, <span class="dt">zscore =</span> zscore, </span>
-<span id="cb5-50"><a href="#cb5-50" aria-hidden="true"></a>        <span class="dt">pval =</span> pval, <span class="dt">niterations =</span> iter, <span class="dt">call =</span> call, <span class="dt">obj =</span> obj)</span>
-<span id="cb5-51"><a href="#cb5-51" aria-hidden="true"></a>    </span>
-<span id="cb5-52"><a href="#cb5-52" aria-hidden="true"></a>    <span class="kw">class</span>(results) =<span class="st"> &quot;irls&quot;</span></span>
-<span id="cb5-53"><a href="#cb5-53" aria-hidden="true"></a>    <span class="kw">return</span>(results)</span>
-<span id="cb5-54"><a href="#cb5-54" aria-hidden="true"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>irls <span class="ot">=</span> <span class="cf">function</span>(fu, fuu, X, y, <span class="at">method =</span> <span class="st">&quot;logistic&quot;</span>, <span class="at">starts =</span> <span class="cn">NULL</span>, <span class="at">itmax =</span> <span class="dv">100</span>, <span class="at">tol =</span> <span class="fl">0.001</span>) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    method <span class="ot">=</span> <span class="fu">match.arg</span>(method, <span class="at">choices =</span> <span class="fu">c</span>(<span class="st">&quot;logistic&quot;</span>, <span class="st">&quot;poisson&quot;</span>))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    convergence <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    iter <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.null</span>(starts)) {</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        b0 <span class="ot">=</span> <span class="cf">switch</span>(method, <span class="at">logistic =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">ncol</span>(X)), <span class="at">poisson =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">ncol</span>(X)))</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> b0 <span class="ot">=</span> starts</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(b0) <span class="sc">!=</span> <span class="fu">ncol</span>(X)) </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stop</span>(<span class="st">&quot;Number of starting params is not equal to number of covariates.&quot;</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> (iter <span class="sc">&lt;=</span> itmax) {</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        iter <span class="ot">=</span> iter <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (iter<span class="sc">%%</span><span class="dv">10</span> <span class="sc">==</span> <span class="dv">0</span>) </span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            <span class="fu">message</span>(<span class="st">&quot;Iterating...&quot;</span>, iter)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        gamma <span class="ot">=</span> <span class="fu">fu</span>(y, X, b0)  <span class="co"># gamma from equation above</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        W <span class="ot">=</span> <span class="fu">diag</span>(<span class="sc">-</span><span class="fu">fuu</span>(y, X, b0))</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        W_inv <span class="ot">=</span> <span class="fu">diag</span>(<span class="sc">-</span><span class="dv">1</span><span class="sc">/</span><span class="fu">fuu</span>(y, X, b0))  <span class="co">#inverse of diag matrix, rather than solving explicitly for inverse.</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>        z <span class="ot">=</span> X <span class="sc">%*%</span> b0 <span class="sc">+</span> W_inv <span class="sc">%*%</span> gamma</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>        b1 <span class="ot">=</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(X, W) <span class="sc">%*%</span> X) <span class="sc">%*%</span> <span class="fu">crossprod</span>(X, W) <span class="sc">%*%</span> z</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="fu">sqrt</span>(<span class="fu">crossprod</span>(b1 <span class="sc">-</span> b0)) <span class="sc">&lt;</span> tol) </span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (iter <span class="sc">==</span> itmax) {</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>            <span class="fu">stop</span>(<span class="st">&quot;Maximum iterations reached prior to convergence.</span><span class="sc">\n</span><span class="st"> Retry using coefficients at termination as starting values:&quot;</span>, </span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>                <span class="fu">paste0</span>(b1, <span class="at">collapse =</span> <span class="st">&quot;, &quot;</span>))</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>        b0 <span class="ot">=</span> b1</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    par <span class="ot">=</span> <span class="fu">as.vector</span>(b1)  <span class="co"># coefficient vector</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    covmat <span class="ot">=</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(X, W) <span class="sc">%*%</span> X)  <span class="co"># covariance matrix</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    se <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(covmat))  <span class="co"># standard errors</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>    zscore <span class="ot">=</span> par<span class="sc">/</span>se</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>    pval <span class="ot">=</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(zscore), <span class="at">lower.tail =</span> F)</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>    coefs <span class="ot">=</span> <span class="fu">cbind</span>(par, se, zscore, pval)</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">colnames</span>(coefs) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;Estimate&quot;</span>, <span class="st">&quot;Std. Error&quot;</span>, <span class="st">&quot;Z-score&quot;</span>, <span class="st">&quot;p-value&quot;</span>)</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rownames</span>(coefs) <span class="ot">=</span> <span class="fu">colnames</span>(X)</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>    call <span class="ot">=</span> <span class="fu">match.call</span>()</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>    obj <span class="ot">=</span> <span class="st">&quot;Custom IRLS Function&quot;</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>    results <span class="ot">=</span> <span class="fu">list</span>(<span class="at">coefs =</span> coefs, <span class="at">par =</span> par, <span class="at">covmat =</span> covmat, <span class="at">se =</span> se, <span class="at">zscore =</span> zscore, </span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>        <span class="at">pval =</span> pval, <span class="at">niterations =</span> iter, <span class="at">call =</span> call, <span class="at">obj =</span> obj)</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">class</span>(results) <span class="ot">=</span> <span class="st">&quot;irls&quot;</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(results)</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Although we now have a light function to implement IRLS, we have not defined the print method for <code>irls</code>-class objects. Therefore, in the lines below I define the print function for the <code>irls</code>-class object. Note that this is not an ideal print function, but it gets the job done for our purposes.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="st">&quot;print.irls&quot;</span> =<span class="st"> </span><span class="cf">function</span>(x) {</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>    <span class="kw">cat</span>(<span class="st">&quot;&quot;</span>, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>    <span class="kw">cat</span>(x<span class="op">$</span>obj, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>    <span class="kw">cat</span>(<span class="st">&quot;</span><span class="ch">\n</span><span class="st">Call: &quot;</span>, <span class="kw">deparse</span>(x<span class="op">$</span>call), <span class="st">&quot;</span><span class="ch">\n\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>    <span class="kw">cat</span>(<span class="st">&quot;===============================================================&quot;</span>, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>    <span class="kw">printCoefmat</span>(x<span class="op">$</span>coefs, <span class="dt">digits =</span> <span class="dv">4</span>, <span class="dt">signif.stars =</span> T)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>    <span class="kw">cat</span>(<span class="st">&quot;===============================================================&quot;</span>, <span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;print.irls&quot;</span> <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">&quot;&quot;</span>, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(x<span class="sc">$</span>obj, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Call: &quot;</span>, <span class="fu">deparse</span>(x<span class="sc">$</span>call), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">&quot;===============================================================&quot;</span>, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">printCoefmat</span>(x<span class="sc">$</span>coefs, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">signif.stars =</span> T)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">&quot;===============================================================&quot;</span>, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>With the logistic derivative functions, <code>fu_logistic</code> and <code>fuu_logistic</code>, the <code>irls</code> function and its corresponding <code>print</code> function all now defined, we can generate some data, and fit the model and compare it to R’s canned <code>glm</code> function.</p>
 <p>Before generating the data, I set the seed for reproducibility. Next, I generate some binary outcome data. Specifically, the data on <code>X</code> are drawn from a multivariate normal distribution (<code>Sigma</code> below) via singular value decomposition (if you are unfamiliar with this approach to simulating from a multivariate normal, you’ll want to check out my other post on the topic, <a href="mvnorm.html">here</a>). The data in <code>X</code> are then used to obtain <code>mu</code>, which is fed through the logistic c.d.f. (<code>plogis</code>) to obtain probabilities. These probabilities, <code>pi</code> below, are input to a Bernoulli distribution (i.e., a binomial with one draw, <code>rbinom</code> below), to obtain the binary outcome variable, <code>y</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">81360</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="co">#### simulate some binary outcome data drawing covariates X from multivariate normal</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a><span class="co">#### via singular value decomposition.</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>n =<span class="st"> </span><span class="dv">1000</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>Sigma =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">0</span>, <span class="fl">1.5</span>, <span class="fl">1.5</span>, <span class="dv">0</span>), <span class="dt">nrow =</span> <span class="dv">2</span>, <span class="dt">byrow =</span> T)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a><span class="kw">diag</span>(Sigma) =<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">1</span>)</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>svd_cov =<span class="st"> </span><span class="kw">svd</span>(Sigma)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>U =<span class="st"> </span>svd_cov<span class="op">$</span>u</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>D =<span class="st"> </span>svd_cov<span class="op">$</span>d</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>V =<span class="st"> </span>svd_cov<span class="op">$</span>v</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a>sqrt_Sigma =<span class="st"> </span>U <span class="op">%*%</span><span class="st"> </span><span class="kw">sqrt</span>(<span class="kw">diag</span>(D)) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(U)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a>X =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n <span class="op">*</span><span class="st"> </span><span class="dv">2</span>), <span class="dt">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>X =<span class="st"> </span>X <span class="op">%*%</span><span class="st"> </span>sqrt_Sigma</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>X =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</span>, X)</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a><span class="kw">colnames</span>(X) =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;intercept&quot;</span>, <span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>B =<span class="st"> </span><span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">-3</span>, <span class="dv">3</span>)</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true"></a>mu =<span class="st"> </span>X <span class="op">%*%</span><span class="st"> </span>B</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true"></a>pi =<span class="st"> </span><span class="kw">plogis</span>(mu)</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true"></a>y =<span class="st"> </span><span class="kw">rbinom</span>(n, <span class="dv">1</span>, pi)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">81360</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="do">#### simulate some binary outcome data drawing covariates X from multivariate normal</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="do">#### via singular value decomposition.</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="dv">1000</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>Sigma <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">1.5</span>, <span class="fl">1.5</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> T)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">diag</span>(Sigma) <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>svd_cov <span class="ot">=</span> <span class="fu">svd</span>(Sigma)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>U <span class="ot">=</span> svd_cov<span class="sc">$</span>u</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>D <span class="ot">=</span> svd_cov<span class="sc">$</span>d</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>V <span class="ot">=</span> svd_cov<span class="sc">$</span>v</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>sqrt_Sigma <span class="ot">=</span> U <span class="sc">%*%</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(D)) <span class="sc">%*%</span> <span class="fu">t</span>(U)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>X <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n <span class="sc">*</span> <span class="dv">2</span>), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>X <span class="ot">=</span> X <span class="sc">%*%</span> sqrt_Sigma</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>X <span class="ot">=</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(X) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;intercept&quot;</span>, <span class="st">&quot;X1&quot;</span>, <span class="st">&quot;X2&quot;</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>B <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> X <span class="sc">%*%</span> B</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>pi <span class="ot">=</span> <span class="fu">plogis</span>(mu)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>y <span class="ot">=</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, pi)</span></code></pre></div>
 <p>And finally, estimating the model using both the custom <code>irls</code> function, and the canned <code>glm</code> function below shows that indeed our function is identical up to rounding error:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="kw">list</span>(<span class="kw">irls</span>(fu_logistic, fuu_logistic, X, y, <span class="dt">itmax =</span> <span class="dv">50</span>, <span class="dt">method =</span> <span class="st">&quot;logistic&quot;</span>), <span class="kw">summary</span>(<span class="kw">glm</span>(y <span class="op">~</span><span class="st"> </span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="st">    </span>X <span class="op">+</span><span class="st"> </span><span class="dv">0</span>, <span class="dt">family =</span> <span class="st">&quot;binomial&quot;</span>)))</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(<span class="fu">irls</span>(fu_logistic, fuu_logistic, X, y, <span class="at">itmax =</span> <span class="dv">50</span>, <span class="at">method =</span> <span class="st">&quot;logistic&quot;</span>), <span class="fu">summary</span>(<span class="fu">glm</span>(y <span class="sc">~</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    X <span class="sc">+</span> <span class="dv">0</span>, <span class="at">family =</span> <span class="st">&quot;binomial&quot;</span>)))</span></code></pre></div>
 <pre class="bg-success"><code>## [[1]]
 ##  
 ## Custom IRLS Function 
@@ -986,26 +1019,26 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <h2>Programming in R</h2>
 <hr />
 <p>Now that we have the general <code>irls</code> function defined (see section on logistic regression programming in R), all we have to do in order to estimate the Poisson parameters is define the derivative functions that have just been derived, and then generate some data from a Poisson distribution (using the same covariates as were used in the section on logistic regression).</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>y =<span class="st"> </span><span class="kw">rpois</span>(n, <span class="kw">exp</span>(mu))</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a>fu_poisson =<span class="st"> </span><span class="cf">function</span>(y, X, b) {</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a>    lambda =<span class="st"> </span><span class="kw">exp</span>(X <span class="op">%*%</span><span class="st"> </span>b)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a>    </span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a>    <span class="kw">as.vector</span>(y <span class="op">-</span><span class="st"> </span>lambda)</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a>    </span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a>}</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true"></a>fuu_poisson =<span class="st"> </span><span class="cf">function</span>(y, X, b) {</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true"></a>    lambda =<span class="st"> </span><span class="kw">exp</span>(X <span class="op">%*%</span><span class="st"> </span>b)</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true"></a>    </span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true"></a>    <span class="kw">as.vector</span>(<span class="op">-</span>lambda)</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true"></a>}</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true"></a></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true"></a><span class="co"># Generate data</span></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true"></a>lambda =<span class="st"> </span><span class="kw">exp</span>(mu)</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true"></a>y =<span class="st"> </span><span class="kw">rpois</span>(n, lambda)</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true"></a></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true"></a><span class="kw">irls</span>(fu_poisson, fuu_poisson, X, y, <span class="dt">method =</span> <span class="st">&quot;poisson&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">=</span> <span class="fu">rpois</span>(n, <span class="fu">exp</span>(mu))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>fu_poisson <span class="ot">=</span> <span class="cf">function</span>(y, X, b) {</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    lambda <span class="ot">=</span> <span class="fu">exp</span>(X <span class="sc">%*%</span> b)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.vector</span>(y <span class="sc">-</span> lambda)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>fuu_poisson <span class="ot">=</span> <span class="cf">function</span>(y, X, b) {</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    lambda <span class="ot">=</span> <span class="fu">exp</span>(X <span class="sc">%*%</span> b)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.vector</span>(<span class="sc">-</span>lambda)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate data</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">=</span> <span class="fu">exp</span>(mu)</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>y <span class="ot">=</span> <span class="fu">rpois</span>(n, lambda)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="fu">irls</span>(fu_poisson, fuu_poisson, X, y, <span class="at">method =</span> <span class="st">&quot;poisson&quot;</span>)</span></code></pre></div>
 <pre><code>## Iterating...10</code></pre>
 <pre class="bg-success"><code>##  
 ## Custom IRLS Function 
@@ -1020,7 +1053,7 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## ===============================================================</code></pre>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="kw">summary</span>(<span class="kw">glm</span>(y <span class="op">~</span><span class="st"> </span>X <span class="op">+</span><span class="st"> </span><span class="dv">0</span>, <span class="dt">family =</span> <span class="st">&quot;poisson&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">glm</span>(y <span class="sc">~</span> X <span class="sc">+</span> <span class="dv">0</span>, <span class="at">family =</span> <span class="st">&quot;poisson&quot;</span>))</span></code></pre></div>
 <pre class="bg-success"><code>## 
 ## Call:
 ## glm(formula = y ~ X + 0, family = &quot;poisson&quot;)
@@ -1052,24 +1085,24 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 <div id="references-and-footnotes" class="section level1">
 <h1>References and Footnotes</h1>
 <hr />
-<div id="refs" class="references hanging-indent">
-<div id="ref-ESL">
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-ESL" class="csl-entry">
 <p>Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. 2009. <em>The Elements of Statistical Learning</em>. Springer series in statistics New York.</p>
 </div>
-<div id="ref-hilbe2011negative">
+<div id="ref-hilbe2011negative" class="csl-entry">
 <p>Hilbe, Joseph M. 2011. <em>Negative Binomial Regression</em>. Cambridge University Press.</p>
 </div>
-<div id="ref-jorgensen2006iteratively">
-<p>Jorgensen, Murray. 2006. “Iteratively Reweighted Least Squares.” <em>Encyclopedia of Environmetrics</em> 3.</p>
+<div id="ref-jorgensen2006iteratively" class="csl-entry">
+<p>Jorgensen, Murray. 2006. <span>“Iteratively Reweighted Least Squares.”</span> <em>Encyclopedia of Environmetrics</em> 3.</p>
 </div>
-<div id="ref-long1997">
-<p>Long, J Scott. 1997. “Regression Models for Categorical and Limited Dependent Variables.” <em>Advanced Quantitative Techniques in the Social Sciences</em> 7.</p>
+<div id="ref-long1997" class="csl-entry">
+<p>Long, J Scott. 1997. <span>“Regression Models for Categorical and Limited Dependent Variables.”</span> <em>Advanced Quantitative Techniques in the Social Sciences</em> 7.</p>
 </div>
-<div id="ref-nelder1972generalized">
-<p>Nelder, John Ashworth, and Robert WM Wedderburn. 1972. “Generalized Linear Models.” <em>Journal of the Royal Statistical Society: Series A (General)</em> 135 (3): 370–84.</p>
+<div id="ref-nelder1972generalized" class="csl-entry">
+<p>Nelder, John Ashworth, and Robert WM Wedderburn. 1972. <span>“Generalized Linear Models.”</span> <em>Journal of the Royal Statistical Society: Series A (General)</em> 135 (3): 370–84.</p>
 </div>
-<div id="ref-stirling1984iteratively">
-<p>Stirling, W Douglas. 1984. “Iteratively Reweighted Least Squares for Models with a Linear Part.” <em>Journal of the Royal Statistical Society: Series C (Applied Statistics)</em> 33 (1): 7–17.</p>
+<div id="ref-stirling1984iteratively" class="csl-entry">
+<p>Stirling, W Douglas. 1984. <span>“Iteratively Reweighted Least Squares for Models with a Linear Part.”</span> <em>Journal of the Royal Statistical Society: Series C (Applied Statistics)</em> 33 (1): 7–17.</p>
 </div>
 </div>
 </div>
@@ -1094,7 +1127,7 @@ x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 
 // add bootstrap table styles to pandoc tables
 function bootstrapStylePandocTables() {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
 }
 $(document).ready(function () {
   bootstrapStylePandocTables();

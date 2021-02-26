@@ -5,12 +5,9 @@ pagetitle: John Niehaus
 <img src="images/headshot_tamu.jpg" style="width:30%; border:10px solid; margin-right: 40px; margin-top: 20px" align="left">
 
 
-I am currently a Master's student in the Department of Statistics at Texas A\&M University. I received my M.A. in Political Science from Texas A\&M University in 2020, and my B.A. in both political science and psychology from the University of Missouri in 2014. During my time in political science, I co-authored peer-reviewed articles on both human rights and political methodology, as well as assisted with teaching graduate-level time series analysis. Methodologically, I am interested in time series analysis and machine learning, and applying both to the prediction of state violence. 
+I am currently a Master's student in the Department of Statistics at Texas A\&M University. I received my M.A. in political science from Texas A\&M University in 2020, and my B.A. in both political science and psychology from the University of Missouri in 2014. On this site you will find a set of posts on various topics which I wanted to learn, as I find that I learn best when trying to explain things. However, please note that all topics have been published on extensively, with appropriate citations included for all content. 
 
-On this site you will find a set of posts on various topics which I wanted to learn (or had to, for one reason or another). I find that I learn best when I try to explain things to myself and others, and have therefore created an assortment of materials here. However, please note that none of the work is original in the sense that it has all been published on extensively. As such, appropriate citations are included for all content. 
-
-For my CV, please see the link above. For all code on this website and more, please visit my github page, also linked above. To contact me via email, please run the following code in R. For those unfamiliar with R, please copy and paste the code into [this](https://rdrr.io/snippets/) site, and press run.
-
+For my CV, or to visit my GitHub page, see the links above. To contact me via email please run the following code in R, or for those unfamiliar with R, please copy and paste the code into [this](https://rdrr.io/snippets/) site and press run.
 
 ```{r klippy, echo=FALSE, include=TRUE}
 klippy::klippy(position = c('top', 'right'),
@@ -20,6 +17,8 @@ klippy::klippy(position = c('top', 'right'),
 ```
 
 ```{r, echo=T, eval=F, results='hide', class.source="klippy"}
-paste(c(rev(c(paste(sort(c(5,2,7,2)),collapse= ""),paste0(sort(c("us","e","ha")),collapse=""),
-"jni")),"@gmail.com",sub("@yahoo.com","", ""),sub("@outlook.com","","")),collapse="")
+paste(c(rev(c(paste(sort(c(5,2,7,2)),collapse= ""),
+              paste0(sort(c("us","e","ha")),collapse=""),
+              "jni")),"@gmail.com",sub("@yahoo.com","", ""),
+        sub("@outlook.com","","")),collapse="")
 ```
