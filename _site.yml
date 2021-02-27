@@ -25,7 +25,7 @@ navbar:
         - text: "Omitted Variables Bias in Probit Models"
         - text: "Building this Website"
   right:
-    - icon: fa-github fa-lg
+    - icon: fab fa-github
       text: "Github"
       href: http://github.com/jmniehaus
 output: 
