@@ -47,6 +47,8 @@ MathJax.Hub.Config({
 knitr::opts_chunk$set(class.output="bg-success",
                       class.source = "fold-show",
                       tidy=T)
+RhpcBLASctl::omp_set_num_threads(1)
+RhpcBLASctl::blas_set_num_threads(1)
 
 ```
 
@@ -166,7 +168,7 @@ newt.plot = function(x0, fn, fprime, from, to,
   #labloc = vertical offset for labels
   labseq = 0:(length(y) - 1)
   cols <- if(is.null(col)) labseq + 2 else cols = col
-  labs = as.expression( sapply(labseq, function(x) bquote("x"[.(x)])))
+  labs = sapply(labseq, function(x) as.expression(bquote("x"[.(x)])))
   labloc = ifelse(y<0, .25, -.25)
   
   if(nlines > length(y)){
@@ -520,7 +522,7 @@ To get started with programming the IRLS algorithm for logistic regressin, I fir
 ```{r,echo=T, eval=T}
 fu_logistic = function(y, X, b){
   pi = plogis(X%*%b)
-  y - pi
+  as.vector(y - pi)
   
   }
 

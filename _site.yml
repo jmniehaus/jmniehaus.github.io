@@ -6,7 +6,7 @@ navbar:
     - text: "Home"
       href: index.html
     - text: "CV"
-      href: "./files/niehaus_cv_S2021_online.pdf"
+      href: "./files/niehaus_cv_2022_online.pdf"
       class: "download"
     - text: "Programming & Derivations"
       menu:
