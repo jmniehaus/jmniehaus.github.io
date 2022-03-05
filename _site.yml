@@ -14,12 +14,12 @@ navbar:
           href: irls.html
         - text: "Multivariate Normal Draws"
           href: mvnorm.html
+        - text: "An In-depth Guide to Monte Carlos in R, with Examples"
+          href: montes.html
         - text: "COMING SOON:"
-        - text: "Monte Carlos, the Right Way (in R)"
-        - text: "Programming Zero Inflated Count Models in R"
+        - text: "Numerical Maximum Likelihood Estimation in R, with Examples"
         - text: "Copulas and Copula Regression"
         - text: "Bias of MLE for Gamma Rate Parameter" 
-        - text: "Programming a Heckman Model in R"
         - text: "Derivation of Negative Binomial Regression"
         - text: "Spurious Regression Problem in Time Series"
         - text: "Omitted Variables Bias in Probit Models"
@@ -31,7 +31,7 @@ navbar:
 output: 
   html_document:
     theme: yeti
-    highlight: zenburn
+    highlight: pygments
     css: "styles.css"
 
 
