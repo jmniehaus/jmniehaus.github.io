@@ -479,7 +479,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Monte Carlo Analysis in R: An in Depth Guide, with Examples</h1>
-<h4 class="date">Updated: 05 Mar, 2022</h4>
+<h4 class="date">Updated: 06 Mar, 2022</h4>
 
 </div>
 
@@ -669,36 +669,37 @@ div.tocify {
 <li><p>Set the seed within your simulation code using <code>set.seed()</code>, but index your inner seeds using the iteration number for the simulation.</p></li>
 </ol>
 <p>For example:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span> </span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>inner_seeds <span class="ot">=</span> <span class="fu">sample</span>(</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">999999</span>, </span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">size =</span> ncores</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, </span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> {</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, </span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> {</span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])</span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>inner_seeds <span class="ot">=</span> <span class="fu">sample</span>(</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">999999</span>, </span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">size =</span> nsims</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> {</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> {</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
 <p>Now this is of course a bit hacky, but this approach does have practical utility. Namely, if you ever need nested parallel loops (using the <code>%:%</code> nesting operator detailed in the <code>foreach</code> documentation), then unfortunately the <code>%dorng%</code> backend is not supported. In this case, the only way I have found to successfully reproduce simulations is the above, core-level seed-setting approach. To be clear, this isn’t setting the same exact seed on all cores. We made a vector of seeds, <code>inner_seeds</code>, and each simulation uses a seed from this vector before executing its instructions. You can think of this as setting a different seed across a bunch of different R sessions, and then combining the results; however, the universe of inner seeds remains the same, and therefore so does the results set.</p>
 <p><br />
 <br />
@@ -746,28 +747,31 @@ div.tocify {
 </ol>
 <div class="sourceCode" id="cb18"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in parent process </span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span> </span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in child processes </span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>,</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">.packages =</span> <span class="st">&quot;RhpcBLASctl&quot;</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%dorng%</span> {</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">library</span>(RhpcBLASctl)</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)   </span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>          }</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span> </span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in child processes </span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims,</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>          <span class="at">.packages =</span> <span class="st">&quot;RhpcBLASctl&quot;</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%dorng%</span> {</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">library</span>(RhpcBLASctl)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)   </span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
 <p><br></p>
 <ol start="2" style="list-style-type: decimal">
 <li>To disable packaged multithreading, you’ll just have to read the documentation for that package to determine how to set the max number of threads to 1. For example, browsing the documentation for <code>data.table</code> immediately tells us that the <code>setDTthreads()</code> function does what we want.</li>
@@ -784,33 +788,238 @@ div.tocify {
 <li><p>It is possible that some combination of matrix or package multithreading along with parallel simulations is “optimal,” in the sense that its faster. For example, if you have 16 threads you could assign 5 threads to <code>foreach</code>, and then have each of those processes use 2 threads for matrix operations. You’d then have 15 threads in use, plus one for R-studio or other tasks on reserve. Perhaps this would be faster overall than single-threaded matrix operations on 15 simulation processes. I haven’t done any testing for this, so I have no idea whether or when this would be better. At the extreme, it could in theory be better to use a single threaded simulation (i.e., serial simulations), while using all cores for matrix operations. I imagine that is an edge case, but again I cannot rule it out as I have not investigated this extensively. In any case, I’m lazy, so I just disable multithreading on all packages and matrix operations, and give all my threads to <code>foreach</code>.</p></li>
 </ol>
 </div>
+</div>
+<div id="parameter-grids" class="section level1">
+<h1>Parameter Grids</h1>
+<hr />
+<p>Now that we’re working in parallel without suffering thread competition and can consistently reproduce our results, the next step is to create a grid of parameters for our simulations, i.e., the points in the parameter space at which we’ll investigate the behavior of our chosen procedure. These will of course be specific to the specific case of simulations under study, but its worth showing a general way to go about creating this grid.</p>
+<p>As a contrived toy example, suppose our task involves normal random variables with different means and variances. Specifically, we are interested in <span class="math inline">\(X \sim \mathcal{N}\left(\mu \in \{0, -1, 1, -3, 5\}, \,\,\sigma^2 \in \{1, 1.5, 3\}\right)\)</span>; that is, we’ll vary the mean and variance of some random variable <span class="math inline">\(X\)</span>. Right now its not important <em>why</em> we’re doing this or what <span class="math inline">\(X\)</span> will be used for, only that we want random variables with every pairwise combination of these parameter values.</p>
+<p>To do so, we create vectors of these parameters, and then use <code>expand.grid()</code> to get the pairwise combinations:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">5</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">3</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>grid</span></code></pre></div>
+<pre class="bg-success"><code>##    mu sig2
+## 1   0  1.0
+## 2  -1  1.0
+## 3   1  1.0
+## 4  -3  1.0
+## 5   5  1.0
+## 6   0  1.5
+## 7  -1  1.5
+## 8   1  1.5
+## 9  -3  1.5
+## 10  5  1.5
+## 11  0  3.0
+## 12 -1  3.0
+## 13  1  3.0
+## 14 -3  3.0
+## 15  5  3.0</code></pre>
+<p>So now we have the parameters we need for our simulations in a nice tabular format, which we can then loop over when creating data from our chosen data generating process. For example:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable thread competition</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Make grid</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">5</span>)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">3</span>)</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2)</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Make backend</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed and use dorng</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid),</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">.packages =</span> <span class="st">&quot;RhpcBLASctl&quot;</span>,</span>
+<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">.combine =</span> c</span>
+<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dorng%</span> {</span>
+<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-28"><a href="#cb21-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">library</span>(RhpcBLASctl)</span>
+<span id="cb21-29"><a href="#cb21-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)   </span>
+<span id="cb21-31"><a href="#cb21-31" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb21-32"><a href="#cb21-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>( <span class="at">n =</span> <span class="dv">1</span>,</span>
+<span id="cb21-33"><a href="#cb21-33" aria-hidden="true" tabindex="-1"></a>           <span class="at">mean =</span> grid[i, <span class="st">&quot;mu&quot;</span>],</span>
+<span id="cb21-34"><a href="#cb21-34" aria-hidden="true" tabindex="-1"></a>           <span class="at">sd =</span> <span class="fu">sqrt</span>(grid[i, <span class="st">&quot;sig2&quot;</span>])</span>
+<span id="cb21-35"><a href="#cb21-35" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb21-36"><a href="#cb21-36" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb21-37"><a href="#cb21-37" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-38"><a href="#cb21-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb21-39"><a href="#cb21-39" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
+<span id="cb21-40"><a href="#cb21-40" aria-hidden="true" tabindex="-1"></a><span class="fu">attributes</span>(out) <span class="ot">=</span> <span class="cn">NULL</span> <span class="co"># makes print look cleaner, removes rngstream attr</span></span>
+<span id="cb21-41"><a href="#cb21-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-42"><a href="#cb21-42" aria-hidden="true" tabindex="-1"></a>out</span></code></pre></div>
+<pre class="bg-success"><code>##  [1]  0.42548166 -1.88176843  0.55516510 -4.77732677  7.70754792  0.65949285
+##  [7] -1.31426853  1.20052407 -2.54077338  3.39156002  1.65080162  0.02448804
+## [13] -0.92256967 -3.60752146  3.62754872</code></pre>
+<p>All we’ve done here is create the grid as seen earlier, loop over each row indexed by <code>i</code>, and simulated one draw from the specified parameterization of the normal distribution from <code>grid</code>. In this way we’ve ensured that we simulate data from each of the desired parameterizations, all without having to manually specify the parameters, and without having to do any sort of nested looping, e.g. <code>for(i in mu){ for j in sig2 {...}}</code>. This is akin to a grid-search in optimization, although here we’re not searching for an optimal set of parameters, we’re investigating the behavior of some procedure at pre-defined grid points in the parameter space.</p>
+<p>Of course, <em>we’ve only done one simulation</em> here. That is, at each set of parameter values, we have one iteration. But in Monte Carlo analysis, we want some large number of simulations in order to see how things are behaving, so we’ll need to replicate this grid. Suppose we want 2 simulations instead of 1, then we can use <code>do.call()</code>, <code>cbind.data.frame</code>, and <code>replicate()</code> together to get a grid with each grid point appearing twice, so that we’ll have two simulations at that point instead of one:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">2</span> </span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">5</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">3</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>grid_multi <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, <span class="fu">replicate</span>(nsims, grid, <span class="at">simplify=</span>F))</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>grid_multi</span></code></pre></div>
+<pre class="bg-success"><code>##    mu sig2
+## 1   0  1.0
+## 2  -1  1.0
+## 3   1  1.0
+## 4  -3  1.0
+## 5   5  1.0
+## 6   0  1.5
+## 7  -1  1.5
+## 8   1  1.5
+## 9  -3  1.5
+## 10  5  1.5
+## 11  0  3.0
+## 12 -1  3.0
+## 13  1  3.0
+## 14 -3  3.0
+## 15  5  3.0
+## 16  0  1.0
+## 17 -1  1.0
+## 18  1  1.0
+## 19 -3  1.0
+## 20  5  1.0
+## 21  0  1.5
+## 22 -1  1.5
+## 23  1  1.5
+## 24 -3  1.5
+## 25  5  1.5
+## 26  0  3.0
+## 27 -1  3.0
+## 28  1  3.0
+## 29 -3  3.0
+## 30  5  3.0</code></pre>
+<p>And we can now see that each grid point appears twice, so if we were to loop over this in the same as as we did previously, we produce results for each parameter combination twice. Inductively then, we know that for arbitrary values of <code>nsims</code>, we’ll get <code>nsims</code>-many results for each parameter combination, which is precisely what we want in Monte Carlo analysis.</p>
+<p>Briefly explaining the above code, <code>replicate()</code> is replicating the <code>grid</code> dataframe <code>nsims</code>-many times, and storing these replicates in a list. Then, <code>do.call</code> calls the <code>rbind.data.frame</code> function with each element of the replicated list as its arguments. Mathematically, <code>do.call</code> is effectively executing <span class="math inline">\(f(x_1, x_2, ..., x_{nsims})\)</span> where <span class="math inline">\(f()\)</span> is <code>rbind.data.frame</code>, and each <code>x_j</code> is an element of a list. In this case, the list-elements are all the original, single-simulation <code>grid</code> object.</p>
+<div id="why-not-use-a-nested-loop" class="section level3">
+<h3>Why not use a nested loop?</h3>
+<p>One potential question is why not use a nested loop instead of replicating each grid point <code>nsims</code>-many times. That is, we could just repeatedly loop over the original <code>grid</code> object, rather than replicating it several times, like so:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># BACKEND ETC OMITTED FOR CLARITY</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Make grid WITHOUT REPLICATING </span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">5</span>)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">3</span>)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="co"># make number of simulations a variable for looping</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">100</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid), </span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">.packages =</span> <span class="st">&quot;RhpcBLASctl&quot;</span>,</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">.combine =</span> c</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dorng%</span> {</span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># create an inner, nested loop that repeatedly simulates from a gridpoint</span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># instead of replicating the gridpoint and looping over the replicates</span></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="fu">seq_len</span>(nsims)){</span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a>      res[j] <span class="ot">=</span> <span class="fu">rnorm</span>( <span class="at">n =</span> <span class="dv">1</span>,</span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">mean =</span> grid[i, <span class="st">&quot;mu&quot;</span>],</span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a>                      <span class="at">sd =</span> <span class="fu">sqrt</span>(grid[i, <span class="st">&quot;sig2&quot;</span>])</span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a>              )</span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>The key difference here is that we create a single set of grid points without duplication, and then create an inner loop (<code>for(j in seq_len(nsims))</code>) that repeatedly uses these grid points <code>nsims</code>-many times. An obvious advantage of the nested-loop approach is that it conserves memory; the grid is not replicated, so each core only stores a copy of the original, single-simulation grid. The memory gains are somewhat trival though due to how R stores lists in memory, but that is a technical aside that I won’t delve into now (see <a href="https://adv-r.hadley.nz/vectors-chap.html#lists">this page</a> for more info).</p>
+<p>However, the major disadvantage of the nested-loop approach is load balancing. In most real-world applications we will be varying the sample size of our procedure; i.e., we’ll estimate some model at small and large sample sizes. Those sample sizes will then appear in our grid because they are a hyper-parameter after all, which then induces severe heterogeneity in computation time for each CPU. For example:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Omit backend, etc for clarity</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">100</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>, <span class="sc">-</span><span class="dv">3</span>, <span class="dv">5</span>)</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">3</span>)</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">100</span>, <span class="dv">1000</span>, <span class="dv">10000</span>)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Add sample size to grid</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid), </span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">.packages =</span> <span class="st">&quot;RhpcBLASctl&quot;</span>,</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">.combine =</span> c</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dorng%</span> {</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="fu">seq_len</span>(nsims)){</span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>          <span class="co"># No longer hard-coding sample size, we index it</span></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>          res[j] <span class="ot">=</span> <span class="fu">rnorm</span>( <span class="at">n =</span> grid[i, <span class="st">&quot;n&quot;</span>], </span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>                          <span class="at">mean =</span> grid[i, <span class="st">&quot;mu&quot;</span>],</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>                          <span class="at">sd =</span> <span class="fu">sqrt</span>(grid[i, <span class="st">&quot;sig2&quot;</span>])</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>              )</span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div>
+<p>So now we are not hard-coding the sample size, <code>n</code>, but we are varying it. In doing so, the nested-loop approach becomes problematic for load balancing purposes, because the CPUs that have the small sample sizes will take way less time to complete their inner, nested loop (recall, the set of instructions on the right-hand side of <code>%dopar%</code> are executed on a single CPU). Eventually then, the CPUs with the large sample sizes will still be running their nested, inner-loops while the CPUs that had the smaller sample sizes have completed their tasks and are <em>sitting idle</em> doing nothing. That all in mind, for the specific toy examples here it turns out that the nested approach is faster than the replicating approach due to parallel processing overhead being greater than the time it takes to complete a task (see <a href="https://en.wikipedia.org/wiki/Parallel_slowdown">here</a> for more on this). However, for more interesting cases, this will generally not be true.</p>
+</div>
+<div id="caveats-1" class="section level3">
+<h3>Caveats</h3>
+<p>In most cases, the replicated-grid approach will be better, often times by several hours when compared with the parallel-outer, serial-inner approach. However, there are at least two instances where this won’t hold, one of which was alluded to in the previous paragraph.</p>
+<ol style="list-style-type: decimal">
+<li>If the run-time of a single simulation is small, e.g., &lt; 1 second, it is possible that the overhead from parallelizing at the simulation level–rather than the grid-point level–will exceed the gains from parallelizing. This is known as parallel slow down. Its possible to mitigate this by using prescheduling, but even this won’t always fix the issue if single simulations take a very small amount of time. Prescheduling splits the total number of tasks into chunks (at random) and assigns these tasks to each CPU. So if you allocate 10 CPUs, and there are 100 tasks, the computer will randomly select 10 tasks to assign to each CPU. Without prescheduling, when a CPU finishes a task, it will communicate with the other CPUs in the network or the parent process and determine what tasks still need doing, and then it does one of the ones that remains. So, by prescheduling we reduce some of this communication overhead. There are advantages and disadvantages to prescheduling that I won’t go into here, but a general rule is if your tasks are numerous and require little time individually, use prescheduling, otherwise don’t. To enable presheduling in <code>foreach</code>, do the following:</li>
+</ol>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule =</span> <span class="cn">TRUE</span>)) <span class="sc">%dorng%</span> {</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>          ...</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>        }</span></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li>If you are doing some form of Markov Chain Monte Carlo (MCMC), rather than traditional Monte Carlo analysis, the nested loop approach will generally become <strong><em>necessary</em></strong>. For things like the Metropolis-Hastings algorithm and its derivatives (e.g., Metropolis, Gibbs), we are typically sampling from a full-conditional distribution that depends on some previous iteration. So parallelization here would occur at the chain-level, and within each chain we would have serial loops to sample from the full conditionals. The gridding approach would also not make as much sense anyway, as the proposal parameters are not fixed ex-ante aside from the starting values.</li>
+</ol>
+</div>
+</div>
+<div id="using-functions-properly" class="section level1">
+<h1>Using Functions Properly</h1>
+<hr />
+<p>At this point we’ve properly set up our environment, and are ready to start with the actual simulations. To recap, we are using <code>foreach</code> combined with <code>%dopar%</code> or <code>%dorng%</code> for parallelism, we’ve ensured reproducability, we have handled thread competition with other parallel processes, and now we have a grid of parameter values at which to investigate the behavior of some procedure, with each grid value appearing once for each simulation iteration. Now we can make some functions that will automate the simulation and transformation of our data.</p>
+<p>R is an object oriented, functional programming language. We should leverage both of these facts to make our simulations easier to understand, implement, and debug. At a minimum, this will consist of having two functions: a simulation function that creates the data to be further analyzed, and an estimation/analysis function that estimates the model(s) that we want, and tidies the results for us. We could optionally further separate the last function into two functions, one for estimation and the other for tidying, rather than combining these steps.</p>
+<div id="simulation-function" class="section level3">
+<h3>Simulation Function</h3>
+</div>
 <div id="wrong-way-3-nested-loops" class="section level3">
 <h3>Wrong Way 3: Nested Loops</h3>
 <p>Often times you may have multiple parameter vectors to consider in your simulations–say, <span class="math inline">\(v_1, v_2, v_3\)</span>. Then, some pseudo-code for your sims would nest loops over these parameter vectors, looking something like:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> v1){</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> v2){</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(k <span class="cf">in</span> v3){</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>      SIMULATE</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> v1){</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> v2){</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(k <span class="cf">in</span> v3){</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>      SIMULATE</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>This is a sub-optimal approach for a few reasons. First, the code is being run serially, at least in this example. Second, assuming you’ve managed to write nested, parallel loops, the usual methods for overcoming the seed-setting issue from point 2 are not currently supported for nested parallel loops. Thus, we run into reproducability problems again. Lastly, nested loops are generally less readable, and I assume we want easily interpretable code. Thus, I advocate a different approach here, although I will also include a bit on how to overcome the reproducibility issue for nested parallel loops, for those of you who require them for some reason.</p>
 </div>
 <div id="wrong-way-4-replacing-matrixdataframe-elements" class="section level3">
 <h3>Wrong Way 4: Replacing Matrix/Dataframe Elements</h3>
 <p>One of the more common approaches to simulations may be to create a dataframe or matrix with specified dimensions, and replace the elements of it with simulation results, like so:</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>params <span class="ot">=</span> VECTOR OF SIM PARAMS</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>results <span class="ot">=</span> <span class="co">#</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">NA</span>,</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> nsims,</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncol =</span> <span class="fu">length</span>(params)</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(j <span class="cf">in</span> params and i <span class="cf">in</span> nsims){</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  results[i,j] <span class="ot">=</span> SIMULATION OUTPUT</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>params <span class="ot">=</span> VECTOR OF SIM PARAMS</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>results <span class="ot">=</span> <span class="co">#</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    <span class="cn">NA</span>,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> nsims,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncol =</span> <span class="fu">length</span>(params)</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(j <span class="cf">in</span> params and i <span class="cf">in</span> nsims){</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  results[i,j] <span class="ot">=</span> SIMULATION OUTPUT</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>The issue with this approach is that it is extremely memory inefficient due to <a href="https://adv-r.hadley.nz/names-values.html#copy-on-modify">R’s copy-on-modify behaviors</a> (see <a href="http://adv-r.had.co.nz/memory.html#modification">this</a> earlier, too). Although it is more efficient for dataframes than for matrices, the more efficient method is to store everything in a list, and then bind up the results later.</p>
 </div>
 <div id="wrong-way-5-using-windows" class="section level3">
