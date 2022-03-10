@@ -48,73 +48,97 @@ After quite a few iterations of writing Monte Carlo simulations, I've decided to
 
 First, I will walk through some of the details, with toy examples to drive points home where applicable. Finally, I will take all of this and put it together in a more serious application where we explore the bias of logistic regression in small samples, as well as a penalized likelihood approach to solving this bias. 
 
+*This guide will applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. It should also be noted that this guide won't be useful for most extremely simple Monte Carlo problems, as parallelism can actually slow those types of tasks down.*
+
 # Serial vs Parallel
 ***
 
-If you're working in R, then implementing parallel simulations is somewhat trivial to do. As such, if you are not using parallel processing to get your sims done faster, there are obvious efficiency gains to be had. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. *Note, however, that I assume your simulations are trivially parallelizable*, meaning that each simulation is completely independent of the others. If this is not true, then this walk-through is not necessarily going to apply to your case.
+If you're working in R, then the first step to better Monte Carlo analysis is implementing parallel simulations. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
 
 For going parallel, there are essentially two options:
 
 1. Using `foreach` loops, which are similar, yet distinct from the typical `for` loop
 
-2. Using the `apply` family of functions' `mclapply` or `parLapply` from the `parallel` package, which is installed by default in R.
+2. Using the parallelized `apply` family of functions, e.g., `parLapply`, `parApply`, and friends.
 
 I've used both approaches extensively (in the past I only used the `apply` approach), and strongly prefer the `foreach` approach at this point for a few reasons:
 
   a. It tends to be more intuitive as its similar to `for` loops in appearance
+  
   b. Tends to be easier to debug (in my opinion)
+  
   c. Doesn't require nested function calls for complicated simulations
+  
   d. Permits nested parallel looping
   
-For these reasons, I won't be covering the `apply` family of functions here. I won't go into the details on my reasoning for the sake of space and attention, but there are plenty of guides elsewhere on those functions.
+For these reasons, I won't be covering the `apply` family of functions here. I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`.
 
+\
 
 ### Differences between `foreach` and `for`
+***
 
-On the surface, the `foreach` package seems to implement a `for`-loop. I say "on the surface" because after every call to foreach you'll see something like `%dopar%`, which is an [infix function](https://adv-r.hadley.nz/functions.html#function-forms), similar to matrix multiplication using `%*%`. Thus, **foreach has a return value because it is a function.** In contrast, an actual `for` loop simply executes a set of instructions repeatedly, with no explicit return value. If this is not intuitive right now, this example may help:
+Since we'll be using `foreach`, its useful to compare and contrast it with a typical `for` loop. Suppose we just wanted to add 1 to each element in a vector, and for some reason we did this using a for loop in R (rather than leveraging vectorization). We might write the following:
 
 ```{r, echo=T, eval=T}
 #for loop
-vec = seq(1, 100)
+vec = seq(1, 5)
 out_for = vector()
 
 for(i in seq_along(vec)) 
   out_for[i] = vec[i] + 1
 
-#====================================================
-#foreach 
-invisible(
-  library(foreach)
-  )
-
-out_foreach = foreach(i = seq_along(vec),
-                      .combine = "c"
-                      ) %do% {
-                        
-    return(vec[i] + 1)
-  }
-
+print(out_for)
 ```
 
-If you aren't familiar with the syntax of `foreach` yet, you'll want to take a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). However, notice that the above two loops (which we would never actually want to run like this, as addition is vectorized in R) differ. The `for` loop is just executing a set of instructions in each iteration, replacing elements of `out_for`. In contrast, the `foreach` function is actually *two functions*:
-  1. The `foreach()` call
-  2. The `%do%` call, which is an infix function
-  
-In other words, the call to `foreach()` creates an object on the left-hand side of the infix function `%do%`, which then also takes in an expression on the right-hand side following the curly brace `{`. This is conceptually similar to matrix multiplication in R, e.g. `X %*% Z` for conformable matrices `X` and `Z`; the arguments to the matrix-multiplication function `%*%` are `X` and `Z`, and to `%do%` they are an object returned by `foreach()`, and an `expression` on the right hand side. If this isn't making a whole lot of sense, I highly recommend reading up on infix functions from the link above, and perhaps looking into [expressions](https://adv-r.hadley.nz/expressions.html). 
+Then, using the `foreach` package, an equivalent loop could be written like so: 
 
-Why does this difference matter? The main reason is that **because `%do%` is a function, it has a return value,** unlike the typical `for` loop which executes a series of instructions on objects but has no return value itself. That is why we have to store the results of the `foreach` loop in an object explicitly, `out_foreach`. Why this difference exists will be explained in the next section.
+```{r, echo=T, eval=T, message=F}
+#foreach 
+library(foreach)
+
+out_foreach = 
+  foreach(i = seq_along(vec),
+          .combine = "c"
+          ) %do% {
+                        
+    return(vec[i] + 1)
+                        
+  }
+
+print(out_foreach)
+```
+
+Despite having a somewhat similar appearance to the `for` loop, `foreach` loops differ in two key ways:
+
+1. They are functions. 
+
+2. Because they are functions, they have a `return` value. 
+
+In fact, `foreach` loops are composed of at least two functions. The first is a bit obvious, its a call to `foreach(...)`. The second is actually the [infix function](https://adv-r.hadley.nz/functions.html#function-forms), `%do%` or `%dopar%`. These functions are similar in concept to the matrix multiplication operator `%*%` in that they take arguments to the function on either side of the operator, and apply some set of instructions using these arguments. Similarly to the matrix multiplication operator, then, `%do%` takes arguments on either side. On the left-hand side is an object returned by the `foreach()` function call, and on the right is an `expression`, which for our purposes is just a bunch of text instructions for our loop. 
+
+The second function call is the call to `foreach()`, which we just learned is on the left-hand side of an infix function call. Thus, its results are an argument to the `%do%` function. You can roughly think of `foreach()` as being the same as the serial case when we call `for(i in something)`: it is creating an object to be iterated over. In reality things are a bit more complicated than that, but the details are not too important here. It is enough to know that `foreach()` is a function, and it returns an object that is in some way useful for iterating and executing a loop in parallel. The results of calling this `foreach(...)` function are then used as the inputs on the left-hand side of `%do%`. 
+
+Finally, on the right-hand side of `%do%` we have an `expression`-class object, which can just be thought of as our loop code. But, because these instructions will be executed on several CPUs simultaneously, we need to send them off to each core first, and _then_ execute the instructions and return their collective results. This is why `foreach` loops are actually function calls, because they have to send off a set of instructions in a unified way to several child processes for execution, keep track of that execution, combine the results, and return them in a sensible way. In contrast, `for` loops are running on a single process, so the instructions can just be executed on that process in real-time. 
+
+If any of this is confusing, the main takeaway is that `foreach` loops are actually functions. Since functions have a `return` value, we stored the results in the `out_foreach` object, and gave the `foreach` loop an explicit `return()` call at the end. This is only a quick introduction to `foreach` though, so I highly recommend taking a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). 
+
+
+
+\
 
 ### Making `foreach` Run in Parallel
+***
 
 Now that you have the basics of how `foreach` and `for` differ, we can move on to making things work in parallel. The above toy example is in fact running serially in both the `foreach` and `for` loops. However, to make the `foreach` loop run in parallel requires trivial alterations:
 
-1. Tell R how many cores to use
+1. Tell R how many cores to use.
 
-2. Register those cores as a parallel backend using the `doParallel` package, which imports `foreach`
+2. Register those cores as a parallel back-end using the `doParallel` package.
 
-3. Change `%do%` to `%dopar%` (though later we'll see that a better alternative is actually `%dorng%`)
+3. Change `%do%` to `%dopar%` (though later we'll see that a better alternative is actually `%dorng%`).
 
-4. Shut down the parallel backend (**this is extremely important for PC longevity**)
+4. Shut down the parallel backend (**this is extremely important for PC longevity**).
 
 ```{r, echo=T, eval=T}
 library(doParallel)
@@ -126,7 +150,7 @@ ncores = parallel::detectCores() - 1
 cl = makeCluster(ncores)
 registerDoParallel(cl)
 
-# 3. dopar 
+# 3. Change `%do%` to `%dopar%` 
 out_foreach = foreach(i = seq_along(vec),
                       .combine = "c"
                       ) %dopar% {
@@ -138,20 +162,15 @@ out_foreach = foreach(i = seq_along(vec),
 stopCluster(cl)
 ```
 
-Now of course this example is contrived, and is only intended to show how to write the instructions. A full example implementing all advice in this page is available at the end. 
 
-Perhaps you can intuit now why `%dopar%` is actually an infix function: the instructions in the `expression` on the right hand side (that is, the loop code) have to be passed to every single core that we are using so that they know what code to execute, *and* the object returned by `foreach(...)` has to be passed as well in order to keep track of iterations etc. This is because each core has its own instance of R running in the background executing a chunk of the simulations, so each of them is passed all the necessary instructions. 
-
-
-\
 \
 
 # Seed Setting and Parallelism
 ***
 
-If you're running simulations, you probably want to be able to reproduce them, either on your own machine at a later date, or on another machine. However, if you've now implemented parallel processing as suggested using `%dopar%`, setting your seed is no longer as straightforward as in the serial case. For example, lets simulate some random variables using both a serial loop and parallel loop, and set the seed before hand. We'd expect that the results are the same, but this turns out to be false.
+If you're running simulations, you probably want to be able to reproduce them, either on your own machine at a later date, or on another machine. However, if you've now implemented parallel processing as suggested using `%dopar%`, **setting your seed is no longer as straightforward as in the serial case**. 
 
-First, serially:
+For example, lets simulate some random variables using both a serial loop and parallel loop, and set the seed before hand. We'd expect that the results are the same, but this turns out to be false. First, serially:
 
 ```{r, echo=T, eval=T}
 # Serially
@@ -193,7 +212,10 @@ identical(parallel_1, parallel_2)
 
 we end up with results which are not the same, despite setting the seed as one would typically do in the serial case. The details of why this is happening are technical and mostly unimportant; what is important is that there are some simple solutions.
 
+\
+
 ### Option 1: `doRNG`
+***
 
 The simplest solution is to use the [`doRNG`](https://cran.r-project.org/web/packages/doRNG/vignettes/doRNG.pdf) package. There are two ways to use the package to reproduce simulation results. 
 
@@ -243,7 +265,10 @@ identical(parallel_1, parallel_2)
 
 Both approaches result in reproducible parallel loops. 
 
+\
+
 ### Option 2: Core-level Seeds
+***
 
 A bit of a hacky alternative to `doRNG` is to simply set the seed on each core. Remember from earlier that the instructions set on the right-hand side of `%dopar%` are passed to each core. Well, if each core has a unique seed, then any time we run the loops, the same results will obtain. To do this we 
 
@@ -257,7 +282,7 @@ For example:
 
 ```{r, eval=T, echo=T, results='hide'}
 ncores = 3
-nsims = 3
+nsims = 10
 cl = makeCluster(ncores)
 registerDoParallel(cl)
 
@@ -269,7 +294,8 @@ inner_seeds = sample(
 
 parallel_1 = 
   foreach(i = 1:nsims, 
-          .combine = c) %dopar% {
+          .combine = c
+          ) %dopar% {
             
     set.seed(inner_seeds[i])
     rnorm(1) 
@@ -278,7 +304,8 @@ parallel_1 =
 
 parallel_2 = 
   foreach(i = 1:nsims, 
-          .combine = c) %dopar% {
+          .combine = c
+          ) %dopar% {
             
     set.seed(inner_seeds[i])
     rnorm(1) 
@@ -289,22 +316,23 @@ stopCluster(cl)
 identical(parallel_1, parallel_2)
 ```
 
-Now this is of course a bit hacky, but this approach does have practical utility. Namely, if you ever need nested parallel loops (using the `%:%` nesting operator detailed in the `foreach` documentation), then unfortunately the `%dorng%` backend is not supported. In this case, the only way I have found to successfully reproduce simulations is the above, core-level seed-setting approach. To be clear, this isn't setting the same exact seed on all cores. We made a vector of seeds, `inner_seeds`, and each simulation uses a seed from this vector before executing its instructions. You can think of this as setting a different seed across a bunch of different R sessions, and then combining the results; however, the universe of inner seeds remains the same, and therefore so does the results set. 
+Now this is of course a bit hacky, but this approach does have practical utility. Namely, if you ever need nested parallel loops (using the `%:%` nesting operator detailed in the `foreach` documentation), then unfortunately the `%dorng%` backend is not supported. In this case, the only way I have found to successfully reproduce simulations is the above, core-level seed-setting approach. To be clear, this isn't setting the same exact seed on all cores. We made a vector of seeds, `inner_seeds`, and each simulation uses a seed from this vector before executing its instructions. You can think of this as setting a different seed across a bunch of different R sessions, and then combining the results; however, the universe of inner seeds remains the same, and therefore so does the results set across runs. 
 
 
 \
-\
+
 
 # Thread Competition
 ***
 
 Now we are running loops in parallel, and our pseudo-random numbers are reproducible as we would want. However, there is a potential lurking issue that will completely tank any simulations structured as we have here: other multithreaded/parallel tasks competing for CPU resources. In other words, if R is trying to execute simulations in parallel while also trying to execute some other task in parallel simultaneously, often times your computer will hang and eventually crash. 
 
-So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries. That is, when you've installed some alternative, optimized linear algebra library and linked it up with R, such as [Open BLAS](https://www.openblas.net/), [MKL](https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html), or [Atlas BLAS](http://math-atlas.sourceforge.net/). In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multithreaded matrix operations; ie, they do common matrix operations in parallel, such as matrix multiplication, inversion, etc. Thus, if you are using these libraries and forget to disable their inherent multithreading, they will compete with `foreach` when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give `foreach` 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you're trying to access 11 threads when you only have 8. The only option is to use the same thread for multiple tasks simultaneously, but this isn't possible so the computer hangs. 
+So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries while executing linear algebra-heavy simulations. That is, when you've installed some alternative, optimized linear algebra library and linked it up with R, such as [Open BLAS](https://www.openblas.net/), [MKL](https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html), or [Atlas BLAS](http://math-atlas.sourceforge.net/), and your simulations then utilize these libraries to execute matrix operations. In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multithreaded matrix operations; ie, they do common matrix operations in parallel, such as matrix multiplication, inversion, etc. Thus, if you are using these libraries and forget to disable their inherent multithreading, they will compete with `foreach` when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give `foreach` 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you're trying to access 11 threads when you only have 8. The only option is to use the same thread for multiple tasks simultaneously, but this isn't possible so the computer hangs. 
 
 \
 
 ### Checking BLAS/LAPACK Threading
+***
 
 To check if your PC is running multi-threaded matrix operations, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package:
 ```{r, echo=T, eval=T}
@@ -326,11 +354,15 @@ but this isn't conclusive, as it merely tells us that I'm using MKL, not that MK
 \
 
 ### Multi-threaded Packages
-In addition to multithreaded matrix operations, there are other R packages that are multithreaded by default and will therefore compete for CPU resources. The number one culprit here is probably [`data.table`](https://cran.r-project.org/web/packages/data.table/index.html). However, other machine learning libraries have the option for multithreading as well, such as [`caret`](https://topepo.github.io/caret/), and [`glmnet`](https://cran.r-project.org/web/packages/glmnet/index.html). To my knowledge neither of these last two are multithreaded by default, so this only becomes a problem if you accidentally tell them to use more than one CPU. 
+***
+
+In addition to multi-threaded matrix operations, there are other R packages that are multithreaded by default and will therefore compete for CPU resources. The number one culprit here is probably [`data.table`](https://cran.r-project.org/web/packages/data.table/index.html). However, other machine learning libraries have the option for multithreading as well, such as [`caret`](https://topepo.github.io/caret/), and [`glmnet`](https://cran.r-project.org/web/packages/glmnet/index.html). To my knowledge neither of these last two are multithreaded by default, so this only becomes a problem if you accidentally tell them to use more than one CPU. 
 
 \
   
 ### Solving Thread Competition
+***
+
 Fortunately, it is extremely easy to solve this problem.
 
 1. To disable multithreaded matrix operations, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, **and be sure to use the code within your parallel loops so that each child process disables the multi-threading.**
@@ -371,6 +403,7 @@ stopCluster(cl)
 \
 
 ### Caveats
+***
 
 There are a few qualifiers worth mentioning here. 
 
@@ -378,181 +411,134 @@ There are a few qualifiers worth mentioning here.
 
 2. If you aren't using the multithreaded R packages, perhaps it goes without saying that you don't need to worry about them competing for resources in this way.
 
-3. It is possible that some combination of matrix or package multithreading along with parallel simulations is "optimal," in the sense that its faster. For example, if you have 16 threads you could assign 5 threads to `foreach`, and then have each of those processes use 2 threads for matrix operations. You'd then have 15 threads in use, plus one for R-studio or other tasks on reserve. Perhaps this would be faster overall than single-threaded matrix operations on 15 simulation processes. I haven't done any testing for this, so I have no idea whether or when this would be better. At the extreme, it could in theory be better to use a single threaded simulation (i.e., serial simulations), while using all cores for matrix operations. I imagine that is an edge case, but again I cannot rule it out as I have not investigated this extensively. In any case, I'm lazy, so I just disable multithreading on all packages and matrix operations, and give all my threads to `foreach`. 
+3. It is possible that some combination of matrix or package multithreading along with parallel simulations is "optimal," in the sense that its faster. For example, if you have 16 threads you could assign 5 threads to `foreach`, and then have each of those processes use 2 threads for matrix operations. You'd then have 15 threads in use, plus one for R-studio or other tasks on reserve. Perhaps this would be faster overall than single-threaded matrix operations on 15 simulation processes. I haven't done any testing for this, so I have no idea whether or when this would be better. At the extreme, it could in theory be better to use a single threaded simulation (i.e., serial simulations), while using all cores for matrix operations. I imagine that is an edge case, but again I cannot rule it out as I have not investigated this extensively. In any case, I'm lazy, so I just disable multi-threading on all packages and matrix operations, and give all my threads to `foreach`. 
+
+\
 
 # Parameter Grids 
-
 ***
 
-Now that we're working in parallel without suffering thread competition and can consistently reproduce our results, the next step is to create a grid of parameters for our simulations, i.e., the points in the parameter space at which we'll investigate the behavior of our chosen procedure. These will of course be specific to the specific case of simulations under study, but its worth showing a general way to go about creating this grid. 
+Now that we're working in parallel without suffering thread competition and can consistently reproduce our results, the next step is to create a grid of parameters for our simulations, i.e., the points in the parameter space at which we'll investigate the behavior of our chosen procedure. These will of course be specific to the process under study, but its worth showing a general way to go about creating this grid. 
 
-As a contrived toy example, suppose our task involves normal random variables with different means and variances. Specifically, we are interested in $X \sim \mathcal{N}\left(\mu \in \{0, -1, 1, -3, 5\}, \,\,\sigma^2 \in \{1, 1.5, 3\}\right)$; that is, we'll vary the mean and variance of some random variable $X$. Right now its not important *why* we're doing this or what $X$ will be used for, only that we want random variables with every pairwise combination of these parameter values. 
+As a contrived toy example, suppose our task involves normal random variables with different means and variances. Specifically, we are interested in $X \sim \mathcal{N}\left(\mu \in \{0, -1 \}, \,\,\sigma^2 \in \{1, 3\}\right)$; that is, we'll vary the mean and variance of some random variable $X$. Additionally, we want to investigate how sample size affects the properties of these random draws. Right now its not important *why* we're doing this or what $X$ will be used for, only that we want random variables with every pairwise combination of these parameter values. 
 
 To do so, we create vectors of these parameters, and then use `expand.grid()` to get the pairwise combinations:
 
 ```{r}
-mu = c(0, -1, 1, -3, 5)
-sig2 = c(1, 1.5, 3)
+mu = c(0, -1)
+sig2 = c(1, 3)
+n = c(5, 10)
 
-grid = expand.grid(mu = mu, sig2 = sig2)
-grid
+(grid = expand.grid(mu = mu, sig2 = sig2, n = n))
 ```
 
 
-So now we have the parameters we need for our simulations in a nice tabular format, which we can then loop over when creating data from our chosen data generating process. For example:
+So now we have the parameters we need for our simulations in a nice tabular format, which we can then loop over when creating data from our chosen data generating process. For example (omitting the back-end setup, etc. for clarity):
 
-```{r}
-library(doParallel)
-library(RhpcBLASctl)
-library(doRNG)
+```{r, eval=F}
+# SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. 
 
-# Disable thread competition
-blas_set_num_threads(1)
-omp_set_num_threads(1)
-
-# Make grid
-mu = c(0, -1, 1, -3, 5)
-sig2 = c(1, 1.5, 3)
-grid = expand.grid(mu = mu, sig2 = sig2)
-
-# Make backend
-ncores = parallel::detectCores() - 1
-cl = makeCluster(ncores)
-registerDoParallel(cl)
-
-# Set seed and use dorng
-set.seed(123)
-
-
-out = foreach(i = 1:nrow(grid),
-        .packages = "RhpcBLASctl",
-        .combine = c
-        ) %dorng% {
+out = foreach(i = 1:nrow(grid)
+        ) %dopar% {
             
-    library(RhpcBLASctl)
-    blas_set_num_threads(1)
-    omp_set_num_threads(1)   
     
-    rnorm( n = 1,
+    rnorm( n = grid[i, "n"],
            mean = grid[i, "mu"],
            sd = sqrt(grid[i, "sig2"])
     )
     
   }
-  
-stopCluster(cl)
-attributes(out) = NULL # makes print look cleaner, removes rngstream attr
-
-out
 ```
 
-All we've done here is create the grid as seen earlier, loop over each row indexed by `i`, and simulated one draw from the specified parameterization of the normal distribution from `grid`. In this way we've ensured that we simulate data from each of the desired parameterizations, all without having to manually specify the parameters, and without having to do any sort of nested looping, e.g. `for(i in mu){ for j in sig2 {...}}`. This is akin to a grid-search in optimization, although here we're not searching for an optimal set of parameters, we're investigating the behavior of some procedure at pre-defined grid points in the parameter space. 
+Right now, the output from this is not the focus. The main point here is that we've created a `grid` of all unique pairwise parameter combinations, and we've looped over each row of that `grid` to then get random numbers using every possible parameter combination. In this way we've ensured that we simulate data from each of the desired parameterizations, all without having to manually specify the parameters, and without having to do any sort of nested looping, e.g. `for(i in mu){ for j in sig2 {...}}`. This is akin to a grid-search in optimization, although here we're not searching for an optimal set of parameters, we're investigating the behavior of some procedure at pre-defined grid points in the parameter space. 
+
+\
+
+### Extending Grids to Multiple Simulations
+***
 
 Of course, *we've only done one simulation* here. That is, at each set of parameter values, we have one iteration. But in Monte Carlo analysis, we want some large number of simulations in order to see how things are behaving, so we'll need to replicate this grid. Suppose we want 2 simulations instead of 1, then we can use `do.call()`, `cbind.data.frame`, and `replicate()` together to get a grid with each grid point appearing twice, so that we'll have two simulations at that point instead of one:
 
 ```{r}
 nsims = 2 
-mu = c(0, -1, 1, -3, 5)
-sig2 = c(1, 1.5, 3)
 
-grid = expand.grid(mu = mu, sig2 = sig2)
-grid_multi = do.call(rbind.data.frame, replicate(nsims, grid, simplify=F))
-grid_multi
+mu = c(0, -1)
+sig2 = c(1, 3)
+n = c(5, 10)
+
+grid = expand.grid(mu = mu, sig2 = sig2, n = n)
+(grid_multi = do.call(rbind.data.frame, replicate(nsims, grid, simplify=F)))
 ```
 
 And we can now see that each grid point appears twice, so if we were to loop over this in the same as as we did previously, we produce results for each parameter combination twice. Inductively then, we know that for arbitrary values of `nsims`, we'll get `nsims`-many results for each parameter combination, which is precisely what we want in Monte Carlo analysis. 
 
 Briefly explaining the above code, `replicate()` is replicating the `grid` dataframe `nsims`-many times, and storing these replicates in a list. Then, `do.call` calls the `rbind.data.frame` function with each element of the replicated list as its arguments. Mathematically, `do.call` is effectively executing $f(x_1, x_2, ..., x_{nsims})$ where $f()$ is `rbind.data.frame`, and each `x_j` is an element of a list. In this case, the list-elements are all the original, single-simulation `grid` object.  
 
-### Why not use a nested loop? 
+\
 
-One potential question is why not use a nested loop instead of replicating each grid point `nsims`-many times. That is, we could just repeatedly loop over the original `grid` object, rather than replicating it several times, like so: 
+### Why not use a nested loop? 
+***
+
+One potential question is why not use a nested loop instead of replicating each grid point `nsims`-many times. That is, we could just repeatedly loop over the original `grid` object, rather than replicating it several times, like so (omitting the back-end setup, etc. for clarity): 
 
 ```{r, echo=T, eval=F}
-# BACKEND ETC OMITTED FOR CLARITY
+# SETUP OMITTED FOR CLARITY. SEE ENDING EXAMPLES FOR FULL SETUP.
 
 # Make grid WITHOUT REPLICATING 
-mu = c(0, -1, 1, -3, 5)
-sig2 = c(1, 1.5, 3)
+mu = c(0, -1)
+sig2 = c(1, 1.5)
+n = c(5, 10)
 
 grid = expand.grid(mu = mu, sig2 = sig2)
 
 # make number of simulations a variable for looping
 nsims = 100
 
-out = foreach(i = 1:nrow(grid), 
-        .packages = "RhpcBLASctl",
-        .combine = c
+out = foreach(i = 1:nrow(grid)
         ) %dorng% {
             
-    res = c()
+    res = list()
     
     # create an inner, nested loop that repeatedly simulates from a gridpoint
     # instead of replicating the gridpoint and looping over the replicates
     for(j in seq_len(nsims)){
 
-      res[j] = rnorm( n = 1,
+      res[[j]] = rnorm( n = grid[i, "n"],
                       mean = grid[i, "mu"],
                       sd = sqrt(grid[i, "sig2"])
               )
     }
     
+    return(res)
     
 }
 ```
 
-The key difference here is that we create a single set of grid points without duplication, and then create an inner loop (`for(j in seq_len(nsims))`) that repeatedly uses these grid points `nsims`-many times. An obvious advantage of the nested-loop approach is that it conserves memory; the grid is not replicated, so each core only stores a copy of the original, single-simulation grid.  The memory gains are somewhat trival though due to how R stores lists in memory, but that is a technical aside that I won't delve into now (see [this page](https://adv-r.hadley.nz/vectors-chap.html#lists) for more info). 
+The key difference here is that we create a single set of grid points without duplication via `replicate`, and then create an inner loop (`for(j in seq_len(nsims))`) that repeatedly uses these grid points `nsims`-many times. An obvious advantage of the nested-loop approach is that it conserves memory; the grid is not replicated, so each core only stores a copy of the original, single-simulation grid.  The memory gains are somewhat trivial though due to how R stores lists in memory, but that is a technical aside that I won't delve into now (see [this page](https://adv-r.hadley.nz/vectors-chap.html#lists) for more info). 
 
 
-However, the major disadvantage of the nested-loop approach is load balancing. In most real-world applications we will be varying the sample size of our procedure; i.e., we'll estimate some model at small and large sample sizes. Those sample sizes will then appear in our grid because they are a hyper-parameter after all, which then induces severe heterogeneity in computation time for each CPU. For example:
+However, the major disadvantage of the nested-loop approach is load balancing. In most real-world applications we will be varying the sample size of our procedure, and by much more than we are doing so here; i.e., we'll estimate some model at small and large sample sizes. In doing so, the nested-loop approach becomes problematic for load balancing purposes, because the CPUs that have the small sample sizes will take way less time to complete their inner, nested loop (recall, the set of instructions on the right-hand side of `%dopar%` are executed on a single CPU). Eventually then, the CPUs with the large sample sizes will still be running their nested, inner-loops while the CPUs that had the smaller sample sizes have completed their tasks and are *sitting idle* doing nothing. That all in mind, for the specific toy examples here it turns out that the nested approach is faster than the replicating approach due to parallel processing overhead being greater than the time it takes to complete a task (see [here](https://en.wikipedia.org/wiki/Parallel_slowdown) for more on this). However, for more interesting cases, this will generally not be true.
 
-```{r, eval=F}
-# Omit backend, etc for clarity
-
-nsims = 100
-mu = c(0, -1, 1, -3, 5)
-sig2 = c(1, 1.5, 3)
-n = c(1, 100, 1000, 10000)
-
-# Add sample size to grid
-grid = expand.grid(mu = mu, sig2 = sig2, n = n)
-
-
-
-out = foreach(i = 1:nrow(grid), 
-        .packages = "RhpcBLASctl",
-        .combine = c
-        ) %dorng% {
-            
-    res = c()
-
-    for(j in seq_len(nsims)){
-        
-          # No longer hard-coding sample size, we index it
-          res[j] = rnorm( n = grid[i, "n"], 
-                          mean = grid[i, "mu"],
-                          sd = sqrt(grid[i, "sig2"])
-              )
-    }
-```
-
-So now we are not hard-coding the sample size, `n`, but we are varying it. In doing so, the nested-loop approach becomes problematic for load balancing purposes, because the CPUs that have the small sample sizes will take way less time to complete their inner, nested loop (recall, the set of instructions on the right-hand side of `%dopar%` are executed on a single CPU). Eventually then, the CPUs with the large sample sizes will still be running their nested, inner-loops while the CPUs that had the smaller sample sizes have completed their tasks and are *sitting idle* doing nothing. That all in mind, for the specific toy examples here it turns out that the nested approach is faster than the replicating approach due to parallel processing overhead being greater than the time it takes to complete a task (see [here](https://en.wikipedia.org/wiki/Parallel_slowdown) for more on this). However, for more interesting cases, this will generally not be true.
+\
 
 ### Caveats 
+***
 
 In most cases, the replicated-grid approach will be better, often times by several hours when compared with the parallel-outer, serial-inner approach. However, there are at least two instances where this won't hold, one of which was alluded to in the previous paragraph. 
 
-1. If the run-time of a single simulation is small, e.g., < 1 second, it is possible that the overhead from parallelizing at the simulation level--rather than the grid-point level--will exceed the gains from parallelizing. This is known as parallel slow down. Its possible to mitigate this by using prescheduling, but even this won't always fix the issue if single simulations take a very small amount of time.  Prescheduling splits the total number of tasks into chunks (at random) and assigns these tasks to each CPU. So if you allocate 10 CPUs, and there are 100 tasks, the computer will randomly select 10 tasks to assign to each CPU. Without prescheduling, when a CPU finishes a task, it will communicate with the other CPUs in the network or the parent process and determine what tasks still need doing, and then it does one of the ones that remains. So, by prescheduling we reduce some of this communication overhead. There are advantages and disadvantages to prescheduling that I won't go into here, but a general rule is if your tasks are numerous and require little time individually, use prescheduling, otherwise don't. To enable presheduling in `foreach`, do the following:
 
-```{r, eval=F}
+1. If the run-time of a single simulation is small, e.g., < 1 second, it is possible that the overhead from parallelizing at the simulation level---rather than the grid-point level---will exceed the gains from parallelizing. This is known as parallel slow down. Its possible to mitigate this by using prescheduling, but even this won't always fix the issue if single simulations take a very small amount of time.  Prescheduling splits the total number of tasks into chunks (at random) and assigns these tasks to each CPU. So if you allocate 10 CPUs, and there are 100 tasks, the computer will randomly select 10 tasks to assign to each CPU. Without prescheduling, when a CPU finishes a task, it will communicate with the other CPUs in the network or the parent process and determine what tasks still need doing, and then it does one of the ones that remains. So, by prescheduling we reduce some of this communication overhead. There are advantages and disadvantages to prescheduling that I won't go into here, but a general rule is if your tasks are numerous and require little time individually, use prescheduling, otherwise don't. To enable presheduling in `foreach`, do the following:
 
-foreach(i = 1:nsims, 
-        .options.multicore = list(preschedule = TRUE)) %dorng% {
+    ```{r, eval=F}
+
+    foreach(i = 1:nsims, 
+        .options.multicore = list(preschedule = TRUE)) 
+        %dorng% {
           
-          ...
+          [...code...]
         
         }
-```
+    ```
 
  
 
@@ -567,7 +553,15 @@ foreach(i = 1:nsims,
 
 At this point we've properly set up our environment, and are ready to start with the actual simulations. To recap, we are using `foreach` combined with `%dopar%` or `%dorng%` for parallelism, we've ensured reproducability, we have handled thread competition with other parallel processes, and now we have a grid of parameter values at which to investigate the behavior of some procedure, with each grid value appearing once for each simulation iteration. Now we can make some functions that will automate the simulation and transformation of our data.
 
-R is an object oriented, functional programming language. We should leverage both of these facts to make our simulations easier to understand, implement, and debug. At a minimum, this will consist of having two functions: a simulation function that creates the data to be further analyzed, and an estimation/analysis function that estimates the model(s) that we want, and tidies the results for us. We could optionally further separate the last function into two functions, one for estimation and the other for tidying, rather than combining these steps. 
+R is an object oriented, functional programming language. We should leverage both of these facts to make our simulations easier to understand, implement, and debug. At a minimum, this will consist of having two functions: 
+
+1. A **simulation function** that creates the data to be further analyzed 
+
+2. An **estimation/analysis function** that estimates the model(s) that we want, and tidies the results for us. 
+
+We could optionally further separate the estimation function (2) into two functions, one for estimation and the other for tidying, rather than combining these steps. 
+
+This approach to Monte Carlo analysis---having a simulation function, and an estimation function---is one of the most important reasons why I choose not to use the parallelized `apply` family of functions. Because the data must be both simulated and estimated, the apply family of functions requires that there be either (i) a single function that does both of these tasks (e.g., via nesting), or (ii) that we pre-simulate every single dataset that will be needed for the estimation procedure, and then call the estimation function on each of them using `apply` functionality. The first approach is bad because debugging functions becomes more nightmarish as they get more complicated, so smooshing two functions into one is ill advised. The second approach is unfeasible in most interesting cases because there is usually not enough memory to store hundreds of thousands of pre-simulated datasets. Thus, because we'll compartmentalize the simulation and estimation into two functions, the `foreach` approach becomes the natural one to implement. 
 
 ### Simulation Function 
 ### Wrong Way 3: Nested Loops
