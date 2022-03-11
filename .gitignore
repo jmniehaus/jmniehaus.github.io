@@ -3,5 +3,5 @@
 testing.R
 
 .Rproj.user
-*_cache
+/*_cache
 

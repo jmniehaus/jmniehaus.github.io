@@ -363,11 +363,11 @@ In addition to multi-threaded matrix operations, there are other R packages that
 ### Solving Thread Competition
 ***
 
-Fortunately, it is extremely easy to solve this problem.
+Fortunately, it is extremely easy to solve thread competition.
 
 1. To disable multithreaded matrix operations, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, **and be sure to use the code within your parallel loops so that each child process disables the multi-threading.**
 
-```{r, echo=T, eval=T, results='hide'}
+    ```{r, echo=T, eval=T, results='hide'}
 # disable in parent process 
 library(RhpcBLASctl)
 library(doRNG)
@@ -395,7 +395,7 @@ set.seed(123)
           }
   
 stopCluster(cl)
-```
+    ```
 <br>
 
 2. To disable packaged multithreading, you'll just have to read the documentation for that package to determine how to set the max number of threads to 1. For example, browsing the documentation for `data.table` immediately tells us that the `setDTthreads()` function does what we want. 
@@ -407,9 +407,9 @@ stopCluster(cl)
 
 There are a few qualifiers worth mentioning here. 
 
-1. If you aren't using matrix operations in your parallel tasks, then multithreaded matrix operations shouldn't cause problems in theory, because they aren't even being attempted. However, if they aren't happening, it also doesn't hurt to just set the number of threads to 1. Just make sure the change it back if you want to leverage that efficiency in your R session later on. 
+1. If you aren't using matrix operations in your parallel tasks, then multi-threaded matrix operations shouldn't cause problems in theory, because they aren't even being attempted. However, if they aren't happening, it also doesn't hurt to just set the number of threads to 1. Just make sure the change it back if you want to leverage that efficiency in your R session later on. 
 
-2. If you aren't using the multithreaded R packages, perhaps it goes without saying that you don't need to worry about them competing for resources in this way.
+2. If you aren't using the multi-threaded R packages, perhaps it goes without saying that you don't need to worry about them competing for resources in this way.
 
 3. It is possible that some combination of matrix or package multithreading along with parallel simulations is "optimal," in the sense that its faster. For example, if you have 16 threads you could assign 5 threads to `foreach`, and then have each of those processes use 2 threads for matrix operations. You'd then have 15 threads in use, plus one for R-studio or other tasks on reserve. Perhaps this would be faster overall than single-threaded matrix operations on 15 simulation processes. I haven't done any testing for this, so I have no idea whether or when this would be better. At the extreme, it could in theory be better to use a single threaded simulation (i.e., serial simulations), while using all cores for matrix operations. I imagine that is an edge case, but again I cannot rule it out as I have not investigated this extensively. In any case, I'm lazy, so I just disable multi-threading on all packages and matrix operations, and give all my threads to `foreach`. 
 
@@ -544,64 +544,218 @@ In most cases, the replicated-grid approach will be better, often times by sever
 
 2. If you are doing some form of Markov Chain Monte Carlo (MCMC), rather than traditional Monte Carlo analysis, the nested loop approach will generally become **_necessary_**. For things like the Metropolis-Hastings algorithm and its derivatives (e.g., Metropolis, Gibbs), we are typically sampling from a full-conditional distribution that depends on some previous iteration. So parallelization here would occur at the chain-level, and within each chain we would have serial loops to sample from the full conditionals. The gridding approach would also not make as much sense anyway, as the proposal parameters are not fixed ex-ante aside from the starting values.
 
-
-
+\
 
 # Using Functions Properly 
 
 ***
 
-At this point we've properly set up our environment, and are ready to start with the actual simulations. To recap, we are using `foreach` combined with `%dopar%` or `%dorng%` for parallelism, we've ensured reproducability, we have handled thread competition with other parallel processes, and now we have a grid of parameter values at which to investigate the behavior of some procedure, with each grid value appearing once for each simulation iteration. Now we can make some functions that will automate the simulation and transformation of our data.
+At this point we've set up our environment, and are ready to start with the actual simulations. To recap, we are using `foreach` combined with `%dopar%` or `%dorng%` for parallelism, we've ensured reproducability, we have handled thread competition with other parallel processes, and now we have a grid of parameter values at which to investigate the behavior of some procedure, with each grid value appearing once for each simulation iteration. Now we can make some functions that will automate the simulation and transformation of our data.
 
 R is an object oriented, functional programming language. We should leverage both of these facts to make our simulations easier to understand, implement, and debug. At a minimum, this will consist of having two functions: 
 
-1. A **simulation function** that creates the data to be further analyzed 
+1. A **simulation function** that creates the data to be further analyzed. 
 
 2. An **estimation/analysis function** that estimates the model(s) that we want, and tidies the results for us. 
 
 We could optionally further separate the estimation function (2) into two functions, one for estimation and the other for tidying, rather than combining these steps. 
 
-This approach to Monte Carlo analysis---having a simulation function, and an estimation function---is one of the most important reasons why I choose not to use the parallelized `apply` family of functions. Because the data must be both simulated and estimated, the apply family of functions requires that there be either (i) a single function that does both of these tasks (e.g., via nesting), or (ii) that we pre-simulate every single dataset that will be needed for the estimation procedure, and then call the estimation function on each of them using `apply` functionality. The first approach is bad because debugging functions becomes more nightmarish as they get more complicated, so smooshing two functions into one is ill advised. The second approach is unfeasible in most interesting cases because there is usually not enough memory to store hundreds of thousands of pre-simulated datasets. Thus, because we'll compartmentalize the simulation and estimation into two functions, the `foreach` approach becomes the natural one to implement. 
+This approach to Monte Carlo analysis---having a simulation function, and an estimation function---is one of the most important reasons why I choose not to use the parallelized `apply` family of functions. If you're unfamiliar with the `apply` family of functions, you can either skip this paragraph or [familiarize yourself](https://www.r-bloggers.com/2015/07/r-tutorial-on-the-apply-family-of-functions/) with them. Because our data must be both simulated and then used in estimation, the `apply` family of functions requires that there be either (i) a single function that does both of these tasks (e.g., via nesting), or (ii) that we pre-simulate every single dataset that will be needed for the estimation procedure, and then call the estimation function on each of them using `apply` functionality. The first approach is bad because debugging functions becomes more nightmarish as they get more complicated, so smooshing two functions into one is ill-advised. The second approach is unfeasible in most interesting cases because there is usually not enough memory to store hundreds of thousands of pre-simulated datasets. Thus, because we'll compartmentalize the simulation and estimation into two functions, the `foreach` approach becomes the natural one to implement. 
+
+\
 
 ### Simulation Function 
-### Wrong Way 3: Nested Loops
 
-Often times you may have multiple parameter vectors to consider in your simulations--say, $v_1, v_2, v_3$. Then, some pseudo-code for your sims would nest loops over these parameter vectors, looking something like:
+The goal of the simulation function is to take in one row from our parameter grid, and use those parameters to create a dataset that will eventually be transformed via estimation or some other procedure of interest. Keeping with the toy example used previously, lets suppose we are just simulating some realizations of a normal random variable at various grid points and sample sizes. We have our grid from earlier: 
 
-```{r, echo=T, eval=F}
-for(i in v1){
-  for(j in v2){
-    for(k in v3){
-      SIMULATE
-    }
-  }
-}
+```{r}
+print(grid_multi)
 ```
 
-This is a sub-optimal approach for a few reasons. First, the code is being run serially, at least in this example. Second, assuming you've managed to write nested, parallel loops, the usual methods for overcoming the seed-setting issue from point 2 are not currently supported for nested parallel loops. Thus, we run into reproducability problems again. Lastly, nested loops are generally less readable, and I assume we want easily interpretable code. Thus, I advocate a different approach here, although I will also include a bit on how to overcome the reproducibility issue for nested parallel loops, for those of you who require them for some reason. 
+which has 3 parameters, `mu`, `sig2` and `n`. So our simulation function will have to take in *at least* these parameters in some way, and potentially others. It is my view that the easiest way to do this is just to take in a vector of parameters as a single parameter to the function, rather than explicitly naming each parameter to the function. This way, if the grid columns change, we don't have to then go and add or remove parameters from the simulation function. 
 
-### Wrong Way 4: Replacing Matrix/Dataframe Elements
+For example, we could specify the parameters explicitly, then index our grid by row when passing the arguments (in this case, just row 1): 
 
-One of the more common approaches to simulations may be to create a dataframe or matrix with specified dimensions, and replace the elements of it with simulation results, like so:
-
-```{r, echo=T, eval=F}
-params = VECTOR OF SIM PARAMS
-
-results = #
-  matrix(
-    NA,
-    nrow = nsims,
-    ncol = length(params)
+```{r}
+simulate_fn = function(mu, sig2, n){
+  
+  return(
+    list(
+      mu = mu, 
+      sig2 = sig2, 
+      n = n
+    )
   )
+  
+}
 
-for(j in params and i in nsims){
-  results[i,j] = SIMULATION OUTPUT
+simulate_fn(
+  mu = grid_multi[1, "mu"], 
+  sig2 = grid_multi[1, "sig2"],
+  n = grid_multi[1, "n"]
+  )
+```
+
+But if we later decide we want to add new parameter to the grid, we then have to update the `simulate_fn` function accordingly. Updating the function's parameters can be avoided if we just pass a named parameter vector as a single parameter, and unpack it inside the function:
+
+```{r}
+simulate_fn = function(grid_row){
+  
+  grid_row = unlist(grid_row) # re-class to vector from data.frame
+
+  return(
+    list(
+      mu = grid_row["mu"], 
+      sig2 = grid_row["sig2"], 
+      n = grid_row["n"]
+    )
+  )
+  
+}
+
+simulate_fn(grid_multi[1,])
+```
+
+Using this second approach then, we can define a function to simulate the normal realizations, and see what it produces for a single iteration on our grid: 
+
+```{r}
+simulate_fn = function(grid_row){
+  
+  grid_row = unlist(grid_row)
+  
+  rnorm(
+    n = grid_row["n"], 
+    mean = grid_row["mu"],
+    sd = sqrt(grid_row["sig2"])
+  )
+  
+}
+
+simulate_fn(grid_row = grid_multi[1,])
+```
+which is a numeric vector, as we would expect. Now we can do whatever transformation of this data to obtain statistics of interest for each iteration. However, we'll need an estimation function first. 
+
+\ 
+
+### Estimation Function 
+***
+To keep up the toy example, lets say now that we're interested in the estimators of the first and second moments of a normal random variable after we've exponentiated it (that is, of the log-normal distribution). So we'll need a function that takes in the data, exponentiates it, and computes these estimates. **Importantly,** we want to know how the various parameters under consideration impact these estimators (if at all), so we need to also keep track of the parameters that we're using. One possibility is the following, where we again pass in the data-generating grid row:
+
+```{r}
+
+estimate_fn = function(dat, grid_row){
+  
+  dat_exp = exp(dat)
+  xbar = mean(dat_exp)
+  s2   = var(dat_exp)
+  
+  out = c(xbar = xbar, s2 = s2, grid_row)
+  
+  return(out)
 }
 ```
 
-The issue with this approach is that it is extremely memory inefficient due to [R's copy-on-modify behaviors](https://adv-r.hadley.nz/names-values.html#copy-on-modify) (see [this](http://adv-r.had.co.nz/memory.html#modification) earlier, too). Although it is more efficient for dataframes than for matrices, the more efficient method is to store everything in a list, and then bind up the results later. 
+So now we'll simulate some data using `simulate_fn` and return the quantities of interest from this data using the `estimate_fn`:
 
-### Wrong Way 5: Using Windows
+```{r}
+grid_row = unlist(grid_multi[1,])
+
+dat = simulate_fn(grid_row = grid_row)
+
+estimate_fn(
+  dat = dat, 
+  grid_row = grid_row
+)
+```
+which gives us the sample mean and variance for a single iteration of transforming data to log-normal realizations, as well as stores the data-generating parameters for use in post-simulation analysis. 
+
+\ 
+
+# Putting it All Together
+*** 
+
+Before we jump into some more serious examples, we can combine everything we've learned using the toy example, just to give an idea about the structure. I'm not going to separate the code out into each step below; all of it will appear in a single chunk with comments so as to mimic what we would actually have in a script. I'll also be doing things in a slightly different order than was presented in the guide. This is again for the example of analyzing the estimators of the first two moments of the log-normal distribution under various parameterizations. I'll do 30 simulations at each grid point for demonstration purposes, but in reality you'd probably want more. 
+
+```{r}
+# Load up packages 
+pks = c("doParallel", "doRNG", "RhpcBLASctl")
+needed = setdiff(pks, rownames(installed.packages()))
+
+if(length(needed) > 1)
+  install.packages(pks, Ncpus = parallel::detectCores() - 1)
+
+invisible(sapply(pks, library, character.only=T))
+
+# Define Simulation and Estimation Functions
+simulate_fn = function(grid_row){
+  
+  rnorm(
+    n = grid_row["n"], 
+    mean = grid_row["mu"],
+    sd = sqrt(grid_row["sig2"])
+  )
+  
+}
+
+estimate_fn = function(dat, grid_row){
+  
+  dat_exp = exp(dat)
+  xbar = mean(dat_exp)
+  s2   = var(dat_exp)
+  
+  out = c(xbar = xbar, s2 = s2, grid_row)
+  
+  return(out)
+}
+
+# Make the parameter grid 
+nsims = 300 
+
+mu = c(0, -1)
+sig2 = c(1, 3)
+n = c(5, 10)
+
+grid = expand.grid(mu = mu, sig2 = sig2, n = n)
+grid_multi = do.call(rbind.data.frame, replicate(nsims, grid, simplify=F))
+
+# Disable BLAS/LAPACK multithreading in parent process 
+blas_set_num_threads(1)
+omp_set_num_threads(1)
+
+# Spin up backend
+nprocs = parallel::detectCores() - 1
+os = .Platform$OS.type
+type = if(grepl('unix', os)) 'FORK' else 'PSOCK'
+cl = makeCluster(nprocs, type = type)
+registerDoParallel(cl)
+
+# Run sims 
+set.seed(123)
+
+res = foreach(i = seq_len(nrow(grid_multi)),
+              .packages = 'RhpcBLASctl',
+              .errorhandling = "pass",
+              .inorder = F,
+              .options.multicore = list(preschedule=T)
+              ) %dorng% {
+    
+  blas_set_num_threads(1)
+  omp_set_num_threads(1)
+  
+  grid_row = unlist(grid_multi[i,])
+    
+  dat = simulate_fn(grid_row)
+  out = estimate_fn(dat, grid_row)
+  
+  return(out)
+  
+}
+
+stopCluster(cl)
+```
+
+
+#  Using Windows
 
 If you are still using Windows to do data work, you are missing out on some clear efficiency gains. Most of all--and related to point 1--windows does not permit the use of forked processes for parallelism; rather, it relies on sockets. The [main difference](https://www.r-bloggers.com/parallel-r-socket-or-fork/) between these two is that forked processes share an environment, while socketed processes must communicate with the master process explicitly to get R objects. What this means is that socketed processes tend to have higher communication overhead, and therefore simulations will run slower than on a fork. 
 
