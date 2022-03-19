@@ -480,11 +480,16 @@ div.tocify {
 
 <h1 class="title toc-ignore">Monte Carlo Analysis in R: An in Depth
 Guide, with Examples</h1>
-<h4 class="date">Updated: 18 Mar, 2022</h4>
+<h4 class="date">Updated: 19 Mar, 2022</h4>
 
 </div>
 
 
+<style>
+.list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
+    background-color: SlateGrey;
+}
+</style>
 <p><br />
 </p>
 <p>In this guide I discuss in-depth five steps to setting up parallel
@@ -589,13 +594,13 @@ content.</p>
 <div id="differences-between-foreach-and-for" class="section level3">
 <h3>Differences between <code>foreach</code> and <code>for</code></h3>
 <hr />
-<p>Since we’ll be using <code>foreach</code>, its useful to compare and
+<p>To see how <code>foreach</code> works, its useful to compare and
 contrast it with a typical <code>for</code> loop. Suppose we just wanted
 to add 1 to each element in a vector, and for some reason we did this
 using a for loop in R (rather than leveraging vectorization). We might
 write the following:</p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#for loop</span></span>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># for loop</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>vec <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">5</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>out_for <span class="ot">=</span> <span class="fu">vector</span>()</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -604,22 +609,26 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a hr
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(out_for)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 2 3 4 5 6</code></pre>
+<p><br />
+</p>
 <p>Then, using the <code>foreach</code> package, an equivalent loop
 could be written like so:</p>
 <div class="sourceCode" id="cb3"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#foreach </span></span>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># foreach </span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(foreach)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>out_foreach <span class="ot">=</span> </span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="fu">seq_along</span>(vec),</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> <span class="st">&quot;c&quot;</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%do%</span> {</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                        </span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(vec[i] <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>vec <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">5</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>out_foreach <span class="ot">=</span> </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="fu">seq_along</span>(vec),</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> <span class="st">&quot;c&quot;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%do%</span> {</span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                        </span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(out_foreach)</span></code></pre></div>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(vec[i] <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>                        </span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(out_foreach)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 2 3 4 5 6</code></pre>
 <p>Despite having a somewhat similar appearance to the <code>for</code>
 loop, <code>foreach</code> loops differ in two key ways:</p>
@@ -632,26 +641,57 @@ value.</p></li>
 functions. The first is a bit obvious, its a call to
 <code>foreach(...)</code>. The second is actually the <a
 href="https://adv-r.hadley.nz/functions.html#function-forms">infix
-function</a>, <code>%do%</code> or <code>%dopar%</code>. These functions
-are similar in concept to the matrix multiplication operator
-<code>%*%</code> in that they take arguments to the function on either
-side of the operator, and apply some set of instructions using these
-arguments. Similarly to the matrix multiplication operator, then,
-<code>%do%</code> takes arguments on either side. On the left-hand side
-is an object returned by the <code>foreach()</code> function call, and
-on the right is an <code>expression</code>, which for our purposes is
-just a bunch of text instructions for our loop.</p>
-<p>The second function call is the call to <code>foreach()</code>, which
-we just learned is on the left-hand side of an infix function call.
-Thus, its results are an argument to the <code>%do%</code> function. You
-can roughly think of <code>foreach()</code> as being the same as the
-serial case when we call <code>for(i in something)</code>: it is
-creating an object to be iterated over. In reality things are a bit more
-complicated than that, but the details are not too important here. It is
-enough to know that <code>foreach()</code> is a function, and it returns
-an object that is in some way useful for iterating and executing a loop
-in parallel. The results of calling this <code>foreach(...)</code>
-function are then used as the inputs on the left-hand side of
+function</a>, <code>%do%</code>, or as we’ll see later,
+<code>%dopar%</code> or <code>%dorng%</code>.</p>
+<p>Starting with the <code>%do%</code> infix function, notice its
+similar appearance to the matrix multiplication operator,
+<code>%*%</code>. Just as the <code>%*%</code> matrix multiplication
+operator takes its arguments on either side, so does the
+<code>%do%</code> or <code>%dopar%</code> operator (or any other
+arbitrary infix function). Thus, we can conclude that <strong>the call
+to <code>foreach(...)</code> on the left-hand side, and the set of loop
+instructions on the right-hand side between the curly braces
+<code>{...}</code> are both arguments to the <code>%do%</code>
+function</strong>.</p>
+<p>Moving to the second function, the call to <code>foreach(...)</code>
+on the left-hand side of <code>%do%</code>, we’ve just learned that this
+function (or rather, the <em>return value</em> of this function) is an
+argument to the <code>%do%</code> operator. Its reasonable to ask what
+the <code>foreach()</code> function returns, then. Lets take a look:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fe_call <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(fe_call)</span></code></pre></div>
+<pre class="bg-success"><code>## List of 11
+##  $ args         : language (1:3)()
+##  $ argnames     : chr &quot;i&quot;
+##  $ evalenv      :&lt;environment: R_GlobalEnv&gt; 
+##  $ specified    : chr(0) 
+##  $ combineInfo  :List of 7
+##   ..$ fun          :function (a, ...)  
+##   ..$ in.order     : logi TRUE
+##   ..$ has.init     : logi TRUE
+##   ..$ init         : language list()
+##   ..$ final        : NULL
+##   ..$ multi.combine: logi TRUE
+##   ..$ max.combine  : num 100
+##  $ errorHandling: chr &quot;stop&quot;
+##  $ packages     : NULL
+##  $ export       : NULL
+##  $ noexport     : NULL
+##  $ options      : list()
+##  $ verbose      : logi FALSE
+##  - attr(*, &quot;class&quot;)= chr &quot;foreach&quot;</code></pre>
+<p>So <code>foreach()</code> returns a list, with a whole bunch of named
+elements. We’ll touch on some of these later on, but for now you can
+roughly think of <code>foreach()</code> as being the same as the serial
+case when we call <code>for(i in something)</code>: it is creating an
+object to be iterated over. In reality things are a bit more complicated
+than that, but the details are not too important here. It is enough to
+know that <code>foreach()</code> is a function, and it returns an object
+that is in some way useful for iterating and executing a loop in
+parallel. The results of calling this <code>foreach(...)</code> function
+are then used as the inputs on the left-hand side of
 <code>%do%</code>.</p>
 <p>Finally, on the right-hand side of <code>%do%</code> we have an
 <code>expression</code>-class object, which can just be thought of as
@@ -691,26 +731,26 @@ we’ll see that a better alternative is actually
 <li><p>Shut down the parallel backend (<strong>this is extremely
 important for PC longevity</strong>).</p></li>
 </ol>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Use one fewer cores than max available due to using R studio</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span> </span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. spin up the cluster</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Change `%do%` to `%dopar%` </span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>out_foreach <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="fu">seq_along</span>(vec),</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">.combine =</span> <span class="st">&quot;c&quot;</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                      ) <span class="sc">%dopar%</span> {</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>                        </span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(vec[i] <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">#4.shut down the cluster DONT FORGET THIS</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Use one fewer cores than max available due to using R studio</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span> </span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. spin up the cluster</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Change `%do%` to `%dopar%` </span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>out_foreach <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="fu">seq_along</span>(vec),</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">.combine =</span> <span class="st">&quot;c&quot;</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                      ) <span class="sc">%dopar%</span> {</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                        </span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(vec[i] <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#4.shut down the cluster DONT FORGET THIS</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
 <p><br />
 </p>
 </div>
@@ -718,8 +758,9 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a hr
 <h3>Important <code>foreach</code> Parameters</h3>
 <hr />
 <p>Although this is certainly not a guide on the <code>foreach</code>
-package (see the previous links for more detail on the package), there
-are a few parameters worth discussing here.</p>
+package (see the <a href="#serial-vs-parallel">previous links</a> for
+more detail on the package), there are a few parameters worth discussing
+here.</p>
 <ul>
 <li><p><code>.combine</code> — This is a function that tells
 <code>foreach</code> how to combine the results, e.g.,
@@ -797,7 +838,8 @@ your code. So, multiple R processes are spawned on your cores, but they
 all access the same single global environment. This minimizes parallel
 overhead communication between the processes. <strong>NOTE:</strong>
 This type of cluster is only available on UNIX-alike machines (i.e.,
-GNU-Linux, Mac), so Windows users cannot use this cluster type.</p></li>
+GNU-Linux, Mac), so <span style="color: red;"><strong>Windows users
+cannot use this cluster type</strong></span>.</p></li>
 <li><p><code>"PSOCK"</code> — This type of cluster does not have a
 shared environment, new global environments are created for each of the
 child processes. So, we have to tell the master process which objects to
@@ -847,41 +889,41 @@ longer as straightforward as in the serial case</strong>.</p>
 loop and parallel loop, and set the seed before hand. We’d expect that
 the results are the same, but this turns out to be false. First,
 serially:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Serially</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>serial_1 <span class="ot">=</span> serial_2 <span class="ot">=</span> <span class="fu">c</span>()</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) </span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  serial_1[i] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) </span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  serial_2[i] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(serial_1, serial_2)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Serially</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>serial_1 <span class="ot">=</span> serial_2 <span class="ot">=</span> <span class="fu">c</span>()</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  serial_1[i] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) </span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  serial_2[i] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(serial_1, serial_2)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p>which produces two vectors of the exact same numbers, as we’d expect
 given the above code.</p>
 <p>However, when we implement the “equivalent” in parallel (notice how
 the infix property becomes more apparent in the code below, too):</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parallel</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parallel</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
 <pre class="bg-danger"><code>## [1] FALSE</code></pre>
 <p>we end up with results which are not the same, despite setting the
 seed as one would typically do in the serial case. The details of why
@@ -900,116 +942,121 @@ results.</p>
 <li><strong><code>doRNG</code> Method 1</strong>: Set your seed as
 usual, and replace <code>%dopar%</code> with <code>%dorng%</code>:</li>
 </ol>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed and  %dorng%</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dorng%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dorng%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed and  %dorng%</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dorng%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dorng%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p><br />
-2. <strong><code>doRNG</code> Method 2</strong>: Register your back-end
-using <code>registerDoRNG()</code>, then use <code>%dopar%</code> as
+2. <strong><code>doRNG</code> Method 2</strong>: Set your seed using
+<code>registerDoRNG()</code> instead, then use <code>%dopar%</code> as
 usual:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># doRNG backend, %dopar%</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoRNG</span>(<span class="dv">123</span>)</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoRNG</span>(<span class="dv">123</span>)</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># doRNG backend, %dopar%</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoRNG</span>(<span class="dv">123</span>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoRNG</span>(<span class="dv">123</span>)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">.combine =</span> c) <span class="sc">%dopar%</span> { <span class="fu">rnorm</span>(<span class="dv">1</span>) }</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p>Both approaches result in reproducible parallel loops.</p>
 <p><br />
 </p>
 </div>
-<div id="option-2-core-level-seeds" class="section level3">
-<h3>Option 2: Core-level Seeds</h3>
+<div id="option-2-iteration-level-seeds" class="section level3">
+<h3>Option 2: Iteration-level Seeds</h3>
 <hr />
 <p>A bit of a hacky alternative to <code>doRNG</code> is to simply set
-the seed on each core. Remember from earlier that the instructions set
-on the right-hand side of <code>%dopar%</code> are passed to each core.
-Well, if each core has a unique seed, then any time we run the loops,
-the same results will obtain. To do this we</p>
+the seed for each iteration. Remember from earlier that the instructions
+set on the right-hand side of <code>%dopar%</code> are passed to each
+core. Well, if every iteration passed to a core has a unique seed, then
+any time we run the loops, the same results will obtain. To do this
+we</p>
 <ol style="list-style-type: decimal">
-<li><p>Set an “outer” seed in the traditional way.</p></li>
-<li><p>Sample “inner” seeds to be used in each set of parallel
-instructions. The number of inner seeds is equal to the number of
-simulations.</p></li>
+<li><p>Set an “outer” seed in the traditional way, i.e., using
+<code>set.seed()</code> outside <code>foreach</code>.</p></li>
+<li><p><code>sample()</code> “inner” seeds to be used in each iteration.
+The number of inner seeds is equal to the number of
+simulations/iterations (i.e., the max of your iteration index). Note
+that this sampling will always produce the same inner seeds, because
+we’ve set our outer seed in step (1).</p></li>
 <li><p>Set the seed within your simulation code using
-<code>set.seed()</code>, but index your inner seeds using the iteration
-number for the simulation.</p></li>
+<code>set.seed()</code>, but using an indexed inner seed, where the
+index is the iteration number.</p></li>
 </ol>
-<p>For example:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">10</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>inner_seeds <span class="ot">=</span> <span class="fu">sample</span>(</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">999999</span>, </span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">size =</span> nsims</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%dopar%</span> {</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c</span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%dopar%</span> {</span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
+<p>To make this more clear:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">10</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)                 <span class="co"># Set seed in the usual way</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>inner_seeds <span class="ot">=</span> <span class="fu">sample</span>(         <span class="co"># Sample nsims-many inner seeds</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="dv">999999</span>, </span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">size =</span> nsims</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>parallel_1 <span class="ot">=</span> </span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%dopar%</span> {</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])  <span class="co"># Set seed for each iteration, using indexed seed</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>parallel_2 <span class="ot">=</span> </span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>          <span class="at">.combine =</span> c</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>          ) <span class="sc">%dopar%</span> {</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(inner_seeds[i])</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
 <p>Now this is of course a bit hacky, but this approach does have
 practical utility. Namely, if you ever need nested parallel loops (using
-the <code>%:%</code> nesting operator detailed in the
-<code>foreach</code> documentation), then unfortunately the
-<code>%dorng%</code> backend is not supported. In this case, the only
-way I have found to successfully reproduce simulations is the above,
-core-level seed-setting approach. To be clear, this isn’t setting the
-same exact seed on all cores. We made a vector of seeds,
-<code>inner_seeds</code>, and each simulation uses a seed from this
-vector before executing its instructions. You can think of this as
-setting a different seed across a bunch of different R sessions, and
-then combining the results; however, the universe of inner seeds remains
-the same, and therefore so does the results set across runs.</p>
+the <code>%:%</code> nesting operator detailed in the <a
+href="https://cran.r-project.org/web/packages/foreach/vignettes/nested.html"><code>foreach</code>
+documentation</a>), then unfortunately the <code>%dorng%</code> backend
+is not supported. In this case, the only way I have found to
+successfully reproduce simulations is the above, iteration-level
+seed-setting approach. To be clear, this isn’t setting the same exact
+seed on all cores. We made a vector of seeds, <code>inner_seeds</code>,
+and each simulation uses a seed from this vector before executing its
+instructions. You can think of this as setting a different seed across a
+bunch of different R sessions, and then combining the results; however,
+the universe of inner seeds remains the same, and therefore so does the
+results set across runs.</p>
 <p><br />
 </p>
 </div>
@@ -1020,8 +1067,8 @@ the same, and therefore so does the results set across runs.</p>
 <p>Now we are running loops in parallel, and our pseudo-random numbers
 are reproducible as we would want. However, there is a potential lurking
 issue that will completely tank any simulations structured as we have
-here: other multithreaded/parallel tasks competing for CPU resources. In
-other words, if R is trying to execute simulations in parallel while
+here: other multit-hreaded/parallel tasks competing for CPU resources.
+In other words, if R is trying to execute simulations in parallel while
 also trying to execute some other task in parallel simultaneously, often
 times your computer will hang and eventually crash.</p>
 <p>So why would anyone be doing multiple forms of parallel processing
@@ -1058,12 +1105,12 @@ href="https://en.wikipedia.org/wiki/Fork_bomb">FORK bomb</a>.</p>
 the <a
 href="https://cran.r-project.org/web/packages/RhpcBLASctl/index.html"><code>RhpcBLASctl</code></a>
 package:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_get_num_procs</span>()</span></code></pre></div>
-<pre class="bg-success"><code>## [1] 12</code></pre>
 <div class="sourceCode" id="cb17"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_get_num_procs</span>()</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_get_num_procs</span>()</span></code></pre></div>
+<pre class="bg-success"><code>## [1] 12</code></pre>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_get_num_procs</span>()</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 20</code></pre>
 <p>If either of these results is greater than 1, then you have
 multithreading enabled. We won’t delve into the differences between BLAS
@@ -1075,8 +1122,8 @@ your BLAS/LAPACK library, and multi-threading is likely enabled by
 default</em></strong></span>.</p>
 <p>Alternatively, you can check on the name of your BLAS library, which
 will tell you at least if its not the default library:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()[<span class="fu">c</span>(<span class="st">&quot;BLAS&quot;</span>, <span class="st">&quot;LAPACK&quot;</span>)]</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()[<span class="fu">c</span>(<span class="st">&quot;BLAS&quot;</span>, <span class="st">&quot;LAPACK&quot;</span>)]</span></code></pre></div>
 <pre class="bg-success"><code>## $BLAS
 ## [1] &quot;/opt/intel/mkl/lib/intel64/libmkl_gf_lp64.so&quot;
 ## 
@@ -1114,34 +1161,34 @@ than one CPU.</p>
 href="https://cran.r-project.org/web/packages/RhpcBLASctl/index.html"><code>RhpcBLASctl</code></a>
 package, <strong>and be sure to disable multi-threading in your loop
 code as seen below, not just outside of it:</strong></p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in parent process </span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span> </span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">3</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in child processes </span></span>
-<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims,</span>
-<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">.packages =</span> <span class="st">&quot;RhpcBLASctl&quot;</span></span>
-<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">%dorng%</span> {</span>
-<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
-<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)           <span class="co"># DISABLE WITHIN LOOP HERE</span></span>
-<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)   </span>
-<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a><span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
-<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in parent process </span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span> </span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">3</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in child processes </span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims,</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">.packages =</span> <span class="st">&quot;RhpcBLASctl&quot;</span>   <span class="co"># Dont forget to export RhpcBLASCtl pkg</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">%dorng%</span> {</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)           <span class="co"># DISABLE WITHIN LOOP HERE</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)   </span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
 <p><br></p></li>
 <li><p>To disable <em>packaged multithreading</em>, you’ll just have to
 read the documentation for that package to determine how to set the max
@@ -1209,12 +1256,12 @@ random variables with every pairwise combination of these parameter
 values.</p>
 <p>To do so, we create vectors of these parameters, and then use
 <code>expand.grid()</code> to get the pairwise combinations:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>(<span class="at">grid =</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n))</span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>(<span class="at">grid =</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n))</span></code></pre></div>
 <pre class="bg-success"><code>##   mu sig2  n
 ## 1  0    1  5
 ## 2 -1    1  5
@@ -1228,31 +1275,51 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb22-1"><a h
 tabular format, which we can then loop over when creating data from our
 chosen data generating process. For example (omitting the back-end
 setup, etc. for clarity):</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. </span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid)</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dopar%</span> {</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>( <span class="at">n =</span> grid[i, <span class="st">&quot;n&quot;</span>],</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">mean =</span> grid[i, <span class="st">&quot;mu&quot;</span>],</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">sd =</span> <span class="fu">sqrt</span>(grid[i, <span class="st">&quot;sig2&quot;</span>])</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
-<p>Right now, the output from this is not the focus. The main point here
-is that we’ve created a <code>grid</code> of all unique pairwise
-parameter combinations, and we’ve looped over each row of that
-<code>grid</code> to then get random numbers using every possible
-parameter combination. In this way we’ve ensured that we simulate data
-from each of the desired parameterizations, all without having to
-manually specify the parameters, and without having to do any sort of
-nested looping, e.g. <code>for(i in mu){ for j in sig2 {...}}</code>.
-This is akin to a grid-search in optimization, although here we’re not
-searching for an optimal set of parameters, we’re investigating the
-behavior of some procedure at pre-defined grid points in the parameter
-space.</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. </span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dopar%</span> {</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>( <span class="at">n =</span> grid[i, <span class="st">&quot;n&quot;</span>],</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">mean =</span> grid[i, <span class="st">&quot;mu&quot;</span>],</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">sd =</span> <span class="fu">sqrt</span>(grid[i, <span class="st">&quot;sig2&quot;</span>])</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(out)</span></code></pre></div>
+<pre class="bg-success"><code>## [[1]]
+## [1]  0.8005543  1.1902066 -1.6895557  1.2394959 -0.1089660
+## 
+## [[2]]
+## [1] -1.1172420 -0.8169174  0.2805549 -2.7272706  0.6901844
+## 
+## [[3]]
+## [1]  0.8726288  4.3792074  0.9510634  0.4125969 -1.8167362
+## 
+## [[4]]
+## [1]  1.242596  0.429877 -1.096451 -2.358590 -2.270465
+## 
+## [[5]]
+##  [1] -0.21586539 -0.33491276 -1.08569914 -0.08542326  1.07061054 -0.14539355
+##  [7] -1.16554485 -0.81851572  0.68493608 -0.32005642
+## 
+## [[6]]
+##  [1] -2.3115224 -1.5996083 -1.1294107 -0.1132639 -1.1513960 -0.6702088
+##  [7] -4.2273228 -1.7717918 -0.7134514 -2.2205120</code></pre>
+<p>The main point here is that we’ve created a <code>grid</code> of all
+unique pairwise parameter combinations, and we’ve looped over each row
+of that <code>grid</code> to then get random numbers using every
+possible parameter combination. In this way we’ve ensured that we
+simulate data from each of the desired parameterizations, all without
+having to manually specify the parameters, and without having to do any
+sort of nested looping,
+e.g. <code>for(i in mu){ for j in sig2 {...}}</code>. This is akin to a
+grid-search in optimization, although here we’re not searching for an
+optimal set of parameters, we’re investigating the behavior of some
+procedure at pre-defined grid points in the parameter space.</p>
 <p><br />
 </p>
 <div id="extending-grids-to-multiple-simulations"
@@ -1267,15 +1334,15 @@ want 2 simulations instead of 1, then we can use <code>do.call()</code>,
 <code>cbind.data.frame</code>, and <code>replicate()</code> together to
 get a grid with each grid point appearing twice, so that we’ll have two
 simulations at that point instead of one:</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">2</span> </span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n)</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>(<span class="at">grid_multi =</span> <span class="fu">do.call</span>(rbind.data.frame, <span class="fu">replicate</span>(nsims, grid, <span class="at">simplify=</span>F)))</span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">2</span> </span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>(<span class="at">grid_multi =</span> <span class="fu">do.call</span>(rbind.data.frame, <span class="fu">replicate</span>(nsims, grid, <span class="at">simplify=</span>F)))</span></code></pre></div>
 <pre class="bg-success"><code>##    mu sig2  n
 ## 1   0    1  5
 ## 2  -1    1  5
@@ -1321,37 +1388,61 @@ replicating each grid point <code>nsims</code>-many times. That is, we
 could just repeatedly loop over the original <code>grid</code> object,
 rather than replicating it several times, like so (omitting the back-end
 setup, etc. for clarity):</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR CLARITY. SEE ENDING EXAMPLES FOR FULL SETUP.</span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Make grid WITHOUT REPLICATING </span></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>)</span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2)</span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="co"># make number of simulations a variable for looping</span></span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">100</span></span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid)</span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dorng%</span> {</span>
-<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">=</span> <span class="fu">list</span>()</span>
-<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># create an inner, nested loop that repeatedly simulates from a gridpoint</span></span>
-<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># instead of replicating the gridpoint and looping over the replicates</span></span>
-<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="fu">seq_len</span>(nsims)){</span>
-<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>      res[[j]] <span class="ot">=</span> <span class="fu">rnorm</span>( <span class="at">n =</span> grid[i, <span class="st">&quot;n&quot;</span>],</span>
-<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>                      <span class="at">mean =</span> grid[i, <span class="st">&quot;mu&quot;</span>],</span>
-<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">sd =</span> <span class="fu">sqrt</span>(grid[i, <span class="st">&quot;sig2&quot;</span>])</span>
-<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>              )</span>
-<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(res)</span>
-<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR CLARITY. SEE ENDING EXAMPLES FOR FULL SETUP.</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Make grid WITHOUT REPLICATING </span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">1.5</span>)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="co"># make number of simulations a variable for looping</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dopar%</span> {</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">=</span> <span class="fu">list</span>()</span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># create an inner, nested loop that repeatedly simulates from a gridpoint</span></span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># instead of replicating the gridpoint and looping over the replicates</span></span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="fu">seq_len</span>(nsims)){</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>      res[[j]] <span class="ot">=</span> <span class="fu">rnorm</span>( <span class="at">n =</span> grid[i, <span class="st">&quot;n&quot;</span>],</span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>                      <span class="at">mean =</span> grid[i, <span class="st">&quot;mu&quot;</span>],</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">sd =</span> <span class="fu">sqrt</span>(grid[i, <span class="st">&quot;sig2&quot;</span>])</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>                      )</span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(res)</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>out[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]</span></code></pre></div>
+<pre class="bg-success"><code>## [[1]]
+## [[1]][[1]]
+## [1]  0.8005543  1.1902066 -1.6895557  1.2394959 -0.1089660
+## 
+## [[1]][[2]]
+## [1] -0.1172420  0.1830826  1.2805549 -1.7272706  1.6901844
+## 
+## 
+## [[2]]
+## [[2]][[1]]
+## [1] -0.4961876  1.5283366 -0.4509033 -0.7617871 -2.0488931
+## 
+## [[2]][[2]]
+## [1]  0.2947633 -0.1744602 -1.0556860 -1.7843822 -1.7335032
+## 
+## 
+## [[3]]
+## [[3]][[1]]
+## [1] -0.2643800 -0.4101827 -1.3297044 -0.1046217  1.3112248
+## 
+## [[3]][[2]]
+## [1] -0.1780700 -1.4274951 -1.0024729  0.8388719 -0.3919875</code></pre>
 <p>The key difference here is that we create a single set of grid points
 without duplication (i.e., without using <code>replicate()</code>), and
 then create an inner loop— <code>for(j in seq_len(nsims))</code>—that
@@ -1363,25 +1454,18 @@ trivial though due to how R stores lists in memory, but that is a
 technical aside that I won’t delve into now (see <a
 href="https://adv-r.hadley.nz/vectors-chap.html#lists">this page</a> for
 more info).</p>
-<p>However, the major disadvantage of the nested-loop approach is load
-balancing. In most real-world applications we will be varying the sample
-size of our procedure, and by much more than we are doing so here; i.e.,
-we’ll estimate some model at small and large sample sizes. In doing so,
-the nested-loop approach becomes problematic for load balancing
-purposes, because the CPUs that have the small sample sizes will take
-way less time to complete their inner, nested loop (recall, the set of
-instructions on the right-hand side of <code>%dopar%</code> are executed
-on a single CPU). Eventually then, the CPUs with the large sample sizes
-will still be running their nested, inner-loops while the CPUs that had
-the smaller sample sizes have completed their tasks and are <em>sitting
-idle</em> doing nothing. That all in mind, for the specific toy examples
-here it turns out that the nested approach is faster than the
-replicating approach due to parallel processing overhead being greater
-than the time it takes to complete a task (see <a
-href="https://en.wikipedia.org/wiki/Parallel_slowdown">here</a> for more
-on this). However, for more interesting cases, this will generally not
-be true.</p>
-<p><br />
+<p>However, <strong>the major disadvantage of the nested-loop approach
+is load balancing</strong>. In most real-world applications we will be
+varying the sample size of our procedure, and by much more than we are
+doing so here; i.e., we’ll estimate some model at small and large sample
+sizes. In doing so, the nested-loop approach becomes problematic for
+load balancing purposes, because the CPUs that have the small sample
+sizes will take way less time to complete their inner, nested loop
+(recall, the set of instructions on the right-hand side of
+<code>%dopar%</code> are executed on a single CPU). Eventually then, the
+CPUs with the large sample sizes will still be running their nested,
+inner-loops while the CPUs that had the smaller sample sizes have
+completed their tasks and are <em>sitting idle</em> doing nothing.<br />
 </p>
 </div>
 <div id="caveats-1" class="section level3">
@@ -1390,35 +1474,35 @@ be true.</p>
 <p>In most cases, the replicated-grid approach will be better, often
 times by several hours when compared with the parallel-outer,
 serial-inner approach. However, there are at least two instances where
-this won’t hold, one of which was alluded to in the previous
-paragraph.</p>
+this won’t hold.</p>
 <ol style="list-style-type: decimal">
 <li><p>If the run-time of a single simulation is small, e.g., &lt; 1
 second, it is possible that the overhead from parallelizing at the
 simulation level—rather than the grid-point level—will exceed the gains
-from parallelizing. This is known as parallel slow down. Its possible to
-mitigate this by using prescheduling, but even this won’t always fix the
-issue if single simulations take a very small amount of time.
-Prescheduling splits the total number of tasks into chunks (at random)
-and assigns these tasks to each CPU. So if you allocate 10 CPUs, and
-there are 100 tasks, the computer will randomly select 10 tasks to
-assign to each CPU. Without prescheduling, when a CPU finishes a task,
-it will communicate with the other CPUs in the network or the parent
-process and determine what tasks still need doing, and then it does one
-of the ones that remains. So, by prescheduling we reduce some of this
-communication overhead. There are advantages and disadvantages to
-prescheduling that I won’t go into here, but a general rule is if your
-tasks are numerous and require little time individually, use
-prescheduling, otherwise don’t. To enable presheduling in
+from parallelizing. This is known as <a
+href="https://en.wikipedia.org/wiki/Parallel_slowdown">parallel slow
+down</a>. It’s possible to mitigate this by using prescheduling, but
+even this won’t always fix the issue if single simulations take a very
+small amount of time. Prescheduling splits the total number of tasks
+into chunks (at random) and assigns these tasks to each CPU. So if you
+allocate 10 CPUs, and there are 100 tasks, the computer will randomly
+select 10 tasks to assign to each CPU. Without prescheduling, when a CPU
+finishes a task, it will communicate with the other CPUs in the network
+or the parent process and determine what tasks still need doing, and
+then it does one of the ones that remains. So, by prescheduling we
+reduce some of this communication overhead. There are advantages and
+disadvantages to prescheduling that I won’t go into here, but a general
+rule is if your tasks are numerous and require little time individually,
+use prescheduling, otherwise don’t. To enable presheduling in
 <code>foreach</code>, do the following:</p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule =</span> <span class="cn">TRUE</span>)) </span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="sc">%dorng%</span> {</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>      [...code...]</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div></li>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule =</span> <span class="cn">TRUE</span>)) </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="sc">%dorng%</span> {</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>      [...code...]</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div></li>
 <li><p>If you are doing some form of Markov Chain Monte Carlo (MCMC),
 rather than traditional Monte Carlo analysis, the nested loop approach
 will generally become <strong><em>necessary</em></strong>. For things
@@ -1483,14 +1567,15 @@ implement.</p>
 </p>
 <div id="simulation-function" class="section level3">
 <h3>Simulation Function</h3>
+<hr />
 <p>The goal of the simulation function is to take in one row from our
 parameter grid, and use those parameters to create a dataset that will
 eventually be transformed via estimation or some other procedure of
 interest. Keeping with the toy example used previously, lets suppose we
 are just simulating some realizations of a normal random variable at
 various grid points and sample sizes. We have our grid from earlier:</p>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(grid_multi)</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(grid_multi)</span></code></pre></div>
 <pre class="bg-success"><code>##    mu sig2  n
 ## 1   0    1  5
 ## 2  -1    1  5
@@ -1510,33 +1595,33 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb29-1"><a h
 ## 16 -1    3 10</code></pre>
 <p>which has 3 parameters, <code>mu</code>, <code>sig2</code> and
 <code>n</code>. So our simulation function will have to take in <em>at
-least</em> these parameters in some way, and potentially others. It is
-my view that the easiest way to do this is just to take in a vector of
-parameters as a single parameter to the function, rather than explicitly
-naming each parameter to the function. This way, if the grid columns
-change, we don’t have to then go and add or remove parameters from the
-simulation function.</p>
+least</em> these parameters, and potentially others. It is my view that
+the easiest way to do this is just to take in a vector of parameters as
+a single parameter to the function, rather than explicitly naming each
+parameter to the function. This way, if the grid columns change, we
+don’t have to then go and add or remove parameters from the simulation
+function.</p>
 <p>For example, we could specify the parameters explicitly, then index
 our grid by row when passing the arguments (in this case, just row
 1):</p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(mu, sig2, n){</span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(</span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">mu =</span> mu, </span>
-<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">sig2 =</span> sig2, </span>
-<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">n =</span> n</span>
-<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(</span>
-<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">mu =</span> grid_multi[<span class="dv">1</span>, <span class="st">&quot;mu&quot;</span>], </span>
-<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">sig2 =</span> grid_multi[<span class="dv">1</span>, <span class="st">&quot;sig2&quot;</span>],</span>
-<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> grid_multi[<span class="dv">1</span>, <span class="st">&quot;n&quot;</span>]</span>
-<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(mu, sig2, n){</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">mu =</span> mu, </span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">sig2 =</span> sig2, </span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">n =</span> n</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">mu =</span> grid_multi[<span class="dv">1</span>, <span class="st">&quot;mu&quot;</span>], </span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">sig2 =</span> grid_multi[<span class="dv">1</span>, <span class="st">&quot;sig2&quot;</span>],</span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> grid_multi[<span class="dv">1</span>, <span class="st">&quot;n&quot;</span>]</span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
 <pre class="bg-success"><code>## $mu
 ## [1] 0
 ## 
@@ -1550,22 +1635,22 @@ then have to update the <code>simulate_fn</code> function accordingly.
 Updating the function’s parameters can be avoided if we just pass a
 named parameter vector as a single parameter, and unpack it inside the
 function:</p>
-<div class="sourceCode" id="cb33"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row) <span class="co"># re-class to vector from data.frame</span></span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(</span>
-<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">mu =</span> grid_row[<span class="st">&quot;mu&quot;</span>], </span>
-<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">sig2 =</span> grid_row[<span class="st">&quot;sig2&quot;</span>], </span>
-<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">n =</span> grid_row[<span class="st">&quot;n&quot;</span>]</span>
-<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(grid_multi[<span class="dv">1</span>,])</span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row) <span class="co"># re-class to vector from data.frame</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">mu =</span> grid_row[<span class="st">&quot;mu&quot;</span>], </span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">sig2 =</span> grid_row[<span class="st">&quot;sig2&quot;</span>], </span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">n =</span> grid_row[<span class="st">&quot;n&quot;</span>]</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(grid_multi[<span class="dv">1</span>,])</span></code></pre></div>
 <pre class="bg-success"><code>## $mu
 ## mu 
 ##  0 
@@ -1577,24 +1662,26 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb33-1"><a h
 ## $n
 ## n 
 ## 5</code></pre>
+<p><br />
+</p>
 <p>Using this second approach then, we can define a function to simulate
 the normal realizations, and see what it produces for a single iteration
 on our grid:</p>
-<div class="sourceCode" id="cb35"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnorm</span>(</span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[<span class="st">&quot;n&quot;</span>], </span>
-<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> grid_row[<span class="st">&quot;mu&quot;</span>],</span>
-<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd =</span> <span class="fu">sqrt</span>(grid_row[<span class="st">&quot;sig2&quot;</span>])</span>
-<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(<span class="at">grid_row =</span> grid_multi[<span class="dv">1</span>,])</span></code></pre></div>
-<pre class="bg-success"><code>## [1] -0.3858557 -1.5701355  1.2269426  0.6666944 -1.1516032</code></pre>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnorm</span>(</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[<span class="st">&quot;n&quot;</span>], </span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> grid_row[<span class="st">&quot;mu&quot;</span>],</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd =</span> <span class="fu">sqrt</span>(grid_row[<span class="st">&quot;sig2&quot;</span>])</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(<span class="at">grid_row =</span> grid_multi[<span class="dv">1</span>,])</span></code></pre></div>
+<pre class="bg-success"><code>## [1]  0.8005543  1.1902066 -1.6895557  1.2394959 -0.1089660</code></pre>
 <p>which is a numeric vector, as we would expect. Now we can do whatever
 transformation of this data to obtain statistics of interest for each
 iteration. However, we’ll need an estimation function first.</p>
@@ -1603,43 +1690,54 @@ iteration. However, we’ll need an estimation function first.</p>
 <div id="estimation-function" class="section level3">
 <h3>Estimation Function</h3>
 <hr />
-<p>To keep up the toy example, lets say now that we’re interested in the
-estimators of the first and second moments of a normal random variable
-after we’ve exponentiated it (that is, of the log-normal distribution).
-So we’ll need a function that takes in the data, exponentiates it, and
-computes these estimates. <strong>Importantly,</strong> we want to know
-how the various parameters under consideration impact these estimators
-(if at all), so we need to also keep track of the parameters that we’re
-using. One possibility is the following, where we again pass in the
-data-generating grid row:</p>
-<div class="sourceCode" id="cb37"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>estimate_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  dat_exp <span class="ot">=</span> <span class="fu">exp</span>(dat)</span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  xbar <span class="ot">=</span> <span class="fu">mean</span>(dat_exp)</span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  s2   <span class="ot">=</span> <span class="fu">var</span>(dat_exp)</span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">c</span>(<span class="at">xbar =</span> xbar, <span class="at">s2 =</span> s2, grid_row)</span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>So now we’ll simulate some data using <code>simulate_fn</code> and
-return the quantities of interest from this data using the
-<code>estimate_fn</code>:</p>
-<div class="sourceCode" id="cb38"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_multi[<span class="dv">1</span>,])</span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">=</span> <span class="fu">simulate_fn</span>(<span class="at">grid_row =</span> grid_row)</span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="fu">estimate_fn</span>(</span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">dat =</span> dat, </span>
-<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid_row =</span> grid_row</span>
-<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>The goal of the estimation function is to take in the data simulated
+from the simulation function (<code>simulate_fn()</code>, previously),
+and carry out whatever procedure on that data we are interested in
+analyzing via the Monte Carlo method. To keep up the toy example, lets
+say now that we’re interested in the estimators of the first and second
+moments of a normal random variable after we’ve exponentiated it (that
+is, of the log-normal distribution). So we’ll need a function that takes
+in the data, exponentiates it, and computes these estimates.
+<strong>Importantly,</strong> we want to know how the various parameters
+under consideration impact these estimators (if at all), so we need to
+also keep track of the parameters that we’re using to generate the data
+for each iteration. One possibility is the following, where we again
+pass in the data-generating grid row:</p>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>estimate_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  dat_exp <span class="ot">=</span> <span class="fu">exp</span>(dat)</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  xbar <span class="ot">=</span> <span class="fu">mean</span>(dat_exp)</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  s2   <span class="ot">=</span> <span class="fu">var</span>(dat_exp)</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">c</span>(<span class="at">xbar =</span> xbar, <span class="at">s2 =</span> s2, grid_row)</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><br />
+</p>
+<p>So now we’ll simulate some data using <code>simulate_fn</code> at a
+single grid-point, <code>grid_multi[1,]</code>, and return the
+quantities of interest from this data using the
+<code>estimate_fn()</code>:</p>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_multi[<span class="dv">1</span>,])</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">=</span> <span class="fu">simulate_fn</span>(<span class="at">grid_row =</span> grid_row)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="fu">estimate_fn</span>(</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">dat =</span> dat, </span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid_row =</span> grid_row</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <pre class="bg-success"><code>##     xbar       s2       mu     sig2        n 
-## 1.165890 0.721435 0.000000 1.000000 5.000000</code></pre>
+## 2.257434 4.779131 0.000000 1.000000 5.000000</code></pre>
 <p>which gives us the sample mean and variance for a single iteration of
 transforming data to log-normal realizations, as well as stores the
-data-generating parameters for use in post-simulation analysis.</p>
+data-generating parameters for use in post-simulation analysis.
+Inductively, we can imagine doing this for all rows in our grid, which
+would give us results for all parameter comibinations multiple times. We
+could then analyze these results graphically or otherwise. The next
+section puts all of this together in a comprehensive toy example.</p>
 <p> </p>
 </div>
 </div>
@@ -1648,90 +1746,116 @@ data-generating parameters for use in post-simulation analysis.</p>
 <hr />
 <p>Before we jump into some more serious examples, we can combine
 everything we’ve learned using the toy example, just to give an idea
-about the structure. I’m not going to separate the code out into each
-step below; all of it will appear in a single chunk with comments so as
-to mimic what we would actually have in a script. I’ll also be doing
-things in a slightly different order than was presented in the guide.
-This is again for the example of analyzing the estimators of the first
-two moments of the log-normal distribution under various
-parameterizations. I’ll do 30 simulations at each grid point for
-demonstration purposes, but in reality you’d probably want more.</p>
-<div class="sourceCode" id="cb40"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load up packages </span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;doParallel&quot;</span>, <span class="st">&quot;doRNG&quot;</span>, <span class="st">&quot;RhpcBLASctl&quot;</span>)</span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">setdiff</span>(pks, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">length</span>(needed) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(pks, <span class="at">Ncpus =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
-<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Define Simulation and Estimation Functions</span></span>
-<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
-<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnorm</span>(</span>
-<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[<span class="st">&quot;n&quot;</span>], </span>
-<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> grid_row[<span class="st">&quot;mu&quot;</span>],</span>
-<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd =</span> <span class="fu">sqrt</span>(grid_row[<span class="st">&quot;sig2&quot;</span>])</span>
-<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-19"><a href="#cb40-19" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb40-20"><a href="#cb40-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-21"><a href="#cb40-21" aria-hidden="true" tabindex="-1"></a>estimate_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
-<span id="cb40-22"><a href="#cb40-22" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-23"><a href="#cb40-23" aria-hidden="true" tabindex="-1"></a>  dat_exp <span class="ot">=</span> <span class="fu">exp</span>(dat)</span>
-<span id="cb40-24"><a href="#cb40-24" aria-hidden="true" tabindex="-1"></a>  xbar <span class="ot">=</span> <span class="fu">mean</span>(dat_exp)</span>
-<span id="cb40-25"><a href="#cb40-25" aria-hidden="true" tabindex="-1"></a>  s2   <span class="ot">=</span> <span class="fu">var</span>(dat_exp)</span>
-<span id="cb40-26"><a href="#cb40-26" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-27"><a href="#cb40-27" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">c</span>(<span class="at">xbar =</span> xbar, <span class="at">s2 =</span> s2, grid_row)</span>
-<span id="cb40-28"><a href="#cb40-28" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-29"><a href="#cb40-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb40-30"><a href="#cb40-30" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb40-31"><a href="#cb40-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-32"><a href="#cb40-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Make the parameter grid </span></span>
-<span id="cb40-33"><a href="#cb40-33" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">300</span> </span>
-<span id="cb40-34"><a href="#cb40-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-35"><a href="#cb40-35" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
-<span id="cb40-36"><a href="#cb40-36" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
-<span id="cb40-37"><a href="#cb40-37" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
-<span id="cb40-38"><a href="#cb40-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-39"><a href="#cb40-39" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n)</span>
-<span id="cb40-40"><a href="#cb40-40" aria-hidden="true" tabindex="-1"></a>grid_multi <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, <span class="fu">replicate</span>(nsims, grid, <span class="at">simplify=</span>F))</span>
-<span id="cb40-41"><a href="#cb40-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-42"><a href="#cb40-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable BLAS/LAPACK multithreading in parent process </span></span>
-<span id="cb40-43"><a href="#cb40-43" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb40-44"><a href="#cb40-44" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb40-45"><a href="#cb40-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-46"><a href="#cb40-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Spin up backend</span></span>
-<span id="cb40-47"><a href="#cb40-47" aria-hidden="true" tabindex="-1"></a>nprocs <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span></span>
-<span id="cb40-48"><a href="#cb40-48" aria-hidden="true" tabindex="-1"></a>os <span class="ot">=</span> .Platform<span class="sc">$</span>OS.type</span>
-<span id="cb40-49"><a href="#cb40-49" aria-hidden="true" tabindex="-1"></a>type <span class="ot">=</span> <span class="cf">if</span>(<span class="fu">grepl</span>(<span class="st">&#39;unix&#39;</span>, os)) <span class="st">&#39;FORK&#39;</span> <span class="cf">else</span> <span class="st">&#39;PSOCK&#39;</span></span>
-<span id="cb40-50"><a href="#cb40-50" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(nprocs, <span class="at">type =</span> type)</span>
-<span id="cb40-51"><a href="#cb40-51" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb40-52"><a href="#cb40-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-53"><a href="#cb40-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Run sims </span></span>
-<span id="cb40-54"><a href="#cb40-54" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb40-55"><a href="#cb40-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-56"><a href="#cb40-56" aria-hidden="true" tabindex="-1"></a>res <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid_multi)),</span>
-<span id="cb40-57"><a href="#cb40-57" aria-hidden="true" tabindex="-1"></a>              <span class="at">.packages =</span> <span class="st">&#39;RhpcBLASctl&#39;</span>,</span>
-<span id="cb40-58"><a href="#cb40-58" aria-hidden="true" tabindex="-1"></a>              <span class="at">.errorhandling =</span> <span class="st">&quot;pass&quot;</span>,</span>
-<span id="cb40-59"><a href="#cb40-59" aria-hidden="true" tabindex="-1"></a>              <span class="at">.inorder =</span> F,</span>
-<span id="cb40-60"><a href="#cb40-60" aria-hidden="true" tabindex="-1"></a>              <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T)</span>
-<span id="cb40-61"><a href="#cb40-61" aria-hidden="true" tabindex="-1"></a>              ) <span class="sc">%dorng%</span> {</span>
-<span id="cb40-62"><a href="#cb40-62" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb40-63"><a href="#cb40-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb40-64"><a href="#cb40-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb40-65"><a href="#cb40-65" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-66"><a href="#cb40-66" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_multi[i,])</span>
-<span id="cb40-67"><a href="#cb40-67" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb40-68"><a href="#cb40-68" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulate_fn</span>(grid_row)</span>
-<span id="cb40-69"><a href="#cb40-69" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">estimate_fn</span>(dat, grid_row)</span>
-<span id="cb40-70"><a href="#cb40-70" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-71"><a href="#cb40-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb40-72"><a href="#cb40-72" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb40-73"><a href="#cb40-73" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb40-74"><a href="#cb40-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-75"><a href="#cb40-75" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
+about the structure. I’m not going to separate the code out for each
+step we’ve covered; all of it will appear in a single chunk with
+comments so as to mimic what we would actually have in a script. I’ll
+also be doing things in a slightly different order than was presented in
+the guide for computational and presentation purposes. This is again for
+the example of analyzing the estimators of the first two moments of the
+log-normal distribution under various parameterizations. I’ll do 30
+simulations at each grid point for demonstration purposes, but in
+reality you’d probably want more.</p>
+<div class="sourceCode" id="cb44"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load up packages </span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;doParallel&quot;</span>, <span class="st">&quot;doRNG&quot;</span>, <span class="st">&quot;RhpcBLASctl&quot;</span>)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">setdiff</span>(pks, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">length</span>(needed) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(pks, <span class="at">Ncpus =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Define Simulation and Estimation Functions</span></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnorm</span>(</span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[<span class="st">&quot;n&quot;</span>], </span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> grid_row[<span class="st">&quot;mu&quot;</span>],</span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd =</span> <span class="fu">sqrt</span>(grid_row[<span class="st">&quot;sig2&quot;</span>])</span>
+<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-21"><a href="#cb44-21" aria-hidden="true" tabindex="-1"></a>estimate_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
+<span id="cb44-22"><a href="#cb44-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-23"><a href="#cb44-23" aria-hidden="true" tabindex="-1"></a>  dat_exp <span class="ot">=</span> <span class="fu">exp</span>(dat)</span>
+<span id="cb44-24"><a href="#cb44-24" aria-hidden="true" tabindex="-1"></a>  xbar <span class="ot">=</span> <span class="fu">mean</span>(dat_exp)</span>
+<span id="cb44-25"><a href="#cb44-25" aria-hidden="true" tabindex="-1"></a>  s2   <span class="ot">=</span> <span class="fu">var</span>(dat_exp)</span>
+<span id="cb44-26"><a href="#cb44-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-27"><a href="#cb44-27" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">c</span>(<span class="at">xbar =</span> xbar, <span class="at">s2 =</span> s2, grid_row)</span>
+<span id="cb44-28"><a href="#cb44-28" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-29"><a href="#cb44-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb44-30"><a href="#cb44-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb44-31"><a href="#cb44-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-32"><a href="#cb44-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Make the parameter grid </span></span>
+<span id="cb44-33"><a href="#cb44-33" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">300</span> </span>
+<span id="cb44-34"><a href="#cb44-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-35"><a href="#cb44-35" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb44-36"><a href="#cb44-36" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
+<span id="cb44-37"><a href="#cb44-37" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
+<span id="cb44-38"><a href="#cb44-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-39"><a href="#cb44-39" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">mu =</span> mu, <span class="at">sig2 =</span> sig2, <span class="at">n =</span> n)</span>
+<span id="cb44-40"><a href="#cb44-40" aria-hidden="true" tabindex="-1"></a>grid_multi <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, <span class="fu">replicate</span>(nsims, grid, <span class="at">simplify=</span>F))</span>
+<span id="cb44-41"><a href="#cb44-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-42"><a href="#cb44-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable BLAS/LAPACK multithreading in parent process </span></span>
+<span id="cb44-43"><a href="#cb44-43" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb44-44"><a href="#cb44-44" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb44-45"><a href="#cb44-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-46"><a href="#cb44-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Spin up backend</span></span>
+<span id="cb44-47"><a href="#cb44-47" aria-hidden="true" tabindex="-1"></a>nprocs <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb44-48"><a href="#cb44-48" aria-hidden="true" tabindex="-1"></a>os <span class="ot">=</span> .Platform<span class="sc">$</span>OS.type</span>
+<span id="cb44-49"><a href="#cb44-49" aria-hidden="true" tabindex="-1"></a>type <span class="ot">=</span> <span class="cf">if</span>(<span class="fu">grepl</span>(<span class="st">&#39;unix&#39;</span>, os)) <span class="st">&#39;FORK&#39;</span> <span class="cf">else</span> <span class="st">&#39;PSOCK&#39;</span></span>
+<span id="cb44-50"><a href="#cb44-50" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(nprocs, <span class="at">type =</span> type)</span>
+<span id="cb44-51"><a href="#cb44-51" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb44-52"><a href="#cb44-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-53"><a href="#cb44-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Run sims </span></span>
+<span id="cb44-54"><a href="#cb44-54" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb44-55"><a href="#cb44-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-56"><a href="#cb44-56" aria-hidden="true" tabindex="-1"></a>res <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid_multi)),</span>
+<span id="cb44-57"><a href="#cb44-57" aria-hidden="true" tabindex="-1"></a>              <span class="at">.packages =</span> <span class="st">&#39;RhpcBLASctl&#39;</span>,</span>
+<span id="cb44-58"><a href="#cb44-58" aria-hidden="true" tabindex="-1"></a>              <span class="at">.errorhandling =</span> <span class="st">&quot;pass&quot;</span>,</span>
+<span id="cb44-59"><a href="#cb44-59" aria-hidden="true" tabindex="-1"></a>              <span class="at">.inorder =</span> F,</span>
+<span id="cb44-60"><a href="#cb44-60" aria-hidden="true" tabindex="-1"></a>              <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T)</span>
+<span id="cb44-61"><a href="#cb44-61" aria-hidden="true" tabindex="-1"></a>              ) <span class="sc">%dorng%</span> {</span>
+<span id="cb44-62"><a href="#cb44-62" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb44-63"><a href="#cb44-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb44-64"><a href="#cb44-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb44-65"><a href="#cb44-65" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-66"><a href="#cb44-66" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_multi[i,])</span>
+<span id="cb44-67"><a href="#cb44-67" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb44-68"><a href="#cb44-68" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulate_fn</span>(grid_row)</span>
+<span id="cb44-69"><a href="#cb44-69" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">estimate_fn</span>(dat, grid_row)</span>
+<span id="cb44-70"><a href="#cb44-70" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-71"><a href="#cb44-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb44-72"><a href="#cb44-72" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb44-73"><a href="#cb44-73" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb44-74"><a href="#cb44-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-75"><a href="#cb44-75" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
+<span id="cb44-76"><a href="#cb44-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-77"><a href="#cb44-77" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(res)</span></code></pre></div>
+<pre class="bg-success"><code>## [[1]]
+##      xbar        s2        mu      sig2         n 
+## 1.3026862 0.3935615 0.0000000 1.0000000 5.0000000 
+## 
+## [[2]]
+##        xbar          s2          mu        sig2           n 
+##  0.34552657  0.03082885 -1.00000000  1.00000000  5.00000000 
+## 
+## [[3]]
+##     xbar       s2       mu     sig2        n 
+##  4.48814 29.04685  0.00000  3.00000  5.00000 
+## 
+## [[4]]
+##     xbar       s2       mu     sig2        n 
+##  3.73561 59.18659 -1.00000  3.00000  5.00000 
+## 
+## [[5]]
+##      xbar        s2        mu      sig2         n 
+##  2.091634 20.764002  0.000000  1.000000 10.000000 
+## 
+## [[6]]
+##       xbar         s2         mu       sig2          n 
+##  0.7508876  0.7733243 -1.0000000  1.0000000 10.0000000</code></pre>
 </div>
 
 
