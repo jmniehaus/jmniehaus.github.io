@@ -33,22 +33,27 @@ knitr::opts_chunk$set(class.output = "bg-success",
 
 \
 
+In this guide I discuss in-depth five steps to setting up parallel Monte Carlo analyses using R. Generally, these steps consist of:
 
-After quite a few iterations of writing Monte Carlo simulations, I've decided to compile a post on how to get started doing montes, all without having to endure some of the painful mistakes that I made. These mistakes include (but are not limited to):
 
-1. Serial simulations/loops
-2. Ignoring implicit parallelization
-3. Improper seed-setting
-4. Nested loops
-5. Ignoring load balancing
-6. Ignoring copy-on-modify overhead
-7. Improper version control
-8. Not using functions, or enough of them
-9. Using Windows operating system
+1. [Switching from serial to parallel loops](#serial-vs-parallel)
+2. [Ensuring reproducibility by setting seeds properly for parallel tasks](#seed-setting-and-parallelism)
+3. [Ensuring that other parallel tasks are not competing for CPU resources](#thread-competition)
+4. [Properly setting up simulation parameter grids](#parameter-grids)
+5. [Compartmentalizing code into simulation and estimation functions](#using-functions-properly)
 
-First, I will walk through some of the details, with toy examples to drive points home where applicable. Finally, I will take all of this and put it together in a more serious application where we explore the bias of logistic regression in small samples, as well as a penalized likelihood approach to solving this bias. 
 
-*This guide will applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. It should also be noted that this guide won't be useful for most extremely simple Monte Carlo problems, as parallelism can actually slow those types of tasks down.*
+First, I will walk through each of these five points with toy examples to drive ideas home where applicable. Finally, I will take all of this and put it together in some more serious applications showing the downward bias of autoregressive parameters in time series models, small sample bias of logistic regression parameters (as well as a correction), and the inefficiency of the Heckman-correction in selection modeling. 
+
+Before getting started though, there are **a few items to take note of**: 
+
+* I assume that you are familiar with the basics of the [Monte Carlo method](https://en.wikipedia.org/wiki/Monte_Carlo_method). I won't be covering its principles at all here. If you are unfamiliar with the method, it would be wise to read up on it before reading through this guide, as most of this won't make much sense otherwise. An in-depth book on the topic is available (for purchase) [here](https://onlinelibrary.wiley.com/doi/book/10.1002/9781118014967), but there are lots of free online resources available elsewhere.
+
+* This guide will applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. 
+
+* This guide won't be as useful for most extremely simple Monte Carlo problems because I emphasize doing things in parallel, but parallel processing can actually slow down simple Monte Carlos relative to a serial processing. Some of the principles in this guide apply regardless, but all examples and discussion assume the parallel case. 
+
+\
 
 # Serial vs Parallel
 ***
@@ -71,7 +76,8 @@ I've used both approaches extensively (in the past I only used the `apply` appro
   
   d. Permits nested parallel looping
   
-For these reasons, I won't be covering the `apply` family of functions here. I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`.
+For these reasons, I won't be covering the `apply` family of functions here. I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`. This is only a quick introduction to `foreach` though, so I highly recommend taking a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). If you're more of a DataCamp or otherwise type of person, there is an entire course on [parallel processing in R](https://www.datacamp.com/courses/parallel-programming-in-r) available through them (I am not affiliated with DataCamp, nor do I receive anything from them for linking this). There are also more in-depth resources on parallel processing in R available [here](https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html), [here](https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html), and [here](https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html), although Googling around will definitely yield droves of additional content.
+
 
 \
 
@@ -121,8 +127,7 @@ The second function call is the call to `foreach()`, which we just learned is on
 
 Finally, on the right-hand side of `%do%` we have an `expression`-class object, which can just be thought of as our loop code. But, because these instructions will be executed on several CPUs simultaneously, we need to send them off to each core first, and _then_ execute the instructions and return their collective results. This is why `foreach` loops are actually function calls, because they have to send off a set of instructions in a unified way to several child processes for execution, keep track of that execution, combine the results, and return them in a sensible way. In contrast, `for` loops are running on a single process, so the instructions can just be executed on that process in real-time. 
 
-If any of this is confusing, the main takeaway is that `foreach` loops are actually functions. Since functions have a `return` value, we stored the results in the `out_foreach` object, and gave the `foreach` loop an explicit `return()` call at the end. This is only a quick introduction to `foreach` though, so I highly recommend taking a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). 
-
+If any of this is confusing, the main takeaway is that `foreach` loops are actually functions. Since functions have a `return` value, we stored the results in the `out_foreach` object, and gave the `foreach` loop an explicit `return()` call at the end. 
 
 
 \
@@ -162,6 +167,41 @@ out_foreach = foreach(i = seq_along(vec),
 stopCluster(cl)
 ```
 
+\
+
+### Important `foreach` Parameters
+***
+
+Although this is certainly not a guide on the `foreach` package (see the previous links for more detail on the package), there are a few parameters worth discussing here. 
+
+* `.combine` --- This is a function that tells `foreach` how to combine the results, e.g., `list`, `c` (for concatenate), `rbind`, etc. (or some custom function). I typically leave this `NULL`, which returns the results in a list. I do this because combining results takes time, and I don't necessarily want to take that time immediately after simulations complete. 
+
+* `.inorder` --- A logical value that indicates whether the results should be combined in the order they were submitted to the workers. I always set this to `FALSE` because I don't care about the ordering, I just want my results as fast as possible. **NOTE: the default is `TRUE`, meaning you combine in order by default.**
+
+* `.multicombine` --- Logical value indicating whether the `.combine` function can take more than 2 arguments. For most conventional functions, e.g., `list`, `cbind`, `rbind`, `c`, this should be `TRUE`. This matters because if the `.combine` function has more than 2 arguments, then the `do.call` function can be used to call it on a list, which will tend to be faster than running a loop to combine results iteratively. Essentially, be sure to set this to `TRUE` if using the conventional functions listed here. 
+
+* `.maxcombine` --- This tells `foreach` how many sets of results to combine at one time. The default is 100 results at a time, which is going to be painfully slow for any modest set of Monte Carlo results. I tend to set this to the total number of expected results, meaning that `foreach` should combine them all at once. With modern hardware this shouldn't be too problematic, but I stand to be corrected. 
+
+* `.errorhandling` --- Tells how to handle errors on each thread. When I'm debugging, I typically set this to `"stop"`, so that errors kill the simulations. However, once I know there are no issues, I set this to `"pass"` so that errors are ignored, but their message is kept in the results. For complicated problems this is useful because there are instances where an algorithm may not converge due to random chance in the data generating process. But, we don't want to kill all simulations when that happens, we want to just keep going but know that for that particular iteration the algorithm did not converge. 
+
+* `.packages` --- This tells `foreach` what packages to export to each parallel process. Remember, `foreach` spins up a separate instance of R on each core, so we have to tell these cores what packages to load. We do so using the `.packages` parameter. 
+
+* `.export` --- This tells `foreach` which objects from the global environment to export to each process. Again, because separate instances of R are created, we need to ensure that each process has access to all the relevant objects. **Note:** This is less relevant when using a `FORK` cluster, as detailed in the next section. 
+
+\
+
+### `FORK` or `PSOCK`?
+***
+
+When spinning up a parallel cluster, e.g., using `makeCluster(cl)` as we did [previously](#making-foreach-run-in-parallel), there is a `type` parameter that controls the type of cluster that we create, which is one of either `"FORK"` or `"PSOCK"`. The default is `"PSOCK"`, but this can be set, e.g. by calling `makeCluster(your_cluster_object, type = "FORK")`. The details on each cluster type are as follows:
+
+* `"FORK"` --- This type of cluster duplicates the master process on each child process, but allows them all to access the same shared global environment from the master process. Think of the master process as the process that you are interacting with in R where you type your code. So, multiple R processes are spawned on your cores, but they all access the same single global environment. This minimizes parallel overhead communication between the processes. **NOTE:** This type of cluster is only available on UNIX-alike machines (i.e., GNU-Linux, Mac), so Windows users cannot use this cluster type.
+
+* `"PSOCK"` --- This type of cluster does not have a shared environment, new global environments are created for each of the child processes. So, we have to tell the master process which objects to export to its children using the `.export` option as mentioned in the previous section, because entirely new (and empty) environments are created for each child process. 
+
+Because of the copying and ensuing communication required for `"PSOCK"` clusters, some estimates put `"FORKS"` as being [roughly 40% faster than socket clusters](https://www.r-bloggers.com/2019/06/parallel-r-socket-or-fork/). Again though, if you're using Windows, you won't be able to leverage this forking speed bonus. 
+
+If you would like to be able to fork but are on Windows, then [dual-booting](https://opensource.com/article/18/5/dual-boot-linux) a Linux OS alongside your Windows installation is a free way to do so while keeping your Windows installation intact. Its also a great way to start learning about the Linux system, as this is often the system of choice in many industrial data science positions. The purpose of this guide is not to give instruction on how to do this, but a good starting Linux distribution is [Linux Mint Cinnamon Edition](https://linuxmint.com/edition.php?id=292), which is built on top of the popular Debian-based [Ubuntu](https://ubuntu.com/). If this interests you, I suggest reading up on dual-booting Windows with Linux, and starting with either of the two distributions listed here. After some more experience with Linux, the Arch-based [Manjaro KDE](https://manjaro.org/downloads/official/kde/) is great, and is in fact what I use daily. Finally note that most popular Linux distributions are like any other operating system in that they have a graphical user interface and can be completely navigated using point-and-click actions, in case you mistakenly think that using Linux implies knowing a bunch about computer science. 
 
 \
 
@@ -327,7 +367,7 @@ Now this is of course a bit hacky, but this approach does have practical utility
 
 Now we are running loops in parallel, and our pseudo-random numbers are reproducible as we would want. However, there is a potential lurking issue that will completely tank any simulations structured as we have here: other multithreaded/parallel tasks competing for CPU resources. In other words, if R is trying to execute simulations in parallel while also trying to execute some other task in parallel simultaneously, often times your computer will hang and eventually crash. 
 
-So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries while executing linear algebra-heavy simulations. That is, when you've installed some alternative, optimized linear algebra library and linked it up with R, such as [Open BLAS](https://www.openblas.net/), [MKL](https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html), or [Atlas BLAS](http://math-atlas.sourceforge.net/), and your simulations then utilize these libraries to execute matrix operations. In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multithreaded matrix operations; ie, they do common matrix operations in parallel, such as matrix multiplication, inversion, etc. Thus, if you are using these libraries and forget to disable their inherent multithreading, they will compete with `foreach` when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give `foreach` 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you're trying to access 11 threads when you only have 8. The only option is to use the same thread for multiple tasks simultaneously, but this isn't possible so the computer hangs. 
+So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries while executing linear algebra-heavy simulations. This includes libraries like [Open BLAS](https://www.openblas.net/), [Intel's MKL](https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html), [AMD's Math Library](https://developer.amd.com/amd-aocl/amd-math-library-libm/), [Apple's Accelerate](https://developer.apple.com/documentation/accelerate) or [ATLAS BLAS](http://math-atlas.sourceforge.net/). In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multi-threaded matrix operations; i.e., they do common matrix operations in parallel, such as matrix multiplication, inversion, etc. Thus, if you are using these libraries and forget to disable their inherent multi-threading, they will compete with `foreach` when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give `foreach` 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you're trying to access 11 threads when you only have 8. The only option is to use the same thread for multiple tasks simultaneously, but this isn't possible so the computer hangs. A particularly egregious case of this is known as a [FORK bomb](https://en.wikipedia.org/wiki/Fork_bomb). 
 
 \
 
@@ -365,7 +405,7 @@ In addition to multi-threaded matrix operations, there are other R packages that
 
 Fortunately, it is extremely easy to solve thread competition.
 
-1. To disable multithreaded matrix operations, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, **and be sure to use the code within your parallel loops so that each child process disables the multi-threading.**
+1. To disable _multi-threaded matrix operations_, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, **and be sure to disable multi-threading in your loop code as seen below, not just outside of it:**
 
     ```{r, echo=T, eval=T, results='hide'}
 # disable in parent process 
@@ -387,7 +427,7 @@ set.seed(123)
           ) %dorng% {
             
     library(RhpcBLASctl)
-    blas_set_num_threads(1)
+    blas_set_num_threads(1)           # DISABLE WITHIN LOOP HERE
     omp_set_num_threads(1)   
     
     rnorm(1) 
@@ -398,7 +438,7 @@ stopCluster(cl)
     ```
 <br>
 
-2. To disable packaged multithreading, you'll just have to read the documentation for that package to determine how to set the max number of threads to 1. For example, browsing the documentation for `data.table` immediately tells us that the `setDTthreads()` function does what we want. 
+2. To disable _packaged multithreading_, you'll just have to read the documentation for that package to determine how to set the max number of threads to 1. For example, browsing the documentation for `data.table` immediately tells us that the `setDTthreads()` function does what we want. 
 
 \
 
@@ -514,7 +554,7 @@ out = foreach(i = 1:nrow(grid)
 }
 ```
 
-The key difference here is that we create a single set of grid points without duplication via `replicate`, and then create an inner loop (`for(j in seq_len(nsims))`) that repeatedly uses these grid points `nsims`-many times. An obvious advantage of the nested-loop approach is that it conserves memory; the grid is not replicated, so each core only stores a copy of the original, single-simulation grid.  The memory gains are somewhat trivial though due to how R stores lists in memory, but that is a technical aside that I won't delve into now (see [this page](https://adv-r.hadley.nz/vectors-chap.html#lists) for more info). 
+The key difference here is that we create a single set of grid points without duplication (i.e., without using `replicate()`), and then create an inner loop--- `for(j in seq_len(nsims))`---that repeatedly uses these grid points `nsims`-many times. An obvious advantage of the nested-loop approach is that it conserves memory; the grid is not replicated, so each core only stores a copy of the original, single-simulation grid.  The memory gains are somewhat trivial though due to how R stores lists in memory, but that is a technical aside that I won't delve into now (see [this page](https://adv-r.hadley.nz/vectors-chap.html#lists) for more info). 
 
 
 However, the major disadvantage of the nested-loop approach is load balancing. In most real-world applications we will be varying the sample size of our procedure, and by much more than we are doing so here; i.e., we'll estimate some model at small and large sample sizes. In doing so, the nested-loop approach becomes problematic for load balancing purposes, because the CPUs that have the small sample sizes will take way less time to complete their inner, nested loop (recall, the set of instructions on the right-hand side of `%dopar%` are executed on a single CPU). Eventually then, the CPUs with the large sample sizes will still be running their nested, inner-loops while the CPUs that had the smaller sample sizes have completed their tasks and are *sitting idle* doing nothing. That all in mind, for the specific toy examples here it turns out that the nested approach is faster than the replicating approach due to parallel processing overhead being greater than the time it takes to complete a task (see [here](https://en.wikipedia.org/wiki/Parallel_slowdown) for more on this). However, for more interesting cases, this will generally not be true.
@@ -754,11 +794,5 @@ res = foreach(i = seq_len(nrow(grid_multi)),
 stopCluster(cl)
 ```
 
-
-#  Using Windows
-
-If you are still using Windows to do data work, you are missing out on some clear efficiency gains. Most of all--and related to point 1--windows does not permit the use of forked processes for parallelism; rather, it relies on sockets. The [main difference](https://www.r-bloggers.com/parallel-r-socket-or-fork/) between these two is that forked processes share an environment, while socketed processes must communicate with the master process explicitly to get R objects. What this means is that socketed processes tend to have higher communication overhead, and therefore simulations will run slower than on a fork. 
-
-Additionally, Windows tends to have a high number of background processes and bloatware, which all consume system resources. If you are on Windows and are interested in trying something new, I highly recommend [dual booting](https://itsfoss.com/guide-install-linux-mint-16-dual-boot-windows/) windows alongside a Linux distribution, which often has fewer processes, allows forking, has a very active user-base, and is completely free. For those of you who think that Linux is just for computer nerds, or perhaps are intimidated by the infamous terminal, I assure you that nowadays most Linux distributions have a very user-friendly GUI that is similar in its usage to Windows and Mac. If this is something you would like to give a try, I suggest either [Linux Mint Xfce, Linux Mint Cinnamon](https://linuxmint.com/download.php), or [MX Linux](https://mxlinux.org/), as these are all highly stable, fairly fast, and have very active communities. Note that MX Linux requires a fresh install of the OS every major release, while Mint does not. So, if you want to install just once, I'd start on Mint. You can always distro-hop later. 
 
 

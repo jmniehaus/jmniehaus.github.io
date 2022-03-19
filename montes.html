@@ -478,52 +478,124 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Monte Carlo Analysis in R: An in Depth Guide, with Examples</h1>
-<h4 class="date">Updated: 10 Mar, 2022</h4>
+<h1 class="title toc-ignore">Monte Carlo Analysis in R: An in Depth
+Guide, with Examples</h1>
+<h4 class="date">Updated: 18 Mar, 2022</h4>
 
 </div>
 
 
 <p><br />
 </p>
-<p>After quite a few iterations of writing Monte Carlo simulations, I’ve decided to compile a post on how to get started doing montes, all without having to endure some of the painful mistakes that I made. These mistakes include (but are not limited to):</p>
+<p>In this guide I discuss in-depth five steps to setting up parallel
+Monte Carlo analyses using R. Generally, these steps consist of:</p>
 <ol style="list-style-type: decimal">
-<li>Serial simulations/loops</li>
-<li>Ignoring implicit parallelization</li>
-<li>Improper seed-setting</li>
-<li>Nested loops</li>
-<li>Ignoring load balancing</li>
-<li>Ignoring copy-on-modify overhead</li>
-<li>Improper version control</li>
-<li>Not using functions, or enough of them</li>
-<li>Using Windows operating system</li>
+<li><a href="#serial-vs-parallel">Switching from serial to parallel
+loops</a></li>
+<li><a href="#seed-setting-and-parallelism">Ensuring reproducibility by
+setting seeds properly for parallel tasks</a></li>
+<li><a href="#thread-competition">Ensuring that other parallel tasks are
+not competing for CPU resources</a></li>
+<li><a href="#parameter-grids">Properly setting up simulation parameter
+grids</a></li>
+<li><a href="#using-functions-properly">Compartmentalizing code into
+simulation and estimation functions</a></li>
 </ol>
-<p>First, I will walk through some of the details, with toy examples to drive points home where applicable. Finally, I will take all of this and put it together in a more serious application where we explore the bias of logistic regression in small samples, as well as a penalized likelihood approach to solving this bias.</p>
-<p><em>This guide will applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. It should also be noted that this guide won’t be useful for most extremely simple Monte Carlo problems, as parallelism can actually slow those types of tasks down.</em></p>
+<p>First, I will walk through each of these five points with toy
+examples to drive ideas home where applicable. Finally, I will take all
+of this and put it together in some more serious applications showing
+the downward bias of autoregressive parameters in time series models,
+small sample bias of logistic regression parameters (as well as a
+correction), and the inefficiency of the Heckman-correction in selection
+modeling.</p>
+<p>Before getting started though, there are <strong>a few items to take
+note of</strong>:</p>
+<ul>
+<li><p>I assume that you are familiar with the basics of the <a
+href="https://en.wikipedia.org/wiki/Monte_Carlo_method">Monte Carlo
+method</a>. I won’t be covering its principles at all here. If you are
+unfamiliar with the method, it would be wise to read up on it before
+reading through this guide, as most of this won’t make much sense
+otherwise. An in-depth book on the topic is available (for purchase) <a
+href="https://onlinelibrary.wiley.com/doi/book/10.1002/9781118014967">here</a>,
+but there are lots of free online resources available
+elsewhere.</p></li>
+<li><p>This guide will applies mostly to the case of trivial
+parallelism, i.e., simulations that are independent of each other.
+However some concepts can be extended to dependent simulations,
+particularly in MCMC algorithms that rely on full-conditionals. Where
+this is the case, I note it in the Caveats subsection of a
+topic.</p></li>
+<li><p>This guide won’t be as useful for most extremely simple Monte
+Carlo problems because I emphasize doing things in parallel, but
+parallel processing can actually slow down simple Monte Carlos relative
+to a serial processing. Some of the principles in this guide apply
+regardless, but all examples and discussion assume the parallel
+case.</p></li>
+</ul>
+<p><br />
+</p>
 <div id="serial-vs-parallel" class="section level1">
 <h1>Serial vs Parallel</h1>
 <hr />
-<p>If you’re working in R, then the first step to better Monte Carlo analysis is implementing parallel simulations. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I’ll walk you through a few approaches here.</p>
+<p>If you’re working in R, then the first step to better Monte Carlo
+analysis is implementing parallel simulations. There are exceptions to
+this rule (e.g., reserving computing resources for other tasks, parallel
+overhead making things slower), but if the reason you are not using
+parallel processing is simply because you do not know how, then I’ll
+walk you through a few approaches here.</p>
 <p>For going parallel, there are essentially two options:</p>
 <ol style="list-style-type: decimal">
-<li><p>Using <code>foreach</code> loops, which are similar, yet distinct from the typical <code>for</code> loop</p></li>
-<li><p>Using the parallelized <code>apply</code> family of functions, e.g., <code>parLapply</code>, <code>parApply</code>, and friends.</p></li>
+<li><p>Using <code>foreach</code> loops, which are similar, yet distinct
+from the typical <code>for</code> loop</p></li>
+<li><p>Using the parallelized <code>apply</code> family of functions,
+e.g., <code>parLapply</code>, <code>parApply</code>, and
+friends.</p></li>
 </ol>
-<p>I’ve used both approaches extensively (in the past I only used the <code>apply</code> approach), and strongly prefer the <code>foreach</code> approach at this point for a few reasons:</p>
+<p>I’ve used both approaches extensively (in the past I only used the
+<code>apply</code> approach), and strongly prefer the
+<code>foreach</code> approach at this point for a few reasons:</p>
 <ol style="list-style-type: lower-alpha">
-<li><p>It tends to be more intuitive as its similar to <code>for</code> loops in appearance</p></li>
+<li><p>It tends to be more intuitive as its similar to <code>for</code>
+loops in appearance</p></li>
 <li><p>Tends to be easier to debug (in my opinion)</p></li>
-<li><p>Doesn’t require nested function calls for complicated simulations</p></li>
+<li><p>Doesn’t require nested function calls for complicated
+simulations</p></li>
 <li><p>Permits nested parallel looping</p></li>
 </ol>
-<p>For these reasons, I won’t be covering the <code>apply</code> family of functions here. I may eventually extend the principles and examples below to the <code>apply</code> family, but for now we’ll focus on <code>foreach</code>.</p>
+<p>For these reasons, I won’t be covering the <code>apply</code> family
+of functions here. I may eventually extend the principles and examples
+below to the <code>apply</code> family, but for now we’ll focus on
+<code>foreach</code>. This is only a quick introduction to
+<code>foreach</code> though, so I highly recommend taking a look at its
+<a
+href="https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html">vignette</a>.
+If you’re more of a DataCamp or otherwise type of person, there is an
+entire course on <a
+href="https://www.datacamp.com/courses/parallel-programming-in-r">parallel
+processing in R</a> available through them (I am not affiliated with
+DataCamp, nor do I receive anything from them for linking this). There
+are also more in-depth resources on parallel processing in R available
+<a
+href="https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html">here</a>,
+<a
+href="https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html">here</a>,
+and <a
+href="https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html">here</a>,
+although Googling around will definitely yield droves of additional
+content.</p>
 <p><br />
 </p>
 <div id="differences-between-foreach-and-for" class="section level3">
 <h3>Differences between <code>foreach</code> and <code>for</code></h3>
 <hr />
-<p>Since we’ll be using <code>foreach</code>, its useful to compare and contrast it with a typical <code>for</code> loop. Suppose we just wanted to add 1 to each element in a vector, and for some reason we did this using a for loop in R (rather than leveraging vectorization). We might write the following:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#for loop</span></span>
+<p>Since we’ll be using <code>foreach</code>, its useful to compare and
+contrast it with a typical <code>for</code> loop. Suppose we just wanted
+to add 1 to each element in a vector, and for some reason we did this
+using a for loop in R (rather than leveraging vectorization). We might
+write the following:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#for loop</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>vec <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">5</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>out_for <span class="ot">=</span> <span class="fu">vector</span>()</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -532,8 +604,10 @@ div.tocify {
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(out_for)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 2 3 4 5 6</code></pre>
-<p>Then, using the <code>foreach</code> package, an equivalent loop could be written like so:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#foreach </span></span>
+<p>Then, using the <code>foreach</code> package, an equivalent loop
+could be written like so:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#foreach </span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(foreach)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>out_foreach <span class="ot">=</span> </span>
@@ -547,29 +621,78 @@ div.tocify {
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(out_foreach)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 2 3 4 5 6</code></pre>
-<p>Despite having a somewhat similar appearance to the <code>for</code> loop, <code>foreach</code> loops differ in two key ways:</p>
+<p>Despite having a somewhat similar appearance to the <code>for</code>
+loop, <code>foreach</code> loops differ in two key ways:</p>
 <ol style="list-style-type: decimal">
 <li><p>They are functions.</p></li>
-<li><p>Because they are functions, they have a <code>return</code> value.</p></li>
+<li><p>Because they are functions, they have a <code>return</code>
+value.</p></li>
 </ol>
-<p>In fact, <code>foreach</code> loops are composed of at least two functions. The first is a bit obvious, its a call to <code>foreach(...)</code>. The second is actually the <a href="https://adv-r.hadley.nz/functions.html#function-forms">infix function</a>, <code>%do%</code> or <code>%dopar%</code>. These functions are similar in concept to the matrix multiplication operator <code>%*%</code> in that they take arguments to the function on either side of the operator, and apply some set of instructions using these arguments. Similarly to the matrix multiplication operator, then, <code>%do%</code> takes arguments on either side. On the left-hand side is an object returned by the <code>foreach()</code> function call, and on the right is an <code>expression</code>, which for our purposes is just a bunch of text instructions for our loop.</p>
-<p>The second function call is the call to <code>foreach()</code>, which we just learned is on the left-hand side of an infix function call. Thus, its results are an argument to the <code>%do%</code> function. You can roughly think of <code>foreach()</code> as being the same as the serial case when we call <code>for(i in something)</code>: it is creating an object to be iterated over. In reality things are a bit more complicated than that, but the details are not too important here. It is enough to know that <code>foreach()</code> is a function, and it returns an object that is in some way useful for iterating and executing a loop in parallel. The results of calling this <code>foreach(...)</code> function are then used as the inputs on the left-hand side of <code>%do%</code>.</p>
-<p>Finally, on the right-hand side of <code>%do%</code> we have an <code>expression</code>-class object, which can just be thought of as our loop code. But, because these instructions will be executed on several CPUs simultaneously, we need to send them off to each core first, and <em>then</em> execute the instructions and return their collective results. This is why <code>foreach</code> loops are actually function calls, because they have to send off a set of instructions in a unified way to several child processes for execution, keep track of that execution, combine the results, and return them in a sensible way. In contrast, <code>for</code> loops are running on a single process, so the instructions can just be executed on that process in real-time.</p>
-<p>If any of this is confusing, the main takeaway is that <code>foreach</code> loops are actually functions. Since functions have a <code>return</code> value, we stored the results in the <code>out_foreach</code> object, and gave the <code>foreach</code> loop an explicit <code>return()</code> call at the end. This is only a quick introduction to <code>foreach</code> though, so I highly recommend taking a look at its <a href="https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html">vignette</a>.</p>
+<p>In fact, <code>foreach</code> loops are composed of at least two
+functions. The first is a bit obvious, its a call to
+<code>foreach(...)</code>. The second is actually the <a
+href="https://adv-r.hadley.nz/functions.html#function-forms">infix
+function</a>, <code>%do%</code> or <code>%dopar%</code>. These functions
+are similar in concept to the matrix multiplication operator
+<code>%*%</code> in that they take arguments to the function on either
+side of the operator, and apply some set of instructions using these
+arguments. Similarly to the matrix multiplication operator, then,
+<code>%do%</code> takes arguments on either side. On the left-hand side
+is an object returned by the <code>foreach()</code> function call, and
+on the right is an <code>expression</code>, which for our purposes is
+just a bunch of text instructions for our loop.</p>
+<p>The second function call is the call to <code>foreach()</code>, which
+we just learned is on the left-hand side of an infix function call.
+Thus, its results are an argument to the <code>%do%</code> function. You
+can roughly think of <code>foreach()</code> as being the same as the
+serial case when we call <code>for(i in something)</code>: it is
+creating an object to be iterated over. In reality things are a bit more
+complicated than that, but the details are not too important here. It is
+enough to know that <code>foreach()</code> is a function, and it returns
+an object that is in some way useful for iterating and executing a loop
+in parallel. The results of calling this <code>foreach(...)</code>
+function are then used as the inputs on the left-hand side of
+<code>%do%</code>.</p>
+<p>Finally, on the right-hand side of <code>%do%</code> we have an
+<code>expression</code>-class object, which can just be thought of as
+our loop code. But, because these instructions will be executed on
+several CPUs simultaneously, we need to send them off to each core
+first, and <em>then</em> execute the instructions and return their
+collective results. This is why <code>foreach</code> loops are actually
+function calls, because they have to send off a set of instructions in a
+unified way to several child processes for execution, keep track of that
+execution, combine the results, and return them in a sensible way. In
+contrast, <code>for</code> loops are running on a single process, so the
+instructions can just be executed on that process in real-time.</p>
+<p>If any of this is confusing, the main takeaway is that
+<code>foreach</code> loops are actually functions. Since functions have
+a <code>return</code> value, we stored the results in the
+<code>out_foreach</code> object, and gave the <code>foreach</code> loop
+an explicit <code>return()</code> call at the end.</p>
 <p><br />
 </p>
 </div>
 <div id="making-foreach-run-in-parallel" class="section level3">
 <h3>Making <code>foreach</code> Run in Parallel</h3>
 <hr />
-<p>Now that you have the basics of how <code>foreach</code> and <code>for</code> differ, we can move on to making things work in parallel. The above toy example is in fact running serially in both the <code>foreach</code> and <code>for</code> loops. However, to make the <code>foreach</code> loop run in parallel requires trivial alterations:</p>
+<p>Now that you have the basics of how <code>foreach</code> and
+<code>for</code> differ, we can move on to making things work in
+parallel. The above toy example is in fact running serially in both the
+<code>foreach</code> and <code>for</code> loops. However, to make the
+<code>foreach</code> loop run in parallel requires trivial
+alterations:</p>
 <ol style="list-style-type: decimal">
 <li><p>Tell R how many cores to use.</p></li>
-<li><p>Register those cores as a parallel back-end using the <code>doParallel</code> package.</p></li>
-<li><p>Change <code>%do%</code> to <code>%dopar%</code> (though later we’ll see that a better alternative is actually <code>%dorng%</code>).</p></li>
-<li><p>Shut down the parallel backend (<strong>this is extremely important for PC longevity</strong>).</p></li>
+<li><p>Register those cores as a parallel back-end using the
+<code>doParallel</code> package.</p></li>
+<li><p>Change <code>%do%</code> to <code>%dopar%</code> (though later
+we’ll see that a better alternative is actually
+<code>%dorng%</code>).</p></li>
+<li><p>Shut down the parallel backend (<strong>this is extremely
+important for PC longevity</strong>).</p></li>
 </ol>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)</span>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Use one fewer cores than max available due to using R studio</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span> </span>
@@ -591,13 +714,141 @@ div.tocify {
 <p><br />
 </p>
 </div>
+<div id="important-foreach-parameters" class="section level3">
+<h3>Important <code>foreach</code> Parameters</h3>
+<hr />
+<p>Although this is certainly not a guide on the <code>foreach</code>
+package (see the previous links for more detail on the package), there
+are a few parameters worth discussing here.</p>
+<ul>
+<li><p><code>.combine</code> — This is a function that tells
+<code>foreach</code> how to combine the results, e.g.,
+<code>list</code>, <code>c</code> (for concatenate), <code>rbind</code>,
+etc. (or some custom function). I typically leave this
+<code>NULL</code>, which returns the results in a list. I do this
+because combining results takes time, and I don’t necessarily want to
+take that time immediately after simulations complete.</p></li>
+<li><p><code>.inorder</code> — A logical value that indicates whether
+the results should be combined in the order they were submitted to the
+workers. I always set this to <code>FALSE</code> because I don’t care
+about the ordering, I just want my results as fast as possible.
+<strong>NOTE: the default is <code>TRUE</code>, meaning you combine in
+order by default.</strong></p></li>
+<li><p><code>.multicombine</code> — Logical value indicating whether the
+<code>.combine</code> function can take more than 2 arguments. For most
+conventional functions, e.g., <code>list</code>, <code>cbind</code>,
+<code>rbind</code>, <code>c</code>, this should be <code>TRUE</code>.
+This matters because if the <code>.combine</code> function has more than
+2 arguments, then the <code>do.call</code> function can be used to call
+it on a list, which will tend to be faster than running a loop to
+combine results iteratively. Essentially, be sure to set this to
+<code>TRUE</code> if using the conventional functions listed
+here.</p></li>
+<li><p><code>.maxcombine</code> — This tells <code>foreach</code> how
+many sets of results to combine at one time. The default is 100 results
+at a time, which is going to be painfully slow for any modest set of
+Monte Carlo results. I tend to set this to the total number of expected
+results, meaning that <code>foreach</code> should combine them all at
+once. With modern hardware this shouldn’t be too problematic, but I
+stand to be corrected.</p></li>
+<li><p><code>.errorhandling</code> — Tells how to handle errors on each
+thread. When I’m debugging, I typically set this to <code>"stop"</code>,
+so that errors kill the simulations. However, once I know there are no
+issues, I set this to <code>"pass"</code> so that errors are ignored,
+but their message is kept in the results. For complicated problems this
+is useful because there are instances where an algorithm may not
+converge due to random chance in the data generating process. But, we
+don’t want to kill all simulations when that happens, we want to just
+keep going but know that for that particular iteration the algorithm did
+not converge.</p></li>
+<li><p><code>.packages</code> — This tells <code>foreach</code> what
+packages to export to each parallel process. Remember,
+<code>foreach</code> spins up a separate instance of R on each core, so
+we have to tell these cores what packages to load. We do so using the
+<code>.packages</code> parameter.</p></li>
+<li><p><code>.export</code> — This tells <code>foreach</code> which
+objects from the global environment to export to each process. Again,
+because separate instances of R are created, we need to ensure that each
+process has access to all the relevant objects. <strong>Note:</strong>
+This is less relevant when using a <code>FORK</code> cluster, as
+detailed in the next section.</p></li>
+</ul>
+<p><br />
+</p>
+</div>
+<div id="fork-or-psock" class="section level3">
+<h3><code>FORK</code> or <code>PSOCK</code>?</h3>
+<hr />
+<p>When spinning up a parallel cluster, e.g., using
+<code>makeCluster(cl)</code> as we did <a
+href="#making-foreach-run-in-parallel">previously</a>, there is a
+<code>type</code> parameter that controls the type of cluster that we
+create, which is one of either <code>"FORK"</code> or
+<code>"PSOCK"</code>. The default is <code>"PSOCK"</code>, but this can
+be set, e.g. by calling
+<code>makeCluster(your_cluster_object, type = "FORK")</code>. The
+details on each cluster type are as follows:</p>
+<ul>
+<li><p><code>"FORK"</code> — This type of cluster duplicates the master
+process on each child process, but allows them all to access the same
+shared global environment from the master process. Think of the master
+process as the process that you are interacting with in R where you type
+your code. So, multiple R processes are spawned on your cores, but they
+all access the same single global environment. This minimizes parallel
+overhead communication between the processes. <strong>NOTE:</strong>
+This type of cluster is only available on UNIX-alike machines (i.e.,
+GNU-Linux, Mac), so Windows users cannot use this cluster type.</p></li>
+<li><p><code>"PSOCK"</code> — This type of cluster does not have a
+shared environment, new global environments are created for each of the
+child processes. So, we have to tell the master process which objects to
+export to its children using the <code>.export</code> option as
+mentioned in the previous section, because entirely new (and empty)
+environments are created for each child process.</p></li>
+</ul>
+<p>Because of the copying and ensuing communication required for
+<code>"PSOCK"</code> clusters, some estimates put <code>"FORKS"</code>
+as being <a
+href="https://www.r-bloggers.com/2019/06/parallel-r-socket-or-fork/">roughly
+40% faster than socket clusters</a>. Again though, if you’re using
+Windows, you won’t be able to leverage this forking speed bonus.</p>
+<p>If you would like to be able to fork but are on Windows, then <a
+href="https://opensource.com/article/18/5/dual-boot-linux">dual-booting</a>
+a Linux OS alongside your Windows installation is a free way to do so
+while keeping your Windows installation intact. Its also a great way to
+start learning about the Linux system, as this is often the system of
+choice in many industrial data science positions. The purpose of this
+guide is not to give instruction on how to do this, but a good starting
+Linux distribution is <a
+href="https://linuxmint.com/edition.php?id=292">Linux Mint Cinnamon
+Edition</a>, which is built on top of the popular Debian-based <a
+href="https://ubuntu.com/">Ubuntu</a>. If this interests you, I suggest
+reading up on dual-booting Windows with Linux, and starting with either
+of the two distributions listed here. After some more experience with
+Linux, the Arch-based <a
+href="https://manjaro.org/downloads/official/kde/">Manjaro KDE</a> is
+great, and is in fact what I use daily. Finally note that most popular
+Linux distributions are like any other operating system in that they
+have a graphical user interface and can be completely navigated using
+point-and-click actions, in case you mistakenly think that using Linux
+implies knowing a bunch about computer science.</p>
+<p><br />
+</p>
+</div>
 </div>
 <div id="seed-setting-and-parallelism" class="section level1">
 <h1>Seed Setting and Parallelism</h1>
 <hr />
-<p>If you’re running simulations, you probably want to be able to reproduce them, either on your own machine at a later date, or on another machine. However, if you’ve now implemented parallel processing as suggested using <code>%dopar%</code>, <strong>setting your seed is no longer as straightforward as in the serial case</strong>.</p>
-<p>For example, lets simulate some random variables using both a serial loop and parallel loop, and set the seed before hand. We’d expect that the results are the same, but this turns out to be false. First, serially:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Serially</span></span>
+<p>If you’re running simulations, you probably want to be able to
+reproduce them, either on your own machine at a later date, or on
+another machine. However, if you’ve now implemented parallel processing
+as suggested using <code>%dopar%</code>, <strong>setting your seed is no
+longer as straightforward as in the serial case</strong>.</p>
+<p>For example, lets simulate some random variables using both a serial
+loop and parallel loop, and set the seed before hand. We’d expect that
+the results are the same, but this turns out to be false. First,
+serially:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Serially</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>serial_1 <span class="ot">=</span> serial_2 <span class="ot">=</span> <span class="fu">c</span>()</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
@@ -610,9 +861,12 @@ div.tocify {
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(serial_1, serial_2)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
-<p>which produces two vectors of the exact same numbers, as we’d expect given the above code.</p>
-<p>However, when we implement the “equivalent” in parallel (notice how the infix property becomes more apparent in the code below, too):</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parallel</span></span>
+<p>which produces two vectors of the exact same numbers, as we’d expect
+given the above code.</p>
+<p>However, when we implement the “equivalent” in parallel (notice how
+the infix property becomes more apparent in the code below, too):</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parallel</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
@@ -629,17 +883,25 @@ div.tocify {
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
 <pre class="bg-danger"><code>## [1] FALSE</code></pre>
-<p>we end up with results which are not the same, despite setting the seed as one would typically do in the serial case. The details of why this is happening are technical and mostly unimportant; what is important is that there are some simple solutions.</p>
+<p>we end up with results which are not the same, despite setting the
+seed as one would typically do in the serial case. The details of why
+this is happening are technical and mostly unimportant; what is
+important is that there are some simple solutions.</p>
 <p><br />
 </p>
 <div id="option-1-dorng" class="section level3">
 <h3>Option 1: <code>doRNG</code></h3>
 <hr />
-<p>The simplest solution is to use the <a href="https://cran.r-project.org/web/packages/doRNG/vignettes/doRNG.pdf"><code>doRNG</code></a> package. There are two ways to use the package to reproduce simulation results.</p>
+<p>The simplest solution is to use the <a
+href="https://cran.r-project.org/web/packages/doRNG/vignettes/doRNG.pdf"><code>doRNG</code></a>
+package. There are two ways to use the package to reproduce simulation
+results.</p>
 <ol style="list-style-type: decimal">
-<li><strong><code>doRNG</code> Method 1</strong>: Set your seed as usual, and replace <code>%dopar%</code> with <code>%dorng%</code>:</li>
+<li><strong><code>doRNG</code> Method 1</strong>: Set your seed as
+usual, and replace <code>%dopar%</code> with <code>%dorng%</code>:</li>
 </ol>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed and  %dorng%</span></span>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed and  %dorng%</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
@@ -658,8 +920,11 @@ div.tocify {
 <span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p><br />
-2. <strong><code>doRNG</code> Method 2</strong>: Register your back-end using <code>registerDoRNG()</code>, then use <code>%dopar%</code> as usual:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># doRNG backend, %dopar%</span></span>
+2. <strong><code>doRNG</code> Method 2</strong>: Register your back-end
+using <code>registerDoRNG()</code>, then use <code>%dopar%</code> as
+usual:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># doRNG backend, %dopar%</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
@@ -683,14 +948,23 @@ div.tocify {
 <div id="option-2-core-level-seeds" class="section level3">
 <h3>Option 2: Core-level Seeds</h3>
 <hr />
-<p>A bit of a hacky alternative to <code>doRNG</code> is to simply set the seed on each core. Remember from earlier that the instructions set on the right-hand side of <code>%dopar%</code> are passed to each core. Well, if each core has a unique seed, then any time we run the loops, the same results will obtain. To do this we</p>
+<p>A bit of a hacky alternative to <code>doRNG</code> is to simply set
+the seed on each core. Remember from earlier that the instructions set
+on the right-hand side of <code>%dopar%</code> are passed to each core.
+Well, if each core has a unique seed, then any time we run the loops,
+the same results will obtain. To do this we</p>
 <ol style="list-style-type: decimal">
 <li><p>Set an “outer” seed in the traditional way.</p></li>
-<li><p>Sample “inner” seeds to be used in each set of parallel instructions. The number of inner seeds is equal to the number of simulations.</p></li>
-<li><p>Set the seed within your simulation code using <code>set.seed()</code>, but index your inner seeds using the iteration number for the simulation.</p></li>
+<li><p>Sample “inner” seeds to be used in each set of parallel
+instructions. The number of inner seeds is equal to the number of
+simulations.</p></li>
+<li><p>Set the seed within your simulation code using
+<code>set.seed()</code>, but index your inner seeds using the iteration
+number for the simulation.</p></li>
 </ol>
 <p>For example:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>ncores <span class="ot">=</span> <span class="dv">3</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">10</span></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncores)</span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
@@ -723,7 +997,19 @@ div.tocify {
 <span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
 <span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(parallel_1, parallel_2)</span></code></pre></div>
-<p>Now this is of course a bit hacky, but this approach does have practical utility. Namely, if you ever need nested parallel loops (using the <code>%:%</code> nesting operator detailed in the <code>foreach</code> documentation), then unfortunately the <code>%dorng%</code> backend is not supported. In this case, the only way I have found to successfully reproduce simulations is the above, core-level seed-setting approach. To be clear, this isn’t setting the same exact seed on all cores. We made a vector of seeds, <code>inner_seeds</code>, and each simulation uses a seed from this vector before executing its instructions. You can think of this as setting a different seed across a bunch of different R sessions, and then combining the results; however, the universe of inner seeds remains the same, and therefore so does the results set across runs.</p>
+<p>Now this is of course a bit hacky, but this approach does have
+practical utility. Namely, if you ever need nested parallel loops (using
+the <code>%:%</code> nesting operator detailed in the
+<code>foreach</code> documentation), then unfortunately the
+<code>%dorng%</code> backend is not supported. In this case, the only
+way I have found to successfully reproduce simulations is the above,
+core-level seed-setting approach. To be clear, this isn’t setting the
+same exact seed on all cores. We made a vector of seeds,
+<code>inner_seeds</code>, and each simulation uses a seed from this
+vector before executing its instructions. You can think of this as
+setting a different seed across a bunch of different R sessions, and
+then combining the results; however, the universe of inner seeds remains
+the same, and therefore so does the results set across runs.</p>
 <p><br />
 </p>
 </div>
@@ -731,35 +1017,91 @@ div.tocify {
 <div id="thread-competition" class="section level1">
 <h1>Thread Competition</h1>
 <hr />
-<p>Now we are running loops in parallel, and our pseudo-random numbers are reproducible as we would want. However, there is a potential lurking issue that will completely tank any simulations structured as we have here: other multithreaded/parallel tasks competing for CPU resources. In other words, if R is trying to execute simulations in parallel while also trying to execute some other task in parallel simultaneously, often times your computer will hang and eventually crash.</p>
-<p>So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries while executing linear algebra-heavy simulations. That is, when you’ve installed some alternative, optimized linear algebra library and linked it up with R, such as <a href="https://www.openblas.net/">Open BLAS</a>, <a href="https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html">MKL</a>, or <a href="http://math-atlas.sourceforge.net/">Atlas BLAS</a>, and your simulations then utilize these libraries to execute matrix operations. In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multithreaded matrix operations; ie, they do common matrix operations in parallel, such as matrix multiplication, inversion, etc. Thus, if you are using these libraries and forget to disable their inherent multithreading, they will compete with <code>foreach</code> when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give <code>foreach</code> 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you’re trying to access 11 threads when you only have 8. The only option is to use the same thread for multiple tasks simultaneously, but this isn’t possible so the computer hangs.</p>
+<p>Now we are running loops in parallel, and our pseudo-random numbers
+are reproducible as we would want. However, there is a potential lurking
+issue that will completely tank any simulations structured as we have
+here: other multithreaded/parallel tasks competing for CPU resources. In
+other words, if R is trying to execute simulations in parallel while
+also trying to execute some other task in parallel simultaneously, often
+times your computer will hang and eventually crash.</p>
+<p>So why would anyone be doing multiple forms of parallel processing
+simultaneously? The most common reason for this is when you are using
+optimized BLAS/LAPACK libraries while executing linear algebra-heavy
+simulations. This includes libraries like <a
+href="https://www.openblas.net/">Open BLAS</a>, <a
+href="https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html">Intel’s
+MKL</a>, <a
+href="https://developer.amd.com/amd-aocl/amd-math-library-libm/">AMD’s
+Math Library</a>, <a
+href="https://developer.apple.com/documentation/accelerate">Apple’s
+Accelerate</a> or <a href="http://math-atlas.sourceforge.net/">ATLAS
+BLAS</a>. In addition to having superior algorithms that are optimized
+for your specific hardware, these libraries often times have
+multi-threaded matrix operations; i.e., they do common matrix operations
+in parallel, such as matrix multiplication, inversion, etc. Thus, if you
+are using these libraries and forget to disable their inherent
+multi-threading, they will compete with <code>foreach</code> when
+accessing your CPUs, which will ultimately hang your system. For
+example, if your computer has 8 threads, and you tell R to give
+<code>foreach</code> 7 of them, but MKL reserves 4 of them for matrix
+operations, suddenly you’re trying to access 11 threads when you only
+have 8. The only option is to use the same thread for multiple tasks
+simultaneously, but this isn’t possible so the computer hangs. A
+particularly egregious case of this is known as a <a
+href="https://en.wikipedia.org/wiki/Fork_bomb">FORK bomb</a>.</p>
 <p><br />
 </p>
 <div id="checking-blaslapack-threading" class="section level3">
 <h3>Checking BLAS/LAPACK Threading</h3>
 <hr />
-<p>To check if your PC is running multi-threaded matrix operations, use the <a href="https://cran.r-project.org/web/packages/RhpcBLASctl/index.html"><code>RhpcBLASctl</code></a> package:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
+<p>To check if your PC is running multi-threaded matrix operations, use
+the <a
+href="https://cran.r-project.org/web/packages/RhpcBLASctl/index.html"><code>RhpcBLASctl</code></a>
+package:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_get_num_procs</span>()</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 12</code></pre>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_get_num_procs</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_get_num_procs</span>()</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 20</code></pre>
-<p>If either of these results is greater than 1, then you have multithreading enabled. We won’t delve into the differences between BLAS and OMP here; suffice it so say that you want both of these at 1 for single-threaded matrix operations. <span style="color: red;"><strong>IF YOU USE <a href="https://mran.microsoft.com/open">MICROSOFT’S R-OPEN</a></strong>, <strong><em>then you definitely have MKL enabled as your BLAS/LAPACK library, and multi-threading is likely enabled by default</em></strong></span>.</p>
-<p>Alternatively, you can check on the name of your BLAS library, which will tell you at least if its not the default library:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()[<span class="fu">c</span>(<span class="st">&quot;BLAS&quot;</span>, <span class="st">&quot;LAPACK&quot;</span>)]</span></code></pre></div>
+<p>If either of these results is greater than 1, then you have
+multithreading enabled. We won’t delve into the differences between BLAS
+and OMP here; suffice it so say that you want both of these at 1 for
+single-threaded matrix operations. <span style="color: red;"><strong>IF
+YOU USE <a href="https://mran.microsoft.com/open">MICROSOFT’S
+R-OPEN</a></strong>, <strong><em>then you definitely have MKL enabled as
+your BLAS/LAPACK library, and multi-threading is likely enabled by
+default</em></strong></span>.</p>
+<p>Alternatively, you can check on the name of your BLAS library, which
+will tell you at least if its not the default library:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()[<span class="fu">c</span>(<span class="st">&quot;BLAS&quot;</span>, <span class="st">&quot;LAPACK&quot;</span>)]</span></code></pre></div>
 <pre class="bg-success"><code>## $BLAS
 ## [1] &quot;/opt/intel/mkl/lib/intel64/libmkl_gf_lp64.so&quot;
 ## 
 ## $LAPACK
 ## [1] &quot;/opt/intel/mkl/lib/intel64/libmkl_gf_lp64.so&quot;</code></pre>
-<p>but this isn’t conclusive, as it merely tells us that I’m using MKL, not that MKL is currently set to use multiple threads. For that reason, the <code>RhpcBLASctl</code> method is probably superior.</p>
+<p>but this isn’t conclusive, as it merely tells us that I’m using MKL,
+not that MKL is currently set to use multiple threads. For that reason,
+the <code>RhpcBLASctl</code> method is probably superior.</p>
 <p><br />
 </p>
 </div>
 <div id="multi-threaded-packages" class="section level3">
 <h3>Multi-threaded Packages</h3>
 <hr />
-<p>In addition to multi-threaded matrix operations, there are other R packages that are multithreaded by default and will therefore compete for CPU resources. The number one culprit here is probably <a href="https://cran.r-project.org/web/packages/data.table/index.html"><code>data.table</code></a>. However, other machine learning libraries have the option for multithreading as well, such as <a href="https://topepo.github.io/caret/"><code>caret</code></a>, and <a href="https://cran.r-project.org/web/packages/glmnet/index.html"><code>glmnet</code></a>. To my knowledge neither of these last two are multithreaded by default, so this only becomes a problem if you accidentally tell them to use more than one CPU.</p>
+<p>In addition to multi-threaded matrix operations, there are other R
+packages that are multithreaded by default and will therefore compete
+for CPU resources. The number one culprit here is probably <a
+href="https://cran.r-project.org/web/packages/data.table/index.html"><code>data.table</code></a>.
+However, other machine learning libraries have the option for
+multithreading as well, such as <a
+href="https://topepo.github.io/caret/"><code>caret</code></a>, and <a
+href="https://cran.r-project.org/web/packages/glmnet/index.html"><code>glmnet</code></a>.
+To my knowledge neither of these last two are multithreaded by default,
+so this only becomes a problem if you accidentally tell them to use more
+than one CPU.</p>
 <p><br />
 </p>
 </div>
@@ -768,8 +1110,12 @@ div.tocify {
 <hr />
 <p>Fortunately, it is extremely easy to solve thread competition.</p>
 <ol style="list-style-type: decimal">
-<li><p>To disable multithreaded matrix operations, use the <a href="https://cran.r-project.org/web/packages/RhpcBLASctl/index.html"><code>RhpcBLASctl</code></a> package, <strong>and be sure to use the code within your parallel loops so that each child process disables the multi-threading.</strong></p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in parent process </span></span>
+<li><p>To disable <em>multi-threaded matrix operations</em>, use the <a
+href="https://cran.r-project.org/web/packages/RhpcBLASctl/index.html"><code>RhpcBLASctl</code></a>
+package, <strong>and be sure to disable multi-threading in your loop
+code as seen below, not just outside of it:</strong></p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># disable in parent process </span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doRNG)</span>
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -788,7 +1134,7 @@ div.tocify {
 <span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">%dorng%</span> {</span>
 <span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
-<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)           <span class="co"># DISABLE WITHIN LOOP HERE</span></span>
 <span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)   </span>
 <span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a><span class="fu">rnorm</span>(<span class="dv">1</span>) </span>
@@ -797,7 +1143,11 @@ div.tocify {
 <span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
 <p><br></p></li>
-<li><p>To disable packaged multithreading, you’ll just have to read the documentation for that package to determine how to set the max number of threads to 1. For example, browsing the documentation for <code>data.table</code> immediately tells us that the <code>setDTthreads()</code> function does what we want.</p></li>
+<li><p>To disable <em>packaged multithreading</em>, you’ll just have to
+read the documentation for that package to determine how to set the max
+number of threads to 1. For example, browsing the documentation for
+<code>data.table</code> immediately tells us that the
+<code>setDTthreads()</code> function does what we want.</p></li>
 </ol>
 <p><br />
 </p>
@@ -807,9 +1157,30 @@ div.tocify {
 <hr />
 <p>There are a few qualifiers worth mentioning here.</p>
 <ol style="list-style-type: decimal">
-<li><p>If you aren’t using matrix operations in your parallel tasks, then multi-threaded matrix operations shouldn’t cause problems in theory, because they aren’t even being attempted. However, if they aren’t happening, it also doesn’t hurt to just set the number of threads to 1. Just make sure the change it back if you want to leverage that efficiency in your R session later on.</p></li>
-<li><p>If you aren’t using the multi-threaded R packages, perhaps it goes without saying that you don’t need to worry about them competing for resources in this way.</p></li>
-<li><p>It is possible that some combination of matrix or package multithreading along with parallel simulations is “optimal,” in the sense that its faster. For example, if you have 16 threads you could assign 5 threads to <code>foreach</code>, and then have each of those processes use 2 threads for matrix operations. You’d then have 15 threads in use, plus one for R-studio or other tasks on reserve. Perhaps this would be faster overall than single-threaded matrix operations on 15 simulation processes. I haven’t done any testing for this, so I have no idea whether or when this would be better. At the extreme, it could in theory be better to use a single threaded simulation (i.e., serial simulations), while using all cores for matrix operations. I imagine that is an edge case, but again I cannot rule it out as I have not investigated this extensively. In any case, I’m lazy, so I just disable multi-threading on all packages and matrix operations, and give all my threads to <code>foreach</code>.</p></li>
+<li><p>If you aren’t using matrix operations in your parallel tasks,
+then multi-threaded matrix operations shouldn’t cause problems in
+theory, because they aren’t even being attempted. However, if they
+aren’t happening, it also doesn’t hurt to just set the number of threads
+to 1. Just make sure the change it back if you want to leverage that
+efficiency in your R session later on.</p></li>
+<li><p>If you aren’t using the multi-threaded R packages, perhaps it
+goes without saying that you don’t need to worry about them competing
+for resources in this way.</p></li>
+<li><p>It is possible that some combination of matrix or package
+multithreading along with parallel simulations is “optimal,” in the
+sense that its faster. For example, if you have 16 threads you could
+assign 5 threads to <code>foreach</code>, and then have each of those
+processes use 2 threads for matrix operations. You’d then have 15
+threads in use, plus one for R-studio or other tasks on reserve. Perhaps
+this would be faster overall than single-threaded matrix operations on
+15 simulation processes. I haven’t done any testing for this, so I have
+no idea whether or when this would be better. At the extreme, it could
+in theory be better to use a single threaded simulation (i.e., serial
+simulations), while using all cores for matrix operations. I imagine
+that is an edge case, but again I cannot rule it out as I have not
+investigated this extensively. In any case, I’m lazy, so I just disable
+multi-threading on all packages and matrix operations, and give all my
+threads to <code>foreach</code>.</p></li>
 </ol>
 <p><br />
 </p>
@@ -818,10 +1189,28 @@ div.tocify {
 <div id="parameter-grids" class="section level1">
 <h1>Parameter Grids</h1>
 <hr />
-<p>Now that we’re working in parallel without suffering thread competition and can consistently reproduce our results, the next step is to create a grid of parameters for our simulations, i.e., the points in the parameter space at which we’ll investigate the behavior of our chosen procedure. These will of course be specific to the process under study, but its worth showing a general way to go about creating this grid.</p>
-<p>As a contrived toy example, suppose our task involves normal random variables with different means and variances. Specifically, we are interested in <span class="math inline">\(X \sim \mathcal{N}\left(\mu \in \{0, -1 \}, \,\,\sigma^2 \in \{1, 3\}\right)\)</span>; that is, we’ll vary the mean and variance of some random variable <span class="math inline">\(X\)</span>. Additionally, we want to investigate how sample size affects the properties of these random draws. Right now its not important <em>why</em> we’re doing this or what <span class="math inline">\(X\)</span> will be used for, only that we want random variables with every pairwise combination of these parameter values.</p>
-<p>To do so, we create vectors of these parameters, and then use <code>expand.grid()</code> to get the pairwise combinations:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
+<p>Now that we’re working in parallel without suffering thread
+competition and can consistently reproduce our results, the next step is
+to create a grid of parameters for our simulations, i.e., the points in
+the parameter space at which we’ll investigate the behavior of our
+chosen procedure. These will of course be specific to the process under
+study, but its worth showing a general way to go about creating this
+grid.</p>
+<p>As a contrived toy example, suppose our task involves normal random
+variables with different means and variances. Specifically, we are
+interested in <span class="math inline">\(X \sim \mathcal{N}\left(\mu
+\in \{0, -1 \}, \,\,\sigma^2 \in \{1, 3\}\right)\)</span>; that is,
+we’ll vary the mean and variance of some random variable <span
+class="math inline">\(X\)</span>. Additionally, we want to investigate
+how sample size affects the properties of these random draws. Right now
+its not important <em>why</em> we’re doing this or what <span
+class="math inline">\(X\)</span> will be used for, only that we want
+random variables with every pairwise combination of these parameter
+values.</p>
+<p>To do so, we create vectors of these parameters, and then use
+<code>expand.grid()</code> to get the pairwise combinations:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>)</span>
 <span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -835,8 +1224,12 @@ div.tocify {
 ## 6 -1    1 10
 ## 7  0    3 10
 ## 8 -1    3 10</code></pre>
-<p>So now we have the parameters we need for our simulations in a nice tabular format, which we can then loop over when creating data from our chosen data generating process. For example (omitting the back-end setup, etc. for clarity):</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. </span></span>
+<p>So now we have the parameters we need for our simulations in a nice
+tabular format, which we can then loop over when creating data from our
+chosen data generating process. For example (omitting the back-end
+setup, etc. for clarity):</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. </span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid)</span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dopar%</span> {</span>
@@ -848,14 +1241,34 @@ div.tocify {
 <span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
-<p>Right now, the output from this is not the focus. The main point here is that we’ve created a <code>grid</code> of all unique pairwise parameter combinations, and we’ve looped over each row of that <code>grid</code> to then get random numbers using every possible parameter combination. In this way we’ve ensured that we simulate data from each of the desired parameterizations, all without having to manually specify the parameters, and without having to do any sort of nested looping, e.g. <code>for(i in mu){ for j in sig2 {...}}</code>. This is akin to a grid-search in optimization, although here we’re not searching for an optimal set of parameters, we’re investigating the behavior of some procedure at pre-defined grid points in the parameter space.</p>
+<p>Right now, the output from this is not the focus. The main point here
+is that we’ve created a <code>grid</code> of all unique pairwise
+parameter combinations, and we’ve looped over each row of that
+<code>grid</code> to then get random numbers using every possible
+parameter combination. In this way we’ve ensured that we simulate data
+from each of the desired parameterizations, all without having to
+manually specify the parameters, and without having to do any sort of
+nested looping, e.g. <code>for(i in mu){ for j in sig2 {...}}</code>.
+This is akin to a grid-search in optimization, although here we’re not
+searching for an optimal set of parameters, we’re investigating the
+behavior of some procedure at pre-defined grid points in the parameter
+space.</p>
 <p><br />
 </p>
-<div id="extending-grids-to-multiple-simulations" class="section level3">
+<div id="extending-grids-to-multiple-simulations"
+class="section level3">
 <h3>Extending Grids to Multiple Simulations</h3>
 <hr />
-<p>Of course, <em>we’ve only done one simulation</em> here. That is, at each set of parameter values, we have one iteration. But in Monte Carlo analysis, we want some large number of simulations in order to see how things are behaving, so we’ll need to replicate this grid. Suppose we want 2 simulations instead of 1, then we can use <code>do.call()</code>, <code>cbind.data.frame</code>, and <code>replicate()</code> together to get a grid with each grid point appearing twice, so that we’ll have two simulations at that point instead of one:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">2</span> </span>
+<p>Of course, <em>we’ve only done one simulation</em> here. That is, at
+each set of parameter values, we have one iteration. But in Monte Carlo
+analysis, we want some large number of simulations in order to see how
+things are behaving, so we’ll need to replicate this grid. Suppose we
+want 2 simulations instead of 1, then we can use <code>do.call()</code>,
+<code>cbind.data.frame</code>, and <code>replicate()</code> together to
+get a grid with each grid point appearing twice, so that we’ll have two
+simulations at that point instead of one:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">2</span> </span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
 <span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>sig2 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)</span>
@@ -880,16 +1293,36 @@ div.tocify {
 ## 14 -1    1 10
 ## 15  0    3 10
 ## 16 -1    3 10</code></pre>
-<p>And we can now see that each grid point appears twice, so if we were to loop over this in the same as as we did previously, we produce results for each parameter combination twice. Inductively then, we know that for arbitrary values of <code>nsims</code>, we’ll get <code>nsims</code>-many results for each parameter combination, which is precisely what we want in Monte Carlo analysis.</p>
-<p>Briefly explaining the above code, <code>replicate()</code> is replicating the <code>grid</code> dataframe <code>nsims</code>-many times, and storing these replicates in a list. Then, <code>do.call</code> calls the <code>rbind.data.frame</code> function with each element of the replicated list as its arguments. Mathematically, <code>do.call</code> is effectively executing <span class="math inline">\(f(x_1, x_2, ..., x_{nsims})\)</span> where <span class="math inline">\(f()\)</span> is <code>rbind.data.frame</code>, and each <code>x_j</code> is an element of a list. In this case, the list-elements are all the original, single-simulation <code>grid</code> object.</p>
+<p>And we can now see that each grid point appears twice, so if we were
+to loop over this in the same as as we did previously, we produce
+results for each parameter combination twice. Inductively then, we know
+that for arbitrary values of <code>nsims</code>, we’ll get
+<code>nsims</code>-many results for each parameter combination, which is
+precisely what we want in Monte Carlo analysis.</p>
+<p>Briefly explaining the above code, <code>replicate()</code> is
+replicating the <code>grid</code> dataframe <code>nsims</code>-many
+times, and storing these replicates in a list. Then,
+<code>do.call</code> calls the <code>rbind.data.frame</code> function
+with each element of the replicated list as its arguments.
+Mathematically, <code>do.call</code> is effectively executing <span
+class="math inline">\(f(x_1, x_2, ..., x_{nsims})\)</span> where <span
+class="math inline">\(f()\)</span> is <code>rbind.data.frame</code>, and
+each <code>x_j</code> is an element of a list. In this case, the
+list-elements are all the original, single-simulation <code>grid</code>
+object.</p>
 <p><br />
 </p>
 </div>
 <div id="why-not-use-a-nested-loop" class="section level3">
 <h3>Why not use a nested loop?</h3>
 <hr />
-<p>One potential question is why not use a nested loop instead of replicating each grid point <code>nsims</code>-many times. That is, we could just repeatedly loop over the original <code>grid</code> object, rather than replicating it several times, like so (omitting the back-end setup, etc. for clarity):</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR CLARITY. SEE ENDING EXAMPLES FOR FULL SETUP.</span></span>
+<p>One potential question is why not use a nested loop instead of
+replicating each grid point <code>nsims</code>-many times. That is, we
+could just repeatedly loop over the original <code>grid</code> object,
+rather than replicating it several times, like so (omitting the back-end
+setup, etc. for clarity):</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SETUP OMITTED FOR CLARITY. SEE ENDING EXAMPLES FOR FULL SETUP.</span></span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Make grid WITHOUT REPLICATING </span></span>
 <span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>)</span>
@@ -919,25 +1352,83 @@ div.tocify {
 <span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(res)</span>
 <span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>The key difference here is that we create a single set of grid points without duplication via <code>replicate</code>, and then create an inner loop (<code>for(j in seq_len(nsims))</code>) that repeatedly uses these grid points <code>nsims</code>-many times. An obvious advantage of the nested-loop approach is that it conserves memory; the grid is not replicated, so each core only stores a copy of the original, single-simulation grid. The memory gains are somewhat trivial though due to how R stores lists in memory, but that is a technical aside that I won’t delve into now (see <a href="https://adv-r.hadley.nz/vectors-chap.html#lists">this page</a> for more info).</p>
-<p>However, the major disadvantage of the nested-loop approach is load balancing. In most real-world applications we will be varying the sample size of our procedure, and by much more than we are doing so here; i.e., we’ll estimate some model at small and large sample sizes. In doing so, the nested-loop approach becomes problematic for load balancing purposes, because the CPUs that have the small sample sizes will take way less time to complete their inner, nested loop (recall, the set of instructions on the right-hand side of <code>%dopar%</code> are executed on a single CPU). Eventually then, the CPUs with the large sample sizes will still be running their nested, inner-loops while the CPUs that had the smaller sample sizes have completed their tasks and are <em>sitting idle</em> doing nothing. That all in mind, for the specific toy examples here it turns out that the nested approach is faster than the replicating approach due to parallel processing overhead being greater than the time it takes to complete a task (see <a href="https://en.wikipedia.org/wiki/Parallel_slowdown">here</a> for more on this). However, for more interesting cases, this will generally not be true.</p>
+<p>The key difference here is that we create a single set of grid points
+without duplication (i.e., without using <code>replicate()</code>), and
+then create an inner loop— <code>for(j in seq_len(nsims))</code>—that
+repeatedly uses these grid points <code>nsims</code>-many times. An
+obvious advantage of the nested-loop approach is that it conserves
+memory; the grid is not replicated, so each core only stores a copy of
+the original, single-simulation grid. The memory gains are somewhat
+trivial though due to how R stores lists in memory, but that is a
+technical aside that I won’t delve into now (see <a
+href="https://adv-r.hadley.nz/vectors-chap.html#lists">this page</a> for
+more info).</p>
+<p>However, the major disadvantage of the nested-loop approach is load
+balancing. In most real-world applications we will be varying the sample
+size of our procedure, and by much more than we are doing so here; i.e.,
+we’ll estimate some model at small and large sample sizes. In doing so,
+the nested-loop approach becomes problematic for load balancing
+purposes, because the CPUs that have the small sample sizes will take
+way less time to complete their inner, nested loop (recall, the set of
+instructions on the right-hand side of <code>%dopar%</code> are executed
+on a single CPU). Eventually then, the CPUs with the large sample sizes
+will still be running their nested, inner-loops while the CPUs that had
+the smaller sample sizes have completed their tasks and are <em>sitting
+idle</em> doing nothing. That all in mind, for the specific toy examples
+here it turns out that the nested approach is faster than the
+replicating approach due to parallel processing overhead being greater
+than the time it takes to complete a task (see <a
+href="https://en.wikipedia.org/wiki/Parallel_slowdown">here</a> for more
+on this). However, for more interesting cases, this will generally not
+be true.</p>
 <p><br />
 </p>
 </div>
 <div id="caveats-1" class="section level3">
 <h3>Caveats</h3>
 <hr />
-<p>In most cases, the replicated-grid approach will be better, often times by several hours when compared with the parallel-outer, serial-inner approach. However, there are at least two instances where this won’t hold, one of which was alluded to in the previous paragraph.</p>
+<p>In most cases, the replicated-grid approach will be better, often
+times by several hours when compared with the parallel-outer,
+serial-inner approach. However, there are at least two instances where
+this won’t hold, one of which was alluded to in the previous
+paragraph.</p>
 <ol style="list-style-type: decimal">
-<li><p>If the run-time of a single simulation is small, e.g., &lt; 1 second, it is possible that the overhead from parallelizing at the simulation level—rather than the grid-point level—will exceed the gains from parallelizing. This is known as parallel slow down. Its possible to mitigate this by using prescheduling, but even this won’t always fix the issue if single simulations take a very small amount of time. Prescheduling splits the total number of tasks into chunks (at random) and assigns these tasks to each CPU. So if you allocate 10 CPUs, and there are 100 tasks, the computer will randomly select 10 tasks to assign to each CPU. Without prescheduling, when a CPU finishes a task, it will communicate with the other CPUs in the network or the parent process and determine what tasks still need doing, and then it does one of the ones that remains. So, by prescheduling we reduce some of this communication overhead. There are advantages and disadvantages to prescheduling that I won’t go into here, but a general rule is if your tasks are numerous and require little time individually, use prescheduling, otherwise don’t. To enable presheduling in <code>foreach</code>, do the following:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
+<li><p>If the run-time of a single simulation is small, e.g., &lt; 1
+second, it is possible that the overhead from parallelizing at the
+simulation level—rather than the grid-point level—will exceed the gains
+from parallelizing. This is known as parallel slow down. Its possible to
+mitigate this by using prescheduling, but even this won’t always fix the
+issue if single simulations take a very small amount of time.
+Prescheduling splits the total number of tasks into chunks (at random)
+and assigns these tasks to each CPU. So if you allocate 10 CPUs, and
+there are 100 tasks, the computer will randomly select 10 tasks to
+assign to each CPU. Without prescheduling, when a CPU finishes a task,
+it will communicate with the other CPUs in the network or the parent
+process and determine what tasks still need doing, and then it does one
+of the ones that remains. So, by prescheduling we reduce some of this
+communication overhead. There are advantages and disadvantages to
+prescheduling that I won’t go into here, but a general rule is if your
+tasks are numerous and require little time individually, use
+prescheduling, otherwise don’t. To enable presheduling in
+<code>foreach</code>, do the following:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>nsims, </span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule =</span> <span class="cn">TRUE</span>)) </span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="sc">%dorng%</span> {</span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>      [...code...]</span>
 <span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div></li>
-<li><p>If you are doing some form of Markov Chain Monte Carlo (MCMC), rather than traditional Monte Carlo analysis, the nested loop approach will generally become <strong><em>necessary</em></strong>. For things like the Metropolis-Hastings algorithm and its derivatives (e.g., Metropolis, Gibbs), we are typically sampling from a full-conditional distribution that depends on some previous iteration. So parallelization here would occur at the chain-level, and within each chain we would have serial loops to sample from the full conditionals. The gridding approach would also not make as much sense anyway, as the proposal parameters are not fixed ex-ante aside from the starting values.</p></li>
+<li><p>If you are doing some form of Markov Chain Monte Carlo (MCMC),
+rather than traditional Monte Carlo analysis, the nested loop approach
+will generally become <strong><em>necessary</em></strong>. For things
+like the Metropolis-Hastings algorithm and its derivatives (e.g.,
+Metropolis, Gibbs), we are typically sampling from a full-conditional
+distribution that depends on some previous iteration. So parallelization
+here would occur at the chain-level, and within each chain we would have
+serial loops to sample from the full conditionals. The gridding approach
+would also not make as much sense anyway, as the proposal parameters are
+not fixed ex-ante aside from the starting values.</p></li>
 </ol>
 <p><br />
 </p>
@@ -946,20 +1437,60 @@ div.tocify {
 <div id="using-functions-properly" class="section level1">
 <h1>Using Functions Properly</h1>
 <hr />
-<p>At this point we’ve set up our environment, and are ready to start with the actual simulations. To recap, we are using <code>foreach</code> combined with <code>%dopar%</code> or <code>%dorng%</code> for parallelism, we’ve ensured reproducability, we have handled thread competition with other parallel processes, and now we have a grid of parameter values at which to investigate the behavior of some procedure, with each grid value appearing once for each simulation iteration. Now we can make some functions that will automate the simulation and transformation of our data.</p>
-<p>R is an object oriented, functional programming language. We should leverage both of these facts to make our simulations easier to understand, implement, and debug. At a minimum, this will consist of having two functions:</p>
+<p>At this point we’ve set up our environment, and are ready to start
+with the actual simulations. To recap, we are using <code>foreach</code>
+combined with <code>%dopar%</code> or <code>%dorng%</code> for
+parallelism, we’ve ensured reproducability, we have handled thread
+competition with other parallel processes, and now we have a grid of
+parameter values at which to investigate the behavior of some procedure,
+with each grid value appearing once for each simulation iteration. Now
+we can make some functions that will automate the simulation and
+transformation of our data.</p>
+<p>R is an object oriented, functional programming language. We should
+leverage both of these facts to make our simulations easier to
+understand, implement, and debug. At a minimum, this will consist of
+having two functions:</p>
 <ol style="list-style-type: decimal">
-<li><p>A <strong>simulation function</strong> that creates the data to be further analyzed.</p></li>
-<li><p>An <strong>estimation/analysis function</strong> that estimates the model(s) that we want, and tidies the results for us.</p></li>
+<li><p>A <strong>simulation function</strong> that creates the data to
+be further analyzed.</p></li>
+<li><p>An <strong>estimation/analysis function</strong> that estimates
+the model(s) that we want, and tidies the results for us.</p></li>
 </ol>
-<p>We could optionally further separate the estimation function (2) into two functions, one for estimation and the other for tidying, rather than combining these steps.</p>
-<p>This approach to Monte Carlo analysis—having a simulation function, and an estimation function—is one of the most important reasons why I choose not to use the parallelized <code>apply</code> family of functions. If you’re unfamiliar with the <code>apply</code> family of functions, you can either skip this paragraph or <a href="https://www.r-bloggers.com/2015/07/r-tutorial-on-the-apply-family-of-functions/">familiarize yourself</a> with them. Because our data must be both simulated and then used in estimation, the <code>apply</code> family of functions requires that there be either (i) a single function that does both of these tasks (e.g., via nesting), or (ii) that we pre-simulate every single dataset that will be needed for the estimation procedure, and then call the estimation function on each of them using <code>apply</code> functionality. The first approach is bad because debugging functions becomes more nightmarish as they get more complicated, so smooshing two functions into one is ill-advised. The second approach is unfeasible in most interesting cases because there is usually not enough memory to store hundreds of thousands of pre-simulated datasets. Thus, because we’ll compartmentalize the simulation and estimation into two functions, the <code>foreach</code> approach becomes the natural one to implement.</p>
+<p>We could optionally further separate the estimation function (2) into
+two functions, one for estimation and the other for tidying, rather than
+combining these steps.</p>
+<p>This approach to Monte Carlo analysis—having a simulation function,
+and an estimation function—is one of the most important reasons why I
+choose not to use the parallelized <code>apply</code> family of
+functions. If you’re unfamiliar with the <code>apply</code> family of
+functions, you can either skip this paragraph or <a
+href="https://www.r-bloggers.com/2015/07/r-tutorial-on-the-apply-family-of-functions/">familiarize
+yourself</a> with them. Because our data must be both simulated and then
+used in estimation, the <code>apply</code> family of functions requires
+that there be either (i) a single function that does both of these tasks
+(e.g., via nesting), or (ii) that we pre-simulate every single dataset
+that will be needed for the estimation procedure, and then call the
+estimation function on each of them using <code>apply</code>
+functionality. The first approach is bad because debugging functions
+becomes more nightmarish as they get more complicated, so smooshing two
+functions into one is ill-advised. The second approach is unfeasible in
+most interesting cases because there is usually not enough memory to
+store hundreds of thousands of pre-simulated datasets. Thus, because
+we’ll compartmentalize the simulation and estimation into two functions,
+the <code>foreach</code> approach becomes the natural one to
+implement.</p>
 <p><br />
 </p>
 <div id="simulation-function" class="section level3">
 <h3>Simulation Function</h3>
-<p>The goal of the simulation function is to take in one row from our parameter grid, and use those parameters to create a dataset that will eventually be transformed via estimation or some other procedure of interest. Keeping with the toy example used previously, lets suppose we are just simulating some realizations of a normal random variable at various grid points and sample sizes. We have our grid from earlier:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(grid_multi)</span></code></pre></div>
+<p>The goal of the simulation function is to take in one row from our
+parameter grid, and use those parameters to create a dataset that will
+eventually be transformed via estimation or some other procedure of
+interest. Keeping with the toy example used previously, lets suppose we
+are just simulating some realizations of a normal random variable at
+various grid points and sample sizes. We have our grid from earlier:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(grid_multi)</span></code></pre></div>
 <pre class="bg-success"><code>##    mu sig2  n
 ## 1   0    1  5
 ## 2  -1    1  5
@@ -977,9 +1508,19 @@ div.tocify {
 ## 14 -1    1 10
 ## 15  0    3 10
 ## 16 -1    3 10</code></pre>
-<p>which has 3 parameters, <code>mu</code>, <code>sig2</code> and <code>n</code>. So our simulation function will have to take in <em>at least</em> these parameters in some way, and potentially others. It is my view that the easiest way to do this is just to take in a vector of parameters as a single parameter to the function, rather than explicitly naming each parameter to the function. This way, if the grid columns change, we don’t have to then go and add or remove parameters from the simulation function.</p>
-<p>For example, we could specify the parameters explicitly, then index our grid by row when passing the arguments (in this case, just row 1):</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(mu, sig2, n){</span>
+<p>which has 3 parameters, <code>mu</code>, <code>sig2</code> and
+<code>n</code>. So our simulation function will have to take in <em>at
+least</em> these parameters in some way, and potentially others. It is
+my view that the easiest way to do this is just to take in a vector of
+parameters as a single parameter to the function, rather than explicitly
+naming each parameter to the function. This way, if the grid columns
+change, we don’t have to then go and add or remove parameters from the
+simulation function.</p>
+<p>For example, we could specify the parameters explicitly, then index
+our grid by row when passing the arguments (in this case, just row
+1):</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(mu, sig2, n){</span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
 <span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(</span>
@@ -1004,8 +1545,13 @@ div.tocify {
 ## 
 ## $n
 ## [1] 5</code></pre>
-<p>But if we later decide we want to add new parameter to the grid, we then have to update the <code>simulate_fn</code> function accordingly. Updating the function’s parameters can be avoided if we just pass a named parameter vector as a single parameter, and unpack it inside the function:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<p>But if we later decide we want to add new parameter to the grid, we
+then have to update the <code>simulate_fn</code> function accordingly.
+Updating the function’s parameters can be avoided if we just pass a
+named parameter vector as a single parameter, and unpack it inside the
+function:</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row) <span class="co"># re-class to vector from data.frame</span></span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1031,8 +1577,11 @@ div.tocify {
 ## $n
 ## n 
 ## 5</code></pre>
-<p>Using this second approach then, we can define a function to simulate the normal realizations, and see what it produces for a single iteration on our grid:</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<p>Using this second approach then, we can define a function to simulate
+the normal realizations, and see what it produces for a single iteration
+on our grid:</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>simulate_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
 <span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -1046,14 +1595,25 @@ div.tocify {
 <span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(<span class="at">grid_row =</span> grid_multi[<span class="dv">1</span>,])</span></code></pre></div>
 <pre class="bg-success"><code>## [1] -0.3858557 -1.5701355  1.2269426  0.6666944 -1.1516032</code></pre>
-<p>which is a numeric vector, as we would expect. Now we can do whatever transformation of this data to obtain statistics of interest for each iteration. However, we’ll need an estimation function first.</p>
+<p>which is a numeric vector, as we would expect. Now we can do whatever
+transformation of this data to obtain statistics of interest for each
+iteration. However, we’ll need an estimation function first.</p>
 <p> </p>
 </div>
 <div id="estimation-function" class="section level3">
 <h3>Estimation Function</h3>
 <hr />
-<p>To keep up the toy example, lets say now that we’re interested in the estimators of the first and second moments of a normal random variable after we’ve exponentiated it (that is, of the log-normal distribution). So we’ll need a function that takes in the data, exponentiates it, and computes these estimates. <strong>Importantly,</strong> we want to know how the various parameters under consideration impact these estimators (if at all), so we need to also keep track of the parameters that we’re using. One possibility is the following, where we again pass in the data-generating grid row:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>estimate_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
+<p>To keep up the toy example, lets say now that we’re interested in the
+estimators of the first and second moments of a normal random variable
+after we’ve exponentiated it (that is, of the log-normal distribution).
+So we’ll need a function that takes in the data, exponentiates it, and
+computes these estimates. <strong>Importantly,</strong> we want to know
+how the various parameters under consideration impact these estimators
+(if at all), so we need to also keep track of the parameters that we’re
+using. One possibility is the following, where we again pass in the
+data-generating grid row:</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>estimate_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  dat_exp <span class="ot">=</span> <span class="fu">exp</span>(dat)</span>
 <span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  xbar <span class="ot">=</span> <span class="fu">mean</span>(dat_exp)</span>
@@ -1063,8 +1623,11 @@ div.tocify {
 <span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
 <span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>So now we’ll simulate some data using <code>simulate_fn</code> and return the quantities of interest from this data using the <code>estimate_fn</code>:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_multi[<span class="dv">1</span>,])</span>
+<p>So now we’ll simulate some data using <code>simulate_fn</code> and
+return the quantities of interest from this data using the
+<code>estimate_fn</code>:</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_multi[<span class="dv">1</span>,])</span>
 <span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">=</span> <span class="fu">simulate_fn</span>(<span class="at">grid_row =</span> grid_row)</span>
 <span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1074,15 +1637,27 @@ div.tocify {
 <span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <pre class="bg-success"><code>##     xbar       s2       mu     sig2        n 
 ## 1.165890 0.721435 0.000000 1.000000 5.000000</code></pre>
-<p>which gives us the sample mean and variance for a single iteration of transforming data to log-normal realizations, as well as stores the data-generating parameters for use in post-simulation analysis.</p>
+<p>which gives us the sample mean and variance for a single iteration of
+transforming data to log-normal realizations, as well as stores the
+data-generating parameters for use in post-simulation analysis.</p>
 <p> </p>
 </div>
 </div>
 <div id="putting-it-all-together" class="section level1">
 <h1>Putting it All Together</h1>
 <hr />
-<p>Before we jump into some more serious examples, we can combine everything we’ve learned using the toy example, just to give an idea about the structure. I’m not going to separate the code out into each step below; all of it will appear in a single chunk with comments so as to mimic what we would actually have in a script. I’ll also be doing things in a slightly different order than was presented in the guide. This is again for the example of analyzing the estimators of the first two moments of the log-normal distribution under various parameterizations. I’ll do 30 simulations at each grid point for demonstration purposes, but in reality you’d probably want more.</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load up packages </span></span>
+<p>Before we jump into some more serious examples, we can combine
+everything we’ve learned using the toy example, just to give an idea
+about the structure. I’m not going to separate the code out into each
+step below; all of it will appear in a single chunk with comments so as
+to mimic what we would actually have in a script. I’ll also be doing
+things in a slightly different order than was presented in the guide.
+This is again for the example of analyzing the estimators of the first
+two moments of the log-normal distribution under various
+parameterizations. I’ll do 30 simulations at each grid point for
+demonstration purposes, but in reality you’d probably want more.</p>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load up packages </span></span>
 <span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;doParallel&quot;</span>, <span class="st">&quot;doRNG&quot;</span>, <span class="st">&quot;RhpcBLASctl&quot;</span>)</span>
 <span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">setdiff</span>(pks, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
 <span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1157,11 +1732,6 @@ div.tocify {
 <span id="cb40-73"><a href="#cb40-73" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb40-74"><a href="#cb40-74" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb40-75"><a href="#cb40-75" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
-</div>
-<div id="using-windows" class="section level1">
-<h1>Using Windows</h1>
-<p>If you are still using Windows to do data work, you are missing out on some clear efficiency gains. Most of all–and related to point 1–windows does not permit the use of forked processes for parallelism; rather, it relies on sockets. The <a href="https://www.r-bloggers.com/parallel-r-socket-or-fork/">main difference</a> between these two is that forked processes share an environment, while socketed processes must communicate with the master process explicitly to get R objects. What this means is that socketed processes tend to have higher communication overhead, and therefore simulations will run slower than on a fork.</p>
-<p>Additionally, Windows tends to have a high number of background processes and bloatware, which all consume system resources. If you are on Windows and are interested in trying something new, I highly recommend <a href="https://itsfoss.com/guide-install-linux-mint-16-dual-boot-windows/">dual booting</a> windows alongside a Linux distribution, which often has fewer processes, allows forking, has a very active user-base, and is completely free. For those of you who think that Linux is just for computer nerds, or perhaps are intimidated by the infamous terminal, I assure you that nowadays most Linux distributions have a very user-friendly GUI that is similar in its usage to Windows and Mac. If this is something you would like to give a try, I suggest either <a href="https://linuxmint.com/download.php">Linux Mint Xfce, Linux Mint Cinnamon</a>, or <a href="https://mxlinux.org/">MX Linux</a>, as these are all highly stable, fairly fast, and have very active communities. Note that MX Linux requires a fresh install of the OS every major release, while Mint does not. So, if you want to install just once, I’d start on Mint. You can always distro-hop later.</p>
 </div>
 
 
