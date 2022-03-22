@@ -480,7 +480,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Monte Carlo Analysis in R: An in Depth
 Guide, with Examples</h1>
-<h4 class="date">Updated: 19 Mar, 2022</h4>
+<h4 class="date">Updated: 21 Mar, 2022</h4>
 
 </div>
 
@@ -1856,6 +1856,79 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb44-1"><a h
 ## [[6]]
 ##       xbar         s2         mu       sig2          n 
 ##  0.7508876  0.7733243 -1.0000000  1.0000000 10.0000000</code></pre>
+<p><br />
+</p>
+</div>
+<div id="example-bias-of-ar1-model" class="section level1">
+<h1>Example: Bias of AR(1) Model</h1>
+<hr />
+<p>In this example I will utlize the steps outlined previously to show
+that order-1 time-series autoregressive models (AR(1) models) have
+biased estimators of the autoregressive parameter. This can be shown
+theoretically, as well, but pretend for the moment that we don’t know
+such a closed form solution exists, or perhaps we’re too lazy to find
+one. The Monte Carlo method is well suited for the task.</p>
+<p>Briefly, AR(1) models assume a data generating process of the form
+<span class="math display">\[ y_t = \rho y_{t-1} + \varepsilon_t
+\]</span> where <span class="math inline">\(t = 1, 2, ..., T\)</span>
+indexes a time period, <span class="math inline">\(|\rho| &lt;
+1\)</span>, and for the time being we’ll assume that <span
+class="math inline">\(\varepsilon_t \overset{iid}{\sim} \mathcal{N}(0,
+1)\)</span>, although with large enough sample sizes normality is not
+required. Then we can estimate <span class="math inline">\(\rho\)</span>
+by <span class="math display">\[\hat\rho = \frac{\sum_t (y_t - \bar
+y)(y_{t-1} - \bar y)}{\sum_t (y_{t-1} - \bar y)^2}\]</span> that is, by
+using its (ordinary) least squares estimator (which is also the sample
+autocorrelation function).</p>
+<p>Using the Monte Carlo method, we will show that <span
+class="math inline">\(\mathbb{E}(\hat\rho) - \rho \neq 0\)</span>,
+meaning that <span class="math inline">\(\hat\rho\)</span> is biased. In
+fact, we’ll determine that <span
+class="math inline">\(|\mathbb{E}(\hat\rho)| &lt; |\rho|\)</span>,
+meaning that the AR parameter is biased towards zero.</p>
+<p>In the below, I will simply apply what was discussed in the previous
+sections without further discussion. The intention here is to give
+example code for more complicated problems, but the principles in
+application are identical to those already discussed.</p>
+<div class="sourceCode" id="cb46"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install, load necessary packages</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;RhpcBLASctl&quot;</span>, <span class="st">&quot;doParallel&quot;</span>, <span class="st">&quot;doRNG&quot;</span>)</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">setdiff</span>(pks, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">length</span>(needed) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">&quot;pks&quot;</span>, <span class="at">Ncpus =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">500</span>, <span class="dv">10000</span>)</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>p <span class="ot">=</span> <span class="fu">c</span>(.<span class="dv">2</span>, .<span class="dv">5</span>, .<span class="dv">75</span>, .<span class="dv">95</span>)</span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span></span>
+<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">n =</span> n, <span class="at">p =</span> p)</span>
+<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>grid_multi <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, <span class="fu">replicate</span>(nsims, grid, <span class="at">simplify =</span> F))</span>
+<span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>simulation_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-18"><a href="#cb46-18" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
+<span id="cb46-19"><a href="#cb46-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-20"><a href="#cb46-20" aria-hidden="true" tabindex="-1"></a>  rho <span class="ot">=</span> grid_row[<span class="st">&quot;p&quot;</span>]</span>
+<span id="cb46-21"><a href="#cb46-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-22"><a href="#cb46-22" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">list</span>()</span>
+<span id="cb46-23"><a href="#cb46-23" aria-hidden="true" tabindex="-1"></a>  y[[<span class="dv">1</span>]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb46-24"><a href="#cb46-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-25"><a href="#cb46-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>grid_row[<span class="st">&quot;n&quot;</span>]) {</span>
+<span id="cb46-26"><a href="#cb46-26" aria-hidden="true" tabindex="-1"></a>    y[[j]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="at">mean=</span>rho<span class="sc">*</span>y[[j<span class="dv">-1</span>]])</span>
+<span id="cb46-27"><a href="#cb46-27" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb46-28"><a href="#cb46-28" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb46-29"><a href="#cb46-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">data.frame</span>(<span class="at">y =</span> <span class="fu">unlist</span>(y)))</span>
+<span id="cb46-30"><a href="#cb46-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-31"><a href="#cb46-31" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb46-32"><a href="#cb46-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-33"><a href="#cb46-33" aria-hidden="true" tabindex="-1"></a>estimation_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
+<span id="cb46-34"><a href="#cb46-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-35"><a href="#cb46-35" aria-hidden="true" tabindex="-1"></a>  mod <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> <span class="fu">c</span>(<span class="cn">NA</span>, y[<span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(y)<span class="sc">-</span><span class="dv">1</span>)]), <span class="at">data=</span>dat)</span>
+<span id="cb46-36"><a href="#cb46-36" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-37"><a href="#cb46-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(mod)</span>
+<span id="cb46-38"><a href="#cb46-38" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 
 

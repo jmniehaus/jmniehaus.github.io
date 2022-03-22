@@ -19,6 +19,8 @@ editor_options:
   chunk_output_type: console
 ---
 
+\newcommand{\E}{\mathbb{E}}
+
 <style>
 .list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
     background-color: SlateGrey;
@@ -824,6 +826,60 @@ stopCluster(cl)
 head(res)
 ```
 
+\
 
+
+# Example: Bias of AR(1) Model 
+***
+
+In this example I will utlize the steps outlined previously to show that order-1 time-series autoregressive models (AR(1) models) have biased estimators of the autoregressive parameter. This can be shown theoretically, as well, but pretend for the moment that we don't know such a closed form solution exists, or perhaps we're too lazy to find one. The Monte Carlo method is well suited for the task. 
+
+Briefly, AR(1) models assume a data generating process of the form $$ y_t = \rho y_{t-1} + \varepsilon_t $$ where $t = 1, 2, ..., T$ indexes a time period, $|\rho| < 1$, and for the time being we'll assume that $\varepsilon_t \overset{iid}{\sim} \mathcal{N}(0, 1)$, although with large enough sample sizes normality is not required. Then we can estimate $\rho$ by $$\hat\rho = \frac{\sum_t (y_t - \bar y)(y_{t-1} - \bar y)}{\sum_t (y_{t-1} - \bar y)^2}$$ that is, by using its (ordinary) least squares estimator (which is also the sample autocorrelation function). 
+
+Using the Monte Carlo method, we will show that $\E(\hat\rho) - \rho \neq 0$, meaning that $\hat\rho$ is biased. In fact, we'll determine that $|\E(\hat\rho)| < |\rho|$, meaning that the AR parameter is biased towards zero. 
+
+In the below, I will simply apply what was discussed in the previous sections without further discussion. The intention here is to give example code for more complicated problems, but the principles in application are identical to those already discussed. 
+
+```{r}
+# Install, load necessary packages
+pks = c("RhpcBLASctl", "doParallel", "doRNG")
+needed = setdiff(pks, rownames(installed.packages()))
+if(length(needed) > 0)
+  install.packages("pks", Ncpus = parallel::detectCores() - 1)
+
+invisible(sapply(pks, library, character.only=T))
+
+n = c(30, 50, 100, 500, 10000)
+p = c(.2, .5, .75, .95)
+
+nsims = 500
+grid = expand.grid(n = n, p = p)
+grid_multi = do.call(rbind.data.frame, replicate(nsims, grid, simplify = F))
+
+simulation_fn = function(grid_row){
+  
+  grid_row = unlist(grid_row)
+  
+  rho = grid_row["p"]
+  
+  y = list()
+  y[[1]] = rnorm(1)
+  
+  for(j in 2:grid_row["n"]) {
+    y[[j]] = rnorm(1, mean=rho*y[[j-1]])
+  }
+    
+  return(data.frame(y = unlist(y)))
+  
+}
+
+estimation_fn = function(dat, grid_row){
+  
+  mod = lm(y ~ c(NA, y[1:(length(y)-1)]), data=dat)
+  
+  return(mod)
+}
+
+```
 
 
