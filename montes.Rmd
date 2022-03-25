@@ -866,19 +866,85 @@ simulation_fn = function(grid_row){
   y[[1]] = rnorm(1)
   
   for(j in 2:grid_row["n"]) {
-    y[[j]] = rnorm(1, mean=rho*y[[j-1]])
+    y[[j]] = rnorm(1, mean = rho*y[[j-1]])
   }
     
-  return(data.frame(y = unlist(y)))
+  return(
+    data.frame(
+      y = unlist(y),
+      lag_y = c(NA, head(unlist(y), -1))
+    )
+  )
   
 }
 
 estimation_fn = function(dat, grid_row){
   
-  mod = lm(y ~ c(NA, y[1:(length(y)-1)]), data=dat)
+  grid_row = unlist(grid_row)
+  mod = lm(y ~ lag_y, data = dat)
   
-  return(mod)
+  return(
+    
+    c(coef(mod), grid_row)
+    
+    )
+  
 }
+
+RhpcBLASctl::blas_set_num_threads(1)
+RhpcBLASctl::omp_set_num_threads(1)
+
+ncpus = parallel::detectCores()-1
+type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
+cl = makeCluster(ncpus, type=type)
+registerDoParallel(cl)
+
+
+out = system.time({
+  foreach(
+  i = seq_len(nrow(grid_multi)),
+  .options.multicore = list(preschedule=T),
+  .maxcombine = nrow(grid_multi),
+  .multicombine = T,
+  .packages = 'RhpcBLASctl'
+) %dorng% {
+  
+  RhpcBLASctl::blas_set_num_threads(1)
+  RhpcBLASctl::omp_set_num_threads(1)
+          
+  grid_row = grid_multi[i, ]
+  
+  dat = simulation_fn(grid_row)
+  
+  return(estimation_fn(dat, grid_row))
+  
+}
+})
+
+stopCluster(cl)
+unregister()
+rm(cl)
+
+out2 = system.time({
+  foreach(
+  i = seq_len(nrow(grid_multi)),
+  .options.multicore = list(preschedule=T),
+  .maxcombine = nrow(grid_multi),
+  .multicombine = T,
+  .packages = 'RhpcBLASctl'
+) %do% {
+  
+  RhpcBLASctl::blas_set_num_threads(1)
+  RhpcBLASctl::omp_set_num_threads(1)
+          
+  grid_row = grid_multi[i, ]
+  
+  dat = simulation_fn(grid_row)
+  
+  return(estimation_fn(dat, grid_row))
+  
+}
+})
 
 ```
 
