@@ -1094,7 +1094,7 @@ estimation_fn = function(dat, grid_row, iter){
 
 
 ### Install, load necessary packages
-pks = c("RhpcBLASctl", "doParallel", "doRNG", "MASS")
+pks = c("RhpcBLASctl", "doParallel", "doRNG")
 needed = setdiff(pks, rownames(installed.packages()))
 if(length(needed) > 0)
   install.packages("pks", Ncpus = parallel::detectCores() - 1)
@@ -1126,7 +1126,7 @@ out =
   .options.multicore = list(preschedule=T),
   .maxcombine = nrow(grid)*nsims,
   .multicombine = T,
-  .packages = c('RhpcBLASctl', 'MASS')
+  .packages = c('RhpcBLASctl')
 ) %dorng% {
   
   RhpcBLASctl::blas_set_num_threads(1)
@@ -1143,5 +1143,124 @@ out =
 stopCluster(cl)
 
   
+
+```
+
+# Example 3: Small Sample Bias of Logit Models 
+
+```{r, cache=T}
+simulation_fn = function(grid_row){
+  b1 = grid_row[["b1"]]
+  n = grid_row[["n"]]
+  
+  X = cbind(
+    1,
+    runif(n, -5, 5),
+    rbinom(n, 1, .5),
+    rexp(n, .33),
+    rbeta(n, 12, 4),
+    rt(n, 5),
+    rnorm(n, sd=1.75),
+    rpois(n, 4)
+    )
+  
+  b = c(-1, b1, 2, -.25, 1.2, .8, -1.5, .33)
+  eta = X%*%b
+  
+  y = rbinom(n, 1, plogis(eta))
+  
+  dat = cbind.data.frame(y = y, X = X[,-1])
+  
+  return(dat)
+}
+
+estimation_fn = function(data, grid_row, iter_id){
+  
+  grid_row = unlist(grid_row)
+  
+  mod_bad = suppressWarnings(
+    glm(y ~ . , 
+        data = dat, 
+        family=binomial(link="logit")
+        )
+    )
+  mod_good = suppressWarnings(
+    glm(y ~ . , 
+        data = dat, 
+        method = "brglmFit", 
+        type = 'AS_mean', 
+        family=binomial(link="logit")
+        )
+    )
+  
+  
+  if(!(mod_bad$converged && mod_good$converged))
+    return(NULL)
+  
+  out_bad = summary(mod_bad)$coefficients[2, 1:2]
+  out_good = summary(mod_good)$coefficients[2, 1:2]
+  
+  out = rbind(out_bad, out_good)
+  
+  cbind.data.frame(
+    iter_id = iter_id,
+    n = grid_row[["n"]],
+    b1 = grid_row[["b1"]],
+    model = c("glm", "pml"),
+    out
+    )
+
+  
+}
+
+
+
+### Install, load necessary packages
+pks = c("RhpcBLASctl", "doParallel", "doRNG", "brglm2")
+needed = setdiff(pks, rownames(installed.packages()))
+if(length(needed) > 0)
+  install.packages("pks", Ncpus = parallel::detectCores() - 1)
+
+invisible(sapply(pks, library, character.only=T))
+
+
+nsims = 500
+b1 = c(-.5, 1.2, 2.7, 3.3)
+n = c(70, 100, 150, 200)
+grid = expand.grid(b1 = b1, n = n)
+chunks = seq(from = nsims, to = nsims*nrow(grid), by = nsims)
+
+RhpcBLASctl::blas_set_num_threads(1)
+RhpcBLASctl::omp_set_num_threads(1)
+
+ncpus = parallel::detectCores()-1
+type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
+cl = makeCluster(ncpus, type=type)
+registerDoParallel(cl)
+
+out = 
+  foreach(
+  i = seq_len(nrow(grid)*nsims),
+  .options.multicore = list(preschedule=T),
+  .maxcombine = nrow(grid)*nsims,
+  .multicombine = T,
+  .packages = c('RhpcBLASctl', 'brglm2')
+) %dorng% {
+  
+  
+  library(brglm2)
+  RhpcBLASctl::blas_set_num_threads(1)
+  RhpcBLASctl::omp_set_num_threads(1)
+          
+  grid_row = grid[which.max(i <= chunks),]
+  
+  dat = simulation_fn(grid_row)
+  
+  estimation_fn(dat, grid_row, i)
+  
+}
+  
+stopCluster(cl)
+
 
 ```
