@@ -1890,421 +1890,445 @@ meaning that the AR parameter is biased towards zero.</p>
 sections without further discussion. The intention here is to give
 example code for more complicated problems, but the principles in
 application are identical to those already discussed.</p>
+</div>
+<div id="spurious-regression-problem" class="section level1">
+<h1>Spurious Regression Problem</h1>
+</div>
+<div id="spurious-regression" class="section level1">
+<h1>Spurious Regression</h1>
 <div class="sourceCode" id="cb46"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install, load necessary packages</span></span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;RhpcBLASctl&quot;</span>, <span class="st">&quot;doParallel&quot;</span>, <span class="st">&quot;doRNG&quot;</span>)</span>
-<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">setdiff</span>(pks, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
-<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">length</span>(needed) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">&quot;pks&quot;</span>, <span class="at">Ncpus =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
-<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">500</span>, <span class="dv">10000</span>)</span>
-<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>p <span class="ot">=</span> <span class="fu">c</span>(.<span class="dv">2</span>, .<span class="dv">5</span>, .<span class="dv">75</span>, .<span class="dv">95</span>)</span>
-<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span></span>
-<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">n =</span> n, <span class="at">p =</span> p)</span>
-<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>grid_multi <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, <span class="fu">replicate</span>(nsims, grid, <span class="at">simplify =</span> F))</span>
-<span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>simulation_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
-<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-18"><a href="#cb46-18" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inst_load</span>()</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>sim_and_est <span class="ot">=</span> <span class="cf">function</span>(n, iter_id){</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">=</span> y <span class="ot">=</span> <span class="fu">list</span>()</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>  x[[<span class="dv">1</span>]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>  y[[<span class="dv">1</span>]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>n){</span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>    x[[i]] <span class="ot">=</span> <span class="dv">2</span> <span class="sc">+</span> x[[i<span class="dv">-1</span>]] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>    y[[i]] <span class="ot">=</span> <span class="dv">1</span> <span class="sc">+</span> y[[i<span class="dv">-1</span>]] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">unlist</span>(y)</span>
+<span id="cb46-18"><a href="#cb46-18" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">=</span> <span class="fu">unlist</span>(x)</span>
 <span id="cb46-19"><a href="#cb46-19" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-20"><a href="#cb46-20" aria-hidden="true" tabindex="-1"></a>  rho <span class="ot">=</span> grid_row[<span class="st">&quot;p&quot;</span>]</span>
-<span id="cb46-21"><a href="#cb46-21" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-22"><a href="#cb46-22" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">list</span>()</span>
-<span id="cb46-23"><a href="#cb46-23" aria-hidden="true" tabindex="-1"></a>  y[[<span class="dv">1</span>]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
-<span id="cb46-24"><a href="#cb46-24" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-25"><a href="#cb46-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>grid_row[<span class="st">&quot;n&quot;</span>]) {</span>
-<span id="cb46-26"><a href="#cb46-26" aria-hidden="true" tabindex="-1"></a>    y[[j]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="at">mean =</span> rho<span class="sc">*</span>y[[j<span class="dv">-1</span>]])</span>
-<span id="cb46-27"><a href="#cb46-27" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb46-28"><a href="#cb46-28" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb46-29"><a href="#cb46-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
-<span id="cb46-30"><a href="#cb46-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
-<span id="cb46-31"><a href="#cb46-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="fu">unlist</span>(y),</span>
-<span id="cb46-32"><a href="#cb46-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">lag_y =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">head</span>(<span class="fu">unlist</span>(y), <span class="sc">-</span><span class="dv">1</span>))</span>
-<span id="cb46-33"><a href="#cb46-33" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb46-34"><a href="#cb46-34" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb46-35"><a href="#cb46-35" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-36"><a href="#cb46-36" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb46-37"><a href="#cb46-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-38"><a href="#cb46-38" aria-hidden="true" tabindex="-1"></a>estimation_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row){</span>
-<span id="cb46-39"><a href="#cb46-39" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-40"><a href="#cb46-40" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
-<span id="cb46-41"><a href="#cb46-41" aria-hidden="true" tabindex="-1"></a>  mod <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> lag_y, <span class="at">data =</span> dat)</span>
-<span id="cb46-42"><a href="#cb46-42" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-43"><a href="#cb46-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
-<span id="cb46-44"><a href="#cb46-44" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb46-45"><a href="#cb46-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="fu">coef</span>(mod), grid_row)</span>
-<span id="cb46-46"><a href="#cb46-46" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb46-47"><a href="#cb46-47" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb46-48"><a href="#cb46-48" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-49"><a href="#cb46-49" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb46-50"><a href="#cb46-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-51"><a href="#cb46-51" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb46-52"><a href="#cb46-52" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb46-53"><a href="#cb46-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-54"><a href="#cb46-54" aria-hidden="true" tabindex="-1"></a>ncpus <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()<span class="sc">-</span><span class="dv">1</span></span>
-<span id="cb46-55"><a href="#cb46-55" aria-hidden="true" tabindex="-1"></a>type <span class="ot">=</span> <span class="cf">if</span>(.Platform<span class="sc">$</span>OS.type <span class="sc">==</span> <span class="st">&#39;unix&#39;</span>) <span class="st">&#39;FORK&#39;</span> <span class="cf">else</span> <span class="st">&#39;PSOCK&#39;</span></span>
-<span id="cb46-56"><a href="#cb46-56" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncpus, <span class="at">type=</span>type)</span>
-<span id="cb46-57"><a href="#cb46-57" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb46-58"><a href="#cb46-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-59"><a href="#cb46-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-60"><a href="#cb46-60" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> </span>
-<span id="cb46-61"><a href="#cb46-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
-<span id="cb46-62"><a href="#cb46-62" aria-hidden="true" tabindex="-1"></a>  <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid_multi)),</span>
-<span id="cb46-63"><a href="#cb46-63" aria-hidden="true" tabindex="-1"></a>  <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
-<span id="cb46-64"><a href="#cb46-64" aria-hidden="true" tabindex="-1"></a>  <span class="at">.maxcombine =</span> <span class="fu">nrow</span>(grid_multi),</span>
-<span id="cb46-65"><a href="#cb46-65" aria-hidden="true" tabindex="-1"></a>  <span class="at">.multicombine =</span> T,</span>
-<span id="cb46-66"><a href="#cb46-66" aria-hidden="true" tabindex="-1"></a>  <span class="at">.packages =</span> <span class="st">&#39;RhpcBLASctl&#39;</span></span>
-<span id="cb46-67"><a href="#cb46-67" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%dorng%</span> {</span>
-<span id="cb46-68"><a href="#cb46-68" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-69"><a href="#cb46-69" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb46-70"><a href="#cb46-70" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb46-71"><a href="#cb46-71" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb46-72"><a href="#cb46-72" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> grid_multi[i, ]</span>
-<span id="cb46-73"><a href="#cb46-73" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-74"><a href="#cb46-74" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulation_fn</span>(grid_row)</span>
-<span id="cb46-75"><a href="#cb46-75" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-76"><a href="#cb46-76" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">estimation_fn</span>(dat, grid_row))</span>
-<span id="cb46-77"><a href="#cb46-77" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-78"><a href="#cb46-78" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb46-79"><a href="#cb46-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-80"><a href="#cb46-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-81"><a href="#cb46-81" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span>
-<span id="cb46-82"><a href="#cb46-82" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(cl)</span>
-<span id="cb46-83"><a href="#cb46-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-84"><a href="#cb46-84" aria-hidden="true" tabindex="-1"></a>out2 <span class="ot">=</span> </span>
-<span id="cb46-85"><a href="#cb46-85" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
-<span id="cb46-86"><a href="#cb46-86" aria-hidden="true" tabindex="-1"></a>  <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid_multi)),</span>
-<span id="cb46-87"><a href="#cb46-87" aria-hidden="true" tabindex="-1"></a>  <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
-<span id="cb46-88"><a href="#cb46-88" aria-hidden="true" tabindex="-1"></a>  <span class="at">.maxcombine =</span> <span class="fu">nrow</span>(grid_multi),</span>
-<span id="cb46-89"><a href="#cb46-89" aria-hidden="true" tabindex="-1"></a>  <span class="at">.multicombine =</span> T,</span>
-<span id="cb46-90"><a href="#cb46-90" aria-hidden="true" tabindex="-1"></a>  <span class="at">.packages =</span> <span class="st">&#39;RhpcBLASctl&#39;</span></span>
-<span id="cb46-91"><a href="#cb46-91" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%do%</span> {</span>
-<span id="cb46-92"><a href="#cb46-92" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-93"><a href="#cb46-93" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb46-94"><a href="#cb46-94" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb46-95"><a href="#cb46-95" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb46-96"><a href="#cb46-96" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> grid_multi[i, ]</span>
-<span id="cb46-97"><a href="#cb46-97" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-98"><a href="#cb46-98" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulation_fn</span>(grid_row)</span>
-<span id="cb46-99"><a href="#cb46-99" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-100"><a href="#cb46-100" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">estimation_fn</span>(dat, grid_row))</span>
-<span id="cb46-101"><a href="#cb46-101" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb46-102"><a href="#cb46-102" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb46-20"><a href="#cb46-20" aria-hidden="true" tabindex="-1"></a>  mod <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> x)</span>
+<span id="cb46-21"><a href="#cb46-21" aria-hidden="true" tabindex="-1"></a>  sumr <span class="ot">=</span> <span class="fu">summary</span>(mod)</span>
+<span id="cb46-22"><a href="#cb46-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-23"><a href="#cb46-23" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">c</span>(<span class="at">n =</span> n,</span>
+<span id="cb46-24"><a href="#cb46-24" aria-hidden="true" tabindex="-1"></a>          iter_id, </span>
+<span id="cb46-25"><a href="#cb46-25" aria-hidden="true" tabindex="-1"></a>          sumr<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], </span>
+<span id="cb46-26"><a href="#cb46-26" aria-hidden="true" tabindex="-1"></a>          <span class="at">r2 =</span> sumr<span class="sc">$</span>adj.r.squared</span>
+<span id="cb46-27"><a href="#cb46-27" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb46-28"><a href="#cb46-28" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-29"><a href="#cb46-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb46-30"><a href="#cb46-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-31"><a href="#cb46-31" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb46-32"><a href="#cb46-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-33"><a href="#cb46-33" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">500</span>, <span class="dv">1000</span>, <span class="dv">10000</span>, <span class="dv">50000</span>)</span>
+<span id="cb46-34"><a href="#cb46-34" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">1000</span></span>
+<span id="cb46-35"><a href="#cb46-35" aria-hidden="true" tabindex="-1"></a>chunks <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from =</span> nsims, </span>
+<span id="cb46-36"><a href="#cb46-36" aria-hidden="true" tabindex="-1"></a>             <span class="at">to =</span> nsims <span class="sc">*</span> <span class="fu">length</span>(n), </span>
+<span id="cb46-37"><a href="#cb46-37" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> nsims</span>
+<span id="cb46-38"><a href="#cb46-38" aria-hidden="true" tabindex="-1"></a>             )</span>
+<span id="cb46-39"><a href="#cb46-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-40"><a href="#cb46-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-41"><a href="#cb46-41" aria-hidden="true" tabindex="-1"></a><span class="fu">setup_cl</span>()</span>
+<span id="cb46-42"><a href="#cb46-42" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> </span>
+<span id="cb46-43"><a href="#cb46-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
+<span id="cb46-44"><a href="#cb46-44" aria-hidden="true" tabindex="-1"></a>  <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">length</span>(n)<span class="sc">*</span>nsims),</span>
+<span id="cb46-45"><a href="#cb46-45" aria-hidden="true" tabindex="-1"></a>  <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
+<span id="cb46-46"><a href="#cb46-46" aria-hidden="true" tabindex="-1"></a>  <span class="at">.maxcombine =</span> <span class="fu">length</span>(n)<span class="sc">*</span>nsims,</span>
+<span id="cb46-47"><a href="#cb46-47" aria-hidden="true" tabindex="-1"></a>  <span class="at">.multicombine =</span> T,</span>
+<span id="cb46-48"><a href="#cb46-48" aria-hidden="true" tabindex="-1"></a>  <span class="at">.packages =</span> <span class="st">&#39;RhpcBLASctl&#39;</span></span>
+<span id="cb46-49"><a href="#cb46-49" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%dorng%</span> {</span>
+<span id="cb46-50"><a href="#cb46-50" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-51"><a href="#cb46-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-52"><a href="#cb46-52" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb46-53"><a href="#cb46-53" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb46-54"><a href="#cb46-54" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb46-55"><a href="#cb46-55" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> n[<span class="fu">which.max</span>(i <span class="sc">&lt;=</span> chunks)]</span>
+<span id="cb46-56"><a href="#cb46-56" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-57"><a href="#cb46-57" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">sim_and_est</span>(grid_row, i)</span>
+<span id="cb46-58"><a href="#cb46-58" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-59"><a href="#cb46-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb46-60"><a href="#cb46-60" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb46-61"><a href="#cb46-61" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb46-62"><a href="#cb46-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-63"><a href="#cb46-63" aria-hidden="true" tabindex="-1"></a><span class="fu">clear_cl</span>()</span></code></pre></div>
 </div>
-<div id="example-2-inefficiency-of-heckman-2-step"
-class="section level1">
-<h1>Example 2: Inefficiency of Heckman 2-Step</h1>
+<div id="bias-of-ar1" class="section level1">
+<h1>Bias of AR(1)</h1>
 <div class="sourceCode" id="cb47"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Define custom regression function</span></span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>fiml_reg <span class="ot">=</span> <span class="cf">function</span>(formula, data){</span>
-<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  fr <span class="ot">=</span> <span class="fu">model.frame</span>(formula, <span class="at">data =</span> data)</span>
-<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">=</span> <span class="fu">model.matrix</span>(formula, fr)</span>
-<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">model.response</span>(fr)</span>
-<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>  starts <span class="ot">=</span> <span class="fu">c</span>( </span>
-<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coef</span>(<span class="fu">lm</span>(y <span class="sc">~</span> X <span class="sc">+</span> <span class="dv">0</span>)),</span>
-<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span></span>
-<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>  mod <span class="ot">=</span> <span class="fu">nlm</span>(fiml_ll, <span class="at">p =</span> starts, <span class="at">hessian =</span> T, <span class="at">X=</span>X, <span class="at">y =</span> y)</span>
-<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>  se <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">solve</span>(mod<span class="sc">$</span>hessian)))</span>
-<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">cbind</span>(mod<span class="sc">$</span>estimate, se)</span>
-<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a><span class="do">### Likelihood to custom reg fn</span></span>
-<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a>fiml_ll <span class="ot">=</span> <span class="cf">function</span>(parms,  y, X, <span class="at">tau =</span> <span class="dv">0</span>){</span>
-<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">=</span> <span class="fu">head</span>(parms, <span class="sc">-</span><span class="dv">1</span>)</span>
-<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a>  sig <span class="ot">=</span> <span class="fu">tail</span>(parms, <span class="dv">1</span>)</span>
-<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a>  obs <span class="ot">=</span>  y <span class="sc">&gt;</span> tau</span>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inst_load</span>()</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>simulation_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  rho <span class="ot">=</span> grid_row[<span class="st">&quot;p&quot;</span>]</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">list</span>()</span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>  y[[<span class="dv">1</span>]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>)</span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>grid_row[<span class="st">&quot;n&quot;</span>]) {</span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>    y[[j]] <span class="ot">=</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="at">mean =</span> rho<span class="sc">*</span>y[[j<span class="dv">-1</span>]])</span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
+<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
+<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> <span class="fu">unlist</span>(y),</span>
+<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a>      <span class="at">lag_y =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">head</span>(<span class="fu">unlist</span>(y), <span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a>estimation_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row, iter_id){</span>
+<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
+<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a>  mod <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> lag_y, <span class="at">data =</span> dat)</span>
 <span id="cb47-29"><a href="#cb47-29" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a>  y_obs <span class="ot">=</span> y[obs]</span>
-<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a>  y_cen <span class="ot">=</span> y[<span class="sc">!</span>obs]</span>
-<span id="cb47-32"><a href="#cb47-32" aria-hidden="true" tabindex="-1"></a>  eta <span class="ot">=</span> <span class="fu">as.vector</span>(X <span class="sc">%*%</span> b)</span>
-<span id="cb47-33"><a href="#cb47-33" aria-hidden="true" tabindex="-1"></a>  eta_obs <span class="ot">=</span> eta[obs]</span>
-<span id="cb47-34"><a href="#cb47-34" aria-hidden="true" tabindex="-1"></a>  eta_cen <span class="ot">=</span> eta[<span class="sc">!</span>obs]</span>
+<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
+<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb47-32"><a href="#cb47-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(iter_id, <span class="fu">coef</span>(mod), grid_row)</span>
+<span id="cb47-33"><a href="#cb47-33" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb47-34"><a href="#cb47-34" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb47-35"><a href="#cb47-35" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-36"><a href="#cb47-36" aria-hidden="true" tabindex="-1"></a>  ll_uncens <span class="ot">=</span> <span class="fu">sum</span>(<span class="fu">dnorm</span>((y_obs <span class="sc">-</span> eta_obs)<span class="sc">/</span>sig, <span class="at">log=</span>T) <span class="sc">-</span> <span class="fu">log</span>(sig))</span>
-<span id="cb47-37"><a href="#cb47-37" aria-hidden="true" tabindex="-1"></a>  ll_cens <span class="ot">=</span> <span class="fu">sum</span>(<span class="fu">pnorm</span>((tau <span class="sc">-</span> eta_cen)<span class="sc">/</span>sig, <span class="at">log.p =</span> T))</span>
-<span id="cb47-38"><a href="#cb47-38" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-39"><a href="#cb47-39" aria-hidden="true" tabindex="-1"></a>  ll <span class="ot">=</span> <span class="sc">-</span>(ll_uncens <span class="sc">+</span> ll_cens)</span>
-<span id="cb47-40"><a href="#cb47-40" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-41"><a href="#cb47-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># if(is.na(ll))</span></span>
-<span id="cb47-42"><a href="#cb47-42" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   ll = .Machine$double.xmax</span></span>
-<span id="cb47-43"><a href="#cb47-43" aria-hidden="true" tabindex="-1"></a>  <span class="co"># </span></span>
-<span id="cb47-44"><a href="#cb47-44" aria-hidden="true" tabindex="-1"></a>  <span class="co"># cat(ll, &quot;\n&quot;)</span></span>
-<span id="cb47-45"><a href="#cb47-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(ll)</span>
-<span id="cb47-46"><a href="#cb47-46" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-47"><a href="#cb47-47" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb47-48"><a href="#cb47-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-36"><a href="#cb47-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb47-37"><a href="#cb47-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-38"><a href="#cb47-38" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">500</span>, <span class="dv">10000</span>)</span>
+<span id="cb47-39"><a href="#cb47-39" aria-hidden="true" tabindex="-1"></a>p <span class="ot">=</span> <span class="fu">c</span>(.<span class="dv">2</span>, .<span class="dv">5</span>, .<span class="dv">75</span>, .<span class="dv">95</span>)</span>
+<span id="cb47-40"><a href="#cb47-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-41"><a href="#cb47-41" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">1000</span></span>
+<span id="cb47-42"><a href="#cb47-42" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">n =</span> n, </span>
+<span id="cb47-43"><a href="#cb47-43" aria-hidden="true" tabindex="-1"></a>                   <span class="at">p =</span> p</span>
+<span id="cb47-44"><a href="#cb47-44" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb47-45"><a href="#cb47-45" aria-hidden="true" tabindex="-1"></a>chunks <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from =</span> nsims, </span>
+<span id="cb47-46"><a href="#cb47-46" aria-hidden="true" tabindex="-1"></a>             <span class="at">to =</span> nsims <span class="sc">*</span> <span class="fu">nrow</span>(grid), </span>
+<span id="cb47-47"><a href="#cb47-47" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> nsims</span>
+<span id="cb47-48"><a href="#cb47-48" aria-hidden="true" tabindex="-1"></a>          )</span>
 <span id="cb47-49"><a href="#cb47-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-50"><a href="#cb47-50" aria-hidden="true" tabindex="-1"></a><span class="do">### Simulation function</span></span>
-<span id="cb47-51"><a href="#cb47-51" aria-hidden="true" tabindex="-1"></a>simulation_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row) {</span>
-<span id="cb47-52"><a href="#cb47-52" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">=</span> grid_row[[<span class="st">&quot;n&quot;</span>]]</span>
-<span id="cb47-53"><a href="#cb47-53" aria-hidden="true" tabindex="-1"></a>  b1 <span class="ot">=</span> grid_row[[<span class="st">&quot;b1&quot;</span>]]</span>
-<span id="cb47-54"><a href="#cb47-54" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-55"><a href="#cb47-55" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">=</span> <span class="fu">c</span>(b1, <span class="sc">-</span><span class="fl">1.2</span>, .<span class="dv">15</span>)</span>
-<span id="cb47-56"><a href="#cb47-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-57"><a href="#cb47-57" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">=</span> <span class="fu">cbind</span>(</span>
-<span id="cb47-58"><a href="#cb47-58" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span>, </span>
-<span id="cb47-59"><a href="#cb47-59" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fl">2.5</span>),</span>
-<span id="cb47-60"><a href="#cb47-60" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rexp</span>(n, .<span class="dv">33</span>)</span>
-<span id="cb47-61"><a href="#cb47-61" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb47-62"><a href="#cb47-62" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-63"><a href="#cb47-63" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> X<span class="sc">%*%</span>b, <span class="at">sd =</span> <span class="fl">1.75</span>)</span>
-<span id="cb47-64"><a href="#cb47-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(y <span class="sc">&lt;</span> <span class="dv">0</span>)</span>
-<span id="cb47-65"><a href="#cb47-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-66"><a href="#cb47-66" aria-hidden="true" tabindex="-1"></a>  obs <span class="ot">=</span>  y <span class="sc">&gt;</span> <span class="dv">0</span></span>
-<span id="cb47-67"><a href="#cb47-67" aria-hidden="true" tabindex="-1"></a>  y[obs <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">=</span> <span class="dv">0</span></span>
-<span id="cb47-68"><a href="#cb47-68" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-69"><a href="#cb47-69" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">cbind.data.frame</span>(<span class="at">X =</span> X, <span class="at">y =</span> y, <span class="at">obs =</span> obs)</span>
-<span id="cb47-70"><a href="#cb47-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
-<span id="cb47-71"><a href="#cb47-71" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb47-72"><a href="#cb47-72" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb47-73"><a href="#cb47-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-74"><a href="#cb47-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-75"><a href="#cb47-75" aria-hidden="true" tabindex="-1"></a><span class="do">#### Estimation function</span></span>
-<span id="cb47-76"><a href="#cb47-76" aria-hidden="true" tabindex="-1"></a>estimation_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row, iter){</span>
-<span id="cb47-77"><a href="#cb47-77" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-78"><a href="#cb47-78" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unname</span>(<span class="fu">unlist</span>(grid_row))</span>
-<span id="cb47-79"><a href="#cb47-79" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-80"><a href="#cb47-80" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Model 1 - OLS</span></span>
-<span id="cb47-81"><a href="#cb47-81" aria-hidden="true" tabindex="-1"></a>  ols <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span>, <span class="at">data=</span>dat)</span>
-<span id="cb47-82"><a href="#cb47-82" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-83"><a href="#cb47-83" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Model 2 - Heckman</span></span>
-<span id="cb47-84"><a href="#cb47-84" aria-hidden="true" tabindex="-1"></a>  hecksel <span class="ot">=</span> <span class="fu">suppressWarnings</span>(</span>
-<span id="cb47-85"><a href="#cb47-85" aria-hidden="true" tabindex="-1"></a>    <span class="fu">glm</span>(obs <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span>,</span>
-<span id="cb47-86"><a href="#cb47-86" aria-hidden="true" tabindex="-1"></a>        <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link=</span><span class="st">&quot;probit&quot;</span>),</span>
-<span id="cb47-87"><a href="#cb47-87" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> dat</span>
-<span id="cb47-88"><a href="#cb47-88" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb47-89"><a href="#cb47-89" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb47-90"><a href="#cb47-90" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-91"><a href="#cb47-91" aria-hidden="true" tabindex="-1"></a>  eta <span class="ot">=</span> <span class="fu">predict</span>(hecksel)</span>
-<span id="cb47-92"><a href="#cb47-92" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-93"><a href="#cb47-93" aria-hidden="true" tabindex="-1"></a>  imills <span class="ot">=</span> <span class="fu">dnorm</span>(eta)<span class="sc">/</span><span class="fu">pnorm</span>(eta)</span>
-<span id="cb47-94"><a href="#cb47-94" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-95"><a href="#cb47-95" aria-hidden="true" tabindex="-1"></a>  heck2step <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span> <span class="sc">+</span> imills,</span>
-<span id="cb47-96"><a href="#cb47-96" aria-hidden="true" tabindex="-1"></a>                 <span class="at">data =</span> dat,</span>
-<span id="cb47-97"><a href="#cb47-97" aria-hidden="true" tabindex="-1"></a>                 <span class="at">subset =</span> obs <span class="sc">==</span> <span class="dv">1</span></span>
-<span id="cb47-98"><a href="#cb47-98" aria-hidden="true" tabindex="-1"></a>                 )</span>
-<span id="cb47-99"><a href="#cb47-99" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-100"><a href="#cb47-100" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Model 3 - FIML Tobit 1</span></span>
-<span id="cb47-101"><a href="#cb47-101" aria-hidden="true" tabindex="-1"></a>  out_fiml <span class="ot">=</span> <span class="fu">tryCatch</span>(</span>
-<span id="cb47-102"><a href="#cb47-102" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fiml_reg</span>(y <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span>, <span class="at">data =</span> dat)[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], </span>
-<span id="cb47-103"><a href="#cb47-103" aria-hidden="true" tabindex="-1"></a>    <span class="at">error =</span> <span class="cf">function</span>(e) <span class="cn">NULL</span></span>
-<span id="cb47-104"><a href="#cb47-104" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb47-105"><a href="#cb47-105" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-106"><a href="#cb47-106" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.null</span>(out_fiml))</span>
-<span id="cb47-107"><a href="#cb47-107" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
-<span id="cb47-108"><a href="#cb47-108" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-109"><a href="#cb47-109" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Tidy everything</span></span>
-<span id="cb47-110"><a href="#cb47-110" aria-hidden="true" tabindex="-1"></a>  prop_obs <span class="ot">=</span> <span class="fu">sum</span>(dat<span class="sc">$</span>obs) <span class="sc">/</span> <span class="fu">nrow</span>(dat)</span>
-<span id="cb47-111"><a href="#cb47-111" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-112"><a href="#cb47-112" aria-hidden="true" tabindex="-1"></a>  out_2step <span class="ot">=</span> <span class="fu">summary</span>(heck2step)<span class="sc">$</span>coefficients[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
-<span id="cb47-113"><a href="#cb47-113" aria-hidden="true" tabindex="-1"></a>  out_ols <span class="ot">=</span> <span class="fu">summary</span>(ols)<span class="sc">$</span>coefficients[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
-<span id="cb47-114"><a href="#cb47-114" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-115"><a href="#cb47-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(out_2step) <span class="ot">=</span> <span class="fu">colnames</span>(out_ols) <span class="ot">=</span> <span class="fu">colnames</span>(out_fiml) <span class="ot">=</span>  <span class="fu">c</span>(<span class="st">&quot;est&quot;</span>, <span class="st">&quot;se&quot;</span>)</span>
-<span id="cb47-116"><a href="#cb47-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames</span>(out_2step) <span class="ot">=</span> <span class="fu">rownames</span>(out_ols) <span class="ot">=</span> <span class="fu">rownames</span>(out_fiml) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;b1&quot;</span>, <span class="st">&quot;b2&quot;</span>, <span class="st">&quot;b3&quot;</span>)</span>
-<span id="cb47-117"><a href="#cb47-117" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-118"><a href="#cb47-118" aria-hidden="true" tabindex="-1"></a>  model <span class="ot">=</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;ols&quot;</span>, <span class="st">&quot;2step&quot;</span>, <span class="st">&quot;fiml&quot;</span>), <span class="at">each=</span><span class="fu">nrow</span>(out_2step))</span>
-<span id="cb47-119"><a href="#cb47-119" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-120"><a href="#cb47-120" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">cbind.data.frame</span>(</span>
-<span id="cb47-121"><a href="#cb47-121" aria-hidden="true" tabindex="-1"></a>    <span class="at">model =</span> model,</span>
-<span id="cb47-122"><a href="#cb47-122" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rbind.data.frame</span>(out_ols, out_2step, out_fiml)</span>
-<span id="cb47-123"><a href="#cb47-123" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb47-124"><a href="#cb47-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-125"><a href="#cb47-125" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames</span>(out) <span class="ot">=</span> <span class="cn">NULL</span></span>
-<span id="cb47-126"><a href="#cb47-126" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb47-127"><a href="#cb47-127" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-128"><a href="#cb47-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
-<span id="cb47-129"><a href="#cb47-129" aria-hidden="true" tabindex="-1"></a>    <span class="at">iter_id =</span> iter,</span>
-<span id="cb47-130"><a href="#cb47-130" aria-hidden="true" tabindex="-1"></a>    <span class="at">param =</span> <span class="fu">rep</span>(<span class="fu">rownames</span>(out_2step), <span class="dv">3</span>),</span>
-<span id="cb47-131"><a href="#cb47-131" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[<span class="dv">1</span>], </span>
-<span id="cb47-132"><a href="#cb47-132" aria-hidden="true" tabindex="-1"></a>    <span class="at">b1 =</span> grid_row[<span class="dv">2</span>], </span>
-<span id="cb47-133"><a href="#cb47-133" aria-hidden="true" tabindex="-1"></a>    <span class="at">prop_obs =</span> prop_obs,</span>
-<span id="cb47-134"><a href="#cb47-134" aria-hidden="true" tabindex="-1"></a>    out</span>
-<span id="cb47-135"><a href="#cb47-135" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb47-136"><a href="#cb47-136" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-137"><a href="#cb47-137" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-138"><a href="#cb47-138" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb47-139"><a href="#cb47-139" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-140"><a href="#cb47-140" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-141"><a href="#cb47-141" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-142"><a href="#cb47-142" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-143"><a href="#cb47-143" aria-hidden="true" tabindex="-1"></a><span class="do">### Install, load necessary packages</span></span>
-<span id="cb47-144"><a href="#cb47-144" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;RhpcBLASctl&quot;</span>, <span class="st">&quot;doParallel&quot;</span>, <span class="st">&quot;doRNG&quot;</span>)</span>
-<span id="cb47-145"><a href="#cb47-145" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">setdiff</span>(pks, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
-<span id="cb47-146"><a href="#cb47-146" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">length</span>(needed) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb47-147"><a href="#cb47-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">&quot;pks&quot;</span>, <span class="at">Ncpus =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb47-148"><a href="#cb47-148" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-149"><a href="#cb47-149" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
-<span id="cb47-150"><a href="#cb47-150" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-151"><a href="#cb47-151" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-152"><a href="#cb47-152" aria-hidden="true" tabindex="-1"></a><span class="do">### Set up for simulations</span></span>
-<span id="cb47-153"><a href="#cb47-153" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">50</span>, <span class="dv">500</span>, <span class="dv">5000</span>)</span>
-<span id="cb47-154"><a href="#cb47-154" aria-hidden="true" tabindex="-1"></a>b1 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
-<span id="cb47-155"><a href="#cb47-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-156"><a href="#cb47-156" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span></span>
-<span id="cb47-157"><a href="#cb47-157" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">n =</span> n, <span class="at">b1 =</span> b1)</span>
-<span id="cb47-158"><a href="#cb47-158" aria-hidden="true" tabindex="-1"></a>chunks <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from =</span> nsims, <span class="at">to =</span> nsims<span class="sc">*</span><span class="fu">nrow</span>(grid), <span class="at">by =</span> nsims)</span>
-<span id="cb47-159"><a href="#cb47-159" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-160"><a href="#cb47-160" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb47-161"><a href="#cb47-161" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb47-162"><a href="#cb47-162" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-163"><a href="#cb47-163" aria-hidden="true" tabindex="-1"></a>ncpus <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()<span class="sc">-</span><span class="dv">1</span></span>
-<span id="cb47-164"><a href="#cb47-164" aria-hidden="true" tabindex="-1"></a>type <span class="ot">=</span> <span class="cf">if</span>(.Platform<span class="sc">$</span>OS.type <span class="sc">==</span> <span class="st">&#39;unix&#39;</span>) <span class="st">&#39;FORK&#39;</span> <span class="cf">else</span> <span class="st">&#39;PSOCK&#39;</span></span>
-<span id="cb47-165"><a href="#cb47-165" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncpus, <span class="at">type=</span>type)</span>
-<span id="cb47-166"><a href="#cb47-166" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb47-167"><a href="#cb47-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-168"><a href="#cb47-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-169"><a href="#cb47-169" aria-hidden="true" tabindex="-1"></a><span class="do">### Main simulations</span></span>
-<span id="cb47-170"><a href="#cb47-170" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> </span>
-<span id="cb47-171"><a href="#cb47-171" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
-<span id="cb47-172"><a href="#cb47-172" aria-hidden="true" tabindex="-1"></a>  <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims),</span>
-<span id="cb47-173"><a href="#cb47-173" aria-hidden="true" tabindex="-1"></a>  <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
-<span id="cb47-174"><a href="#cb47-174" aria-hidden="true" tabindex="-1"></a>  <span class="at">.maxcombine =</span> <span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims,</span>
-<span id="cb47-175"><a href="#cb47-175" aria-hidden="true" tabindex="-1"></a>  <span class="at">.multicombine =</span> T,</span>
-<span id="cb47-176"><a href="#cb47-176" aria-hidden="true" tabindex="-1"></a>  <span class="at">.packages =</span> <span class="fu">c</span>(<span class="st">&#39;RhpcBLASctl&#39;</span>)</span>
-<span id="cb47-177"><a href="#cb47-177" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%dorng%</span> {</span>
-<span id="cb47-178"><a href="#cb47-178" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-179"><a href="#cb47-179" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb47-180"><a href="#cb47-180" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb47-181"><a href="#cb47-181" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb47-182"><a href="#cb47-182" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> grid[<span class="fu">which.max</span>(i <span class="sc">&lt;=</span> chunks),]</span>
-<span id="cb47-183"><a href="#cb47-183" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-184"><a href="#cb47-184" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulation_fn</span>(grid_row)</span>
-<span id="cb47-185"><a href="#cb47-185" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-186"><a href="#cb47-186" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estimation_fn</span>(dat, grid_row, i)</span>
-<span id="cb47-187"><a href="#cb47-187" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-188"><a href="#cb47-188" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb47-189"><a href="#cb47-189" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb47-190"><a href="#cb47-190" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
+<span id="cb47-50"><a href="#cb47-50" aria-hidden="true" tabindex="-1"></a><span class="fu">setup_cl</span>()</span>
+<span id="cb47-51"><a href="#cb47-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-52"><a href="#cb47-52" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> </span>
+<span id="cb47-53"><a href="#cb47-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
+<span id="cb47-54"><a href="#cb47-54" aria-hidden="true" tabindex="-1"></a>  <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid_multi)),</span>
+<span id="cb47-55"><a href="#cb47-55" aria-hidden="true" tabindex="-1"></a>  <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
+<span id="cb47-56"><a href="#cb47-56" aria-hidden="true" tabindex="-1"></a>  <span class="at">.maxcombine =</span> <span class="fu">nrow</span>(grid_multi),</span>
+<span id="cb47-57"><a href="#cb47-57" aria-hidden="true" tabindex="-1"></a>  <span class="at">.multicombine =</span> T,</span>
+<span id="cb47-58"><a href="#cb47-58" aria-hidden="true" tabindex="-1"></a>  <span class="at">.packages =</span> <span class="st">&#39;RhpcBLASctl&#39;</span></span>
+<span id="cb47-59"><a href="#cb47-59" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%dorng%</span> {</span>
+<span id="cb47-60"><a href="#cb47-60" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-61"><a href="#cb47-61" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb47-62"><a href="#cb47-62" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb47-63"><a href="#cb47-63" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb47-64"><a href="#cb47-64" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> grid[<span class="fu">which.max</span>(i <span class="sc">&lt;=</span> chunks),]</span>
+<span id="cb47-65"><a href="#cb47-65" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-66"><a href="#cb47-66" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulation_fn</span>(grid_row)</span>
+<span id="cb47-67"><a href="#cb47-67" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-68"><a href="#cb47-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">estimation_fn</span>(dat, grid_row, i))</span>
+<span id="cb47-69"><a href="#cb47-69" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb47-70"><a href="#cb47-70" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb47-71"><a href="#cb47-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-72"><a href="#cb47-72" aria-hidden="true" tabindex="-1"></a><span class="fu">clear_cl</span>()</span></code></pre></div>
 </div>
-<div id="example-3-small-sample-bias-of-logit-models"
-class="section level1">
-<h1>Example 3: Small Sample Bias of Logit Models</h1>
+<div id="heckman" class="section level1">
+<h1>Heckman</h1>
 <div class="sourceCode" id="cb48"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>simulation_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  b1 <span class="ot">=</span> grid_row[[<span class="st">&quot;b1&quot;</span>]]</span>
-<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">=</span> grid_row[[<span class="st">&quot;n&quot;</span>]]</span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">=</span> <span class="fu">cbind</span>(</span>
-<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span>,</span>
-<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">5</span>, <span class="dv">5</span>),</span>
-<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rbinom</span>(n, <span class="dv">1</span>, .<span class="dv">5</span>),</span>
-<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rexp</span>(n, .<span class="dv">33</span>),</span>
-<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rbeta</span>(n, <span class="dv">12</span>, <span class="dv">4</span>),</span>
-<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rt</span>(n, <span class="dv">5</span>),</span>
-<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(n, <span class="at">sd=</span><span class="fl">1.75</span>),</span>
-<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rpois</span>(n, <span class="dv">4</span>)</span>
-<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, b1, <span class="dv">2</span>, <span class="sc">-</span>.<span class="dv">25</span>, <span class="fl">1.2</span>, .<span class="dv">8</span>, <span class="sc">-</span><span class="fl">1.5</span>, .<span class="dv">33</span>)</span>
-<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>  eta <span class="ot">=</span> X<span class="sc">%*%</span>b</span>
-<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, <span class="fu">plogis</span>(eta))</span>
-<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">cbind.data.frame</span>(<span class="at">y =</span> y, <span class="at">X =</span> X[,<span class="sc">-</span><span class="dv">1</span>])</span>
-<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dat)</span>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inst_load</span>()</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="do">### Likelihood to custom reg fn</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>fiml_ll <span class="ot">=</span> <span class="cf">function</span>(parms,  y, X, <span class="at">tau =</span> <span class="dv">0</span>){</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">=</span> <span class="fu">head</span>(parms, <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>  sig <span class="ot">=</span> <span class="fu">tail</span>(parms, <span class="dv">1</span>)</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>  obs <span class="ot">=</span>  y <span class="sc">&gt;</span> tau</span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>  y_obs <span class="ot">=</span> y[obs]</span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  y_cen <span class="ot">=</span> y[<span class="sc">!</span>obs]</span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>  eta <span class="ot">=</span> <span class="fu">as.vector</span>(X <span class="sc">%*%</span> b)</span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>  eta_obs <span class="ot">=</span> eta[obs]</span>
+<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a>  eta_cen <span class="ot">=</span> eta[<span class="sc">!</span>obs]</span>
+<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>  ll_uncens <span class="ot">=</span> <span class="fu">sum</span>(<span class="fu">dnorm</span>((y_obs <span class="sc">-</span> eta_obs)<span class="sc">/</span>sig, <span class="at">log=</span>T) <span class="sc">-</span> <span class="fu">log</span>(sig))</span>
+<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>  ll_cens <span class="ot">=</span> <span class="fu">sum</span>(<span class="fu">pnorm</span>((tau <span class="sc">-</span> eta_cen)<span class="sc">/</span>sig, <span class="at">log.p =</span> T))</span>
+<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a>  ll <span class="ot">=</span> <span class="sc">-</span>(ll_uncens <span class="sc">+</span> ll_cens)</span>
+<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(ll)</span>
+<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb48-24"><a href="#cb48-24" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb48-25"><a href="#cb48-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-26"><a href="#cb48-26" aria-hidden="true" tabindex="-1"></a>estimation_fn <span class="ot">=</span> <span class="cf">function</span>(data, grid_row, iter_id){</span>
-<span id="cb48-27"><a href="#cb48-27" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-28"><a href="#cb48-28" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
+<span id="cb48-26"><a href="#cb48-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-27"><a href="#cb48-27" aria-hidden="true" tabindex="-1"></a><span class="do">### Define custom regression function</span></span>
+<span id="cb48-28"><a href="#cb48-28" aria-hidden="true" tabindex="-1"></a>fiml_reg <span class="ot">=</span> <span class="cf">function</span>(formula, data){</span>
 <span id="cb48-29"><a href="#cb48-29" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-30"><a href="#cb48-30" aria-hidden="true" tabindex="-1"></a>  mod_bad <span class="ot">=</span> <span class="fu">suppressWarnings</span>(</span>
-<span id="cb48-31"><a href="#cb48-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">glm</span>(y <span class="sc">~</span> . , </span>
-<span id="cb48-32"><a href="#cb48-32" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> dat, </span>
-<span id="cb48-33"><a href="#cb48-33" aria-hidden="true" tabindex="-1"></a>        <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link=</span><span class="st">&quot;logit&quot;</span>)</span>
-<span id="cb48-34"><a href="#cb48-34" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb48-35"><a href="#cb48-35" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb48-36"><a href="#cb48-36" aria-hidden="true" tabindex="-1"></a>  mod_good <span class="ot">=</span> <span class="fu">suppressWarnings</span>(</span>
-<span id="cb48-37"><a href="#cb48-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">glm</span>(y <span class="sc">~</span> . , </span>
-<span id="cb48-38"><a href="#cb48-38" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> dat, </span>
-<span id="cb48-39"><a href="#cb48-39" aria-hidden="true" tabindex="-1"></a>        <span class="at">method =</span> <span class="st">&quot;brglmFit&quot;</span>, </span>
-<span id="cb48-40"><a href="#cb48-40" aria-hidden="true" tabindex="-1"></a>        <span class="at">type =</span> <span class="st">&#39;AS_mean&#39;</span>, </span>
-<span id="cb48-41"><a href="#cb48-41" aria-hidden="true" tabindex="-1"></a>        <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link=</span><span class="st">&quot;logit&quot;</span>)</span>
-<span id="cb48-42"><a href="#cb48-42" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb48-43"><a href="#cb48-43" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb48-30"><a href="#cb48-30" aria-hidden="true" tabindex="-1"></a>  fr <span class="ot">=</span> <span class="fu">model.frame</span>(formula, <span class="at">data =</span> data)</span>
+<span id="cb48-31"><a href="#cb48-31" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">=</span> <span class="fu">model.matrix</span>(formula, fr)</span>
+<span id="cb48-32"><a href="#cb48-32" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">model.response</span>(fr)</span>
+<span id="cb48-33"><a href="#cb48-33" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-34"><a href="#cb48-34" aria-hidden="true" tabindex="-1"></a>  starts <span class="ot">=</span> <span class="fu">c</span>( </span>
+<span id="cb48-35"><a href="#cb48-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coef</span>(<span class="fu">lm</span>(y <span class="sc">~</span> X <span class="sc">+</span> <span class="dv">0</span>)),</span>
+<span id="cb48-36"><a href="#cb48-36" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span></span>
+<span id="cb48-37"><a href="#cb48-37" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb48-38"><a href="#cb48-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-39"><a href="#cb48-39" aria-hidden="true" tabindex="-1"></a>  mod <span class="ot">=</span> <span class="fu">nlm</span>(fiml_ll, <span class="at">p =</span> starts, <span class="at">hessian =</span> T, <span class="at">X=</span>X, <span class="at">y =</span> y)</span>
+<span id="cb48-40"><a href="#cb48-40" aria-hidden="true" tabindex="-1"></a>  se <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">solve</span>(mod<span class="sc">$</span>hessian)))</span>
+<span id="cb48-41"><a href="#cb48-41" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-42"><a href="#cb48-42" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">cbind</span>(mod<span class="sc">$</span>estimate, se)</span>
+<span id="cb48-43"><a href="#cb48-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
 <span id="cb48-44"><a href="#cb48-44" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-45"><a href="#cb48-45" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-46"><a href="#cb48-46" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span>(mod_bad<span class="sc">$</span>converged <span class="sc">&amp;&amp;</span> mod_good<span class="sc">$</span>converged))</span>
-<span id="cb48-47"><a href="#cb48-47" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
-<span id="cb48-48"><a href="#cb48-48" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-49"><a href="#cb48-49" aria-hidden="true" tabindex="-1"></a>  out_bad <span class="ot">=</span> <span class="fu">summary</span>(mod_bad)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
-<span id="cb48-50"><a href="#cb48-50" aria-hidden="true" tabindex="-1"></a>  out_good <span class="ot">=</span> <span class="fu">summary</span>(mod_good)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
-<span id="cb48-51"><a href="#cb48-51" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-52"><a href="#cb48-52" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">rbind</span>(out_bad, out_good)</span>
-<span id="cb48-53"><a href="#cb48-53" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-54"><a href="#cb48-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cbind.data.frame</span>(</span>
-<span id="cb48-55"><a href="#cb48-55" aria-hidden="true" tabindex="-1"></a>    <span class="at">iter_id =</span> iter_id,</span>
-<span id="cb48-56"><a href="#cb48-56" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[[<span class="st">&quot;n&quot;</span>]],</span>
-<span id="cb48-57"><a href="#cb48-57" aria-hidden="true" tabindex="-1"></a>    <span class="at">b1 =</span> grid_row[[<span class="st">&quot;b1&quot;</span>]],</span>
-<span id="cb48-58"><a href="#cb48-58" aria-hidden="true" tabindex="-1"></a>    <span class="at">model =</span> <span class="fu">c</span>(<span class="st">&quot;glm&quot;</span>, <span class="st">&quot;pml&quot;</span>),</span>
-<span id="cb48-59"><a href="#cb48-59" aria-hidden="true" tabindex="-1"></a>    out</span>
-<span id="cb48-60"><a href="#cb48-60" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb48-61"><a href="#cb48-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-45"><a href="#cb48-45" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb48-46"><a href="#cb48-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-47"><a href="#cb48-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-48"><a href="#cb48-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-49"><a href="#cb48-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-50"><a href="#cb48-50" aria-hidden="true" tabindex="-1"></a><span class="do">### Simulation function</span></span>
+<span id="cb48-51"><a href="#cb48-51" aria-hidden="true" tabindex="-1"></a>simulation_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row) {</span>
+<span id="cb48-52"><a href="#cb48-52" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">=</span> grid_row[[<span class="st">&quot;n&quot;</span>]]</span>
+<span id="cb48-53"><a href="#cb48-53" aria-hidden="true" tabindex="-1"></a>  b1 <span class="ot">=</span> grid_row[[<span class="st">&quot;b1&quot;</span>]]</span>
+<span id="cb48-54"><a href="#cb48-54" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-55"><a href="#cb48-55" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">=</span> <span class="fu">c</span>(b1, <span class="sc">-</span><span class="fl">1.2</span>, .<span class="dv">15</span>)</span>
+<span id="cb48-56"><a href="#cb48-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-57"><a href="#cb48-57" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">=</span> <span class="fu">cbind</span>(</span>
+<span id="cb48-58"><a href="#cb48-58" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span>, </span>
+<span id="cb48-59"><a href="#cb48-59" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fl">2.5</span>),</span>
+<span id="cb48-60"><a href="#cb48-60" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rexp</span>(n, .<span class="dv">33</span>)</span>
+<span id="cb48-61"><a href="#cb48-61" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb48-62"><a href="#cb48-62" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-63"><a href="#cb48-63" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb48-64"><a href="#cb48-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-63"><a href="#cb48-63" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> X<span class="sc">%*%</span>b, <span class="at">sd =</span> <span class="fl">1.75</span>)</span>
+<span id="cb48-64"><a href="#cb48-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(y <span class="sc">&lt;</span> <span class="dv">0</span>)</span>
 <span id="cb48-65"><a href="#cb48-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-66"><a href="#cb48-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-67"><a href="#cb48-67" aria-hidden="true" tabindex="-1"></a><span class="do">### Install, load necessary packages</span></span>
-<span id="cb48-68"><a href="#cb48-68" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;RhpcBLASctl&quot;</span>, <span class="st">&quot;doParallel&quot;</span>, <span class="st">&quot;doRNG&quot;</span>, <span class="st">&quot;brglm2&quot;</span>)</span>
-<span id="cb48-69"><a href="#cb48-69" aria-hidden="true" tabindex="-1"></a>needed <span class="ot">=</span> <span class="fu">setdiff</span>(pks, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
-<span id="cb48-70"><a href="#cb48-70" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">length</span>(needed) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb48-71"><a href="#cb48-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">&quot;pks&quot;</span>, <span class="at">Ncpus =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb48-72"><a href="#cb48-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-73"><a href="#cb48-73" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
+<span id="cb48-66"><a href="#cb48-66" aria-hidden="true" tabindex="-1"></a>  obs <span class="ot">=</span>  y <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb48-67"><a href="#cb48-67" aria-hidden="true" tabindex="-1"></a>  y[obs <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb48-68"><a href="#cb48-68" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-69"><a href="#cb48-69" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">cbind.data.frame</span>(<span class="at">X =</span> X, <span class="at">y =</span> y, <span class="at">obs =</span> obs)</span>
+<span id="cb48-70"><a href="#cb48-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb48-71"><a href="#cb48-71" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb48-72"><a href="#cb48-72" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb48-73"><a href="#cb48-73" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb48-74"><a href="#cb48-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-75"><a href="#cb48-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-76"><a href="#cb48-76" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span></span>
-<span id="cb48-77"><a href="#cb48-77" aria-hidden="true" tabindex="-1"></a>b1 <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">5</span>, <span class="fl">1.2</span>, <span class="fl">2.7</span>, <span class="fl">3.3</span>)</span>
-<span id="cb48-78"><a href="#cb48-78" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">70</span>, <span class="dv">100</span>, <span class="dv">150</span>, <span class="dv">200</span>)</span>
-<span id="cb48-79"><a href="#cb48-79" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">b1 =</span> b1, <span class="at">n =</span> n)</span>
-<span id="cb48-80"><a href="#cb48-80" aria-hidden="true" tabindex="-1"></a>chunks <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from =</span> nsims, <span class="at">to =</span> nsims<span class="sc">*</span><span class="fu">nrow</span>(grid), <span class="at">by =</span> nsims)</span>
-<span id="cb48-81"><a href="#cb48-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-82"><a href="#cb48-82" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb48-83"><a href="#cb48-83" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb48-84"><a href="#cb48-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-85"><a href="#cb48-85" aria-hidden="true" tabindex="-1"></a>ncpus <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()<span class="sc">-</span><span class="dv">1</span></span>
-<span id="cb48-86"><a href="#cb48-86" aria-hidden="true" tabindex="-1"></a>type <span class="ot">=</span> <span class="cf">if</span>(.Platform<span class="sc">$</span>OS.type <span class="sc">==</span> <span class="st">&#39;unix&#39;</span>) <span class="st">&#39;FORK&#39;</span> <span class="cf">else</span> <span class="st">&#39;PSOCK&#39;</span></span>
-<span id="cb48-87"><a href="#cb48-87" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">=</span> <span class="fu">makeCluster</span>(ncpus, <span class="at">type=</span>type)</span>
-<span id="cb48-88"><a href="#cb48-88" aria-hidden="true" tabindex="-1"></a><span class="fu">registerDoParallel</span>(cl)</span>
-<span id="cb48-89"><a href="#cb48-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-90"><a href="#cb48-90" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> </span>
-<span id="cb48-91"><a href="#cb48-91" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
-<span id="cb48-92"><a href="#cb48-92" aria-hidden="true" tabindex="-1"></a>  <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims),</span>
-<span id="cb48-93"><a href="#cb48-93" aria-hidden="true" tabindex="-1"></a>  <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
-<span id="cb48-94"><a href="#cb48-94" aria-hidden="true" tabindex="-1"></a>  <span class="at">.maxcombine =</span> <span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims,</span>
-<span id="cb48-95"><a href="#cb48-95" aria-hidden="true" tabindex="-1"></a>  <span class="at">.multicombine =</span> T,</span>
-<span id="cb48-96"><a href="#cb48-96" aria-hidden="true" tabindex="-1"></a>  <span class="at">.packages =</span> <span class="fu">c</span>(<span class="st">&#39;RhpcBLASctl&#39;</span>, <span class="st">&#39;brglm2&#39;</span>)</span>
-<span id="cb48-97"><a href="#cb48-97" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%dorng%</span> {</span>
-<span id="cb48-98"><a href="#cb48-98" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-75"><a href="#cb48-75" aria-hidden="true" tabindex="-1"></a><span class="do">### Estimation function</span></span>
+<span id="cb48-76"><a href="#cb48-76" aria-hidden="true" tabindex="-1"></a>estimation_fn <span class="ot">=</span> <span class="cf">function</span>(dat, grid_row, iter){</span>
+<span id="cb48-77"><a href="#cb48-77" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-78"><a href="#cb48-78" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unname</span>(<span class="fu">unlist</span>(grid_row))</span>
+<span id="cb48-79"><a href="#cb48-79" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-80"><a href="#cb48-80" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Model 1 - OLS</span></span>
+<span id="cb48-81"><a href="#cb48-81" aria-hidden="true" tabindex="-1"></a>  ols <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span>, <span class="at">data=</span>dat)</span>
+<span id="cb48-82"><a href="#cb48-82" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-83"><a href="#cb48-83" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Model 2 - Heckman</span></span>
+<span id="cb48-84"><a href="#cb48-84" aria-hidden="true" tabindex="-1"></a>  hecksel <span class="ot">=</span> <span class="fu">suppressWarnings</span>(</span>
+<span id="cb48-85"><a href="#cb48-85" aria-hidden="true" tabindex="-1"></a>    <span class="fu">glm</span>(obs <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span>,</span>
+<span id="cb48-86"><a href="#cb48-86" aria-hidden="true" tabindex="-1"></a>        <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link=</span><span class="st">&quot;probit&quot;</span>),</span>
+<span id="cb48-87"><a href="#cb48-87" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> dat</span>
+<span id="cb48-88"><a href="#cb48-88" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb48-89"><a href="#cb48-89" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb48-90"><a href="#cb48-90" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-91"><a href="#cb48-91" aria-hidden="true" tabindex="-1"></a>  eta <span class="ot">=</span> <span class="fu">predict</span>(hecksel)</span>
+<span id="cb48-92"><a href="#cb48-92" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-93"><a href="#cb48-93" aria-hidden="true" tabindex="-1"></a>  imills <span class="ot">=</span> <span class="fu">dnorm</span>(eta)<span class="sc">/</span><span class="fu">pnorm</span>(eta)</span>
+<span id="cb48-94"><a href="#cb48-94" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-95"><a href="#cb48-95" aria-hidden="true" tabindex="-1"></a>  heck2step <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span> <span class="sc">+</span> imills,</span>
+<span id="cb48-96"><a href="#cb48-96" aria-hidden="true" tabindex="-1"></a>                 <span class="at">data =</span> dat,</span>
+<span id="cb48-97"><a href="#cb48-97" aria-hidden="true" tabindex="-1"></a>                 <span class="at">subset =</span> obs <span class="sc">==</span> <span class="dv">1</span></span>
+<span id="cb48-98"><a href="#cb48-98" aria-hidden="true" tabindex="-1"></a>                 )</span>
 <span id="cb48-99"><a href="#cb48-99" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-100"><a href="#cb48-100" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(brglm2)</span>
-<span id="cb48-101"><a href="#cb48-101" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb48-102"><a href="#cb48-102" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb48-103"><a href="#cb48-103" aria-hidden="true" tabindex="-1"></a>          </span>
-<span id="cb48-104"><a href="#cb48-104" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> grid[<span class="fu">which.max</span>(i <span class="sc">&lt;=</span> chunks),]</span>
+<span id="cb48-100"><a href="#cb48-100" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Model 3 - FIML Tobit 1</span></span>
+<span id="cb48-101"><a href="#cb48-101" aria-hidden="true" tabindex="-1"></a>  out_fiml <span class="ot">=</span> <span class="fu">tryCatch</span>(</span>
+<span id="cb48-102"><a href="#cb48-102" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fiml_reg</span>(y <span class="sc">~</span> X<span class="fl">.2</span> <span class="sc">+</span> X<span class="fl">.3</span>, <span class="at">data =</span> dat)[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], </span>
+<span id="cb48-103"><a href="#cb48-103" aria-hidden="true" tabindex="-1"></a>    <span class="at">error =</span> <span class="cf">function</span>(e) <span class="cn">NULL</span></span>
+<span id="cb48-104"><a href="#cb48-104" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb48-105"><a href="#cb48-105" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-106"><a href="#cb48-106" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulation_fn</span>(grid_row)</span>
-<span id="cb48-107"><a href="#cb48-107" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-108"><a href="#cb48-108" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estimation_fn</span>(dat, grid_row, i)</span>
-<span id="cb48-109"><a href="#cb48-109" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-110"><a href="#cb48-110" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb48-106"><a href="#cb48-106" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">is.null</span>(out_fiml))</span>
+<span id="cb48-107"><a href="#cb48-107" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
+<span id="cb48-108"><a href="#cb48-108" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-109"><a href="#cb48-109" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Tidy everything</span></span>
+<span id="cb48-110"><a href="#cb48-110" aria-hidden="true" tabindex="-1"></a>  prop_obs <span class="ot">=</span> <span class="fu">sum</span>(dat<span class="sc">$</span>obs) <span class="sc">/</span> <span class="fu">nrow</span>(dat)</span>
 <span id="cb48-111"><a href="#cb48-111" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb48-112"><a href="#cb48-112" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
+<span id="cb48-112"><a href="#cb48-112" aria-hidden="true" tabindex="-1"></a>  out_2step <span class="ot">=</span> <span class="fu">summary</span>(heck2step)<span class="sc">$</span>coefficients[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
+<span id="cb48-113"><a href="#cb48-113" aria-hidden="true" tabindex="-1"></a>  out_ols <span class="ot">=</span> <span class="fu">summary</span>(ols)<span class="sc">$</span>coefficients[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
+<span id="cb48-114"><a href="#cb48-114" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-115"><a href="#cb48-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(out_2step) <span class="ot">=</span> <span class="fu">colnames</span>(out_ols) <span class="ot">=</span> <span class="fu">colnames</span>(out_fiml) <span class="ot">=</span>  <span class="fu">c</span>(<span class="st">&quot;est&quot;</span>, <span class="st">&quot;se&quot;</span>)</span>
+<span id="cb48-116"><a href="#cb48-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames</span>(out_2step) <span class="ot">=</span> <span class="fu">rownames</span>(out_ols) <span class="ot">=</span> <span class="fu">rownames</span>(out_fiml) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;b1&quot;</span>, <span class="st">&quot;b2&quot;</span>, <span class="st">&quot;b3&quot;</span>)</span>
+<span id="cb48-117"><a href="#cb48-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-118"><a href="#cb48-118" aria-hidden="true" tabindex="-1"></a>  model <span class="ot">=</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;ols&quot;</span>, <span class="st">&quot;2step&quot;</span>, <span class="st">&quot;fiml&quot;</span>), <span class="at">each=</span><span class="fu">nrow</span>(out_2step))</span>
+<span id="cb48-119"><a href="#cb48-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-120"><a href="#cb48-120" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">cbind.data.frame</span>(</span>
+<span id="cb48-121"><a href="#cb48-121" aria-hidden="true" tabindex="-1"></a>    <span class="at">model =</span> model,</span>
+<span id="cb48-122"><a href="#cb48-122" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rbind.data.frame</span>(out_ols, out_2step, out_fiml)</span>
+<span id="cb48-123"><a href="#cb48-123" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb48-124"><a href="#cb48-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-125"><a href="#cb48-125" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames</span>(out) <span class="ot">=</span> <span class="cn">NULL</span></span>
+<span id="cb48-126"><a href="#cb48-126" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb48-127"><a href="#cb48-127" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-128"><a href="#cb48-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb48-129"><a href="#cb48-129" aria-hidden="true" tabindex="-1"></a>    <span class="at">iter_id =</span> iter,</span>
+<span id="cb48-130"><a href="#cb48-130" aria-hidden="true" tabindex="-1"></a>    <span class="at">param =</span> <span class="fu">rep</span>(<span class="fu">rownames</span>(out_2step), <span class="dv">3</span>),</span>
+<span id="cb48-131"><a href="#cb48-131" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[<span class="dv">1</span>], </span>
+<span id="cb48-132"><a href="#cb48-132" aria-hidden="true" tabindex="-1"></a>    <span class="at">b1 =</span> grid_row[<span class="dv">2</span>], </span>
+<span id="cb48-133"><a href="#cb48-133" aria-hidden="true" tabindex="-1"></a>    <span class="at">prop_obs =</span> prop_obs,</span>
+<span id="cb48-134"><a href="#cb48-134" aria-hidden="true" tabindex="-1"></a>    out</span>
+<span id="cb48-135"><a href="#cb48-135" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb48-136"><a href="#cb48-136" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-137"><a href="#cb48-137" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-138"><a href="#cb48-138" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb48-139"><a href="#cb48-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-140"><a href="#cb48-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-141"><a href="#cb48-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-142"><a href="#cb48-142" aria-hidden="true" tabindex="-1"></a><span class="do">### Set up for simulations</span></span>
+<span id="cb48-143"><a href="#cb48-143" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">50</span>, <span class="dv">500</span>, <span class="dv">5000</span>)</span>
+<span id="cb48-144"><a href="#cb48-144" aria-hidden="true" tabindex="-1"></a>b1 <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
+<span id="cb48-145"><a href="#cb48-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-146"><a href="#cb48-146" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span></span>
+<span id="cb48-147"><a href="#cb48-147" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">n =</span> n, </span>
+<span id="cb48-148"><a href="#cb48-148" aria-hidden="true" tabindex="-1"></a>                   <span class="at">b1 =</span> b1</span>
+<span id="cb48-149"><a href="#cb48-149" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb48-150"><a href="#cb48-150" aria-hidden="true" tabindex="-1"></a>chunks <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from =</span> nsims, </span>
+<span id="cb48-151"><a href="#cb48-151" aria-hidden="true" tabindex="-1"></a>             <span class="at">to =</span> nsims<span class="sc">*</span><span class="fu">nrow</span>(grid), </span>
+<span id="cb48-152"><a href="#cb48-152" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> nsims</span>
+<span id="cb48-153"><a href="#cb48-153" aria-hidden="true" tabindex="-1"></a>          )</span>
+<span id="cb48-154"><a href="#cb48-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-155"><a href="#cb48-155" aria-hidden="true" tabindex="-1"></a><span class="fu">setup_cl</span>()</span>
+<span id="cb48-156"><a href="#cb48-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-157"><a href="#cb48-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-158"><a href="#cb48-158" aria-hidden="true" tabindex="-1"></a><span class="do">### Main simulations</span></span>
+<span id="cb48-159"><a href="#cb48-159" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> </span>
+<span id="cb48-160"><a href="#cb48-160" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
+<span id="cb48-161"><a href="#cb48-161" aria-hidden="true" tabindex="-1"></a>  <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims),</span>
+<span id="cb48-162"><a href="#cb48-162" aria-hidden="true" tabindex="-1"></a>  <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
+<span id="cb48-163"><a href="#cb48-163" aria-hidden="true" tabindex="-1"></a>  <span class="at">.maxcombine =</span> <span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims,</span>
+<span id="cb48-164"><a href="#cb48-164" aria-hidden="true" tabindex="-1"></a>  <span class="at">.multicombine =</span> T,</span>
+<span id="cb48-165"><a href="#cb48-165" aria-hidden="true" tabindex="-1"></a>  <span class="at">.packages =</span> <span class="fu">c</span>(<span class="st">&#39;RhpcBLASctl&#39;</span>)</span>
+<span id="cb48-166"><a href="#cb48-166" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%dorng%</span> {</span>
+<span id="cb48-167"><a href="#cb48-167" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-168"><a href="#cb48-168" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb48-169"><a href="#cb48-169" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb48-170"><a href="#cb48-170" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb48-171"><a href="#cb48-171" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> grid[<span class="fu">which.max</span>(i <span class="sc">&lt;=</span> chunks),]</span>
+<span id="cb48-172"><a href="#cb48-172" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-173"><a href="#cb48-173" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulation_fn</span>(grid_row)</span>
+<span id="cb48-174"><a href="#cb48-174" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-175"><a href="#cb48-175" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estimation_fn</span>(dat, grid_row, i)</span>
+<span id="cb48-176"><a href="#cb48-176" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-177"><a href="#cb48-177" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb48-178"><a href="#cb48-178" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb48-179"><a href="#cb48-179" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(cl)</span></code></pre></div>
+</div>
+<div id="logit-bias" class="section level1">
+<h1>Logit Bias</h1>
+<div class="sourceCode" id="cb49"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">inst_load</span>(<span class="at">pks =</span> <span class="st">&#39;brglm2&#39;</span>)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>simulation_fn <span class="ot">=</span> <span class="cf">function</span>(grid_row){</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>  b1 <span class="ot">=</span> grid_row[[<span class="st">&quot;b1&quot;</span>]]</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">=</span> grid_row[[<span class="st">&quot;n&quot;</span>]]</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">=</span> <span class="fu">cbind</span>(</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span>,</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">5</span>, <span class="dv">5</span>),</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rbinom</span>(n, <span class="dv">1</span>, .<span class="dv">5</span>),</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rexp</span>(n, .<span class="dv">33</span>),</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rbeta</span>(n, <span class="dv">12</span>, <span class="dv">4</span>),</span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rt</span>(n, <span class="dv">5</span>),</span>
+<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(n, <span class="at">sd=</span><span class="fl">1.75</span>),</span>
+<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rpois</span>(n, <span class="dv">4</span>)</span>
+<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-18"><a href="#cb49-18" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, b1, <span class="dv">2</span>, <span class="sc">-</span>.<span class="dv">25</span>, <span class="fl">1.2</span>, .<span class="dv">8</span>, <span class="sc">-</span><span class="fl">1.5</span>, .<span class="dv">33</span>)</span>
+<span id="cb49-19"><a href="#cb49-19" aria-hidden="true" tabindex="-1"></a>  eta <span class="ot">=</span> X<span class="sc">%*%</span>b</span>
+<span id="cb49-20"><a href="#cb49-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-21"><a href="#cb49-21" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">=</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, <span class="fu">plogis</span>(eta))</span>
+<span id="cb49-22"><a href="#cb49-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-23"><a href="#cb49-23" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">cbind.data.frame</span>(<span class="at">y =</span> y, <span class="at">X =</span> X[,<span class="sc">-</span><span class="dv">1</span>])</span>
+<span id="cb49-24"><a href="#cb49-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-25"><a href="#cb49-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dat)</span>
+<span id="cb49-26"><a href="#cb49-26" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb49-27"><a href="#cb49-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-28"><a href="#cb49-28" aria-hidden="true" tabindex="-1"></a>estimation_fn <span class="ot">=</span> <span class="cf">function</span>(data, grid_row, iter_id){</span>
+<span id="cb49-29"><a href="#cb49-29" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-30"><a href="#cb49-30" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> <span class="fu">unlist</span>(grid_row)</span>
+<span id="cb49-31"><a href="#cb49-31" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-32"><a href="#cb49-32" aria-hidden="true" tabindex="-1"></a>  mod_bad <span class="ot">=</span> <span class="fu">suppressWarnings</span>(</span>
+<span id="cb49-33"><a href="#cb49-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">glm</span>(y <span class="sc">~</span> . , </span>
+<span id="cb49-34"><a href="#cb49-34" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> dat, </span>
+<span id="cb49-35"><a href="#cb49-35" aria-hidden="true" tabindex="-1"></a>        <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link=</span><span class="st">&quot;logit&quot;</span>)</span>
+<span id="cb49-36"><a href="#cb49-36" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb49-37"><a href="#cb49-37" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb49-38"><a href="#cb49-38" aria-hidden="true" tabindex="-1"></a>  mod_good <span class="ot">=</span> <span class="fu">suppressWarnings</span>(</span>
+<span id="cb49-39"><a href="#cb49-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">glm</span>(y <span class="sc">~</span> . , </span>
+<span id="cb49-40"><a href="#cb49-40" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> dat, </span>
+<span id="cb49-41"><a href="#cb49-41" aria-hidden="true" tabindex="-1"></a>        <span class="at">method =</span> <span class="st">&quot;brglmFit&quot;</span>, </span>
+<span id="cb49-42"><a href="#cb49-42" aria-hidden="true" tabindex="-1"></a>        <span class="at">type =</span> <span class="st">&#39;AS_mean&#39;</span>, </span>
+<span id="cb49-43"><a href="#cb49-43" aria-hidden="true" tabindex="-1"></a>        <span class="at">family=</span><span class="fu">binomial</span>(<span class="at">link=</span><span class="st">&quot;logit&quot;</span>)</span>
+<span id="cb49-44"><a href="#cb49-44" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb49-45"><a href="#cb49-45" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb49-46"><a href="#cb49-46" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-47"><a href="#cb49-47" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-48"><a href="#cb49-48" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span>(mod_bad<span class="sc">$</span>converged <span class="sc">&amp;&amp;</span> mod_good<span class="sc">$</span>converged))</span>
+<span id="cb49-49"><a href="#cb49-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
+<span id="cb49-50"><a href="#cb49-50" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-51"><a href="#cb49-51" aria-hidden="true" tabindex="-1"></a>  out_bad <span class="ot">=</span> <span class="fu">summary</span>(mod_bad)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
+<span id="cb49-52"><a href="#cb49-52" aria-hidden="true" tabindex="-1"></a>  out_good <span class="ot">=</span> <span class="fu">summary</span>(mod_good)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
+<span id="cb49-53"><a href="#cb49-53" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-54"><a href="#cb49-54" aria-hidden="true" tabindex="-1"></a>  out <span class="ot">=</span> <span class="fu">rbind</span>(out_bad, out_good)</span>
+<span id="cb49-55"><a href="#cb49-55" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-56"><a href="#cb49-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cbind.data.frame</span>(</span>
+<span id="cb49-57"><a href="#cb49-57" aria-hidden="true" tabindex="-1"></a>    <span class="at">iter_id =</span> iter_id,</span>
+<span id="cb49-58"><a href="#cb49-58" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> grid_row[[<span class="st">&quot;n&quot;</span>]],</span>
+<span id="cb49-59"><a href="#cb49-59" aria-hidden="true" tabindex="-1"></a>    <span class="at">b1 =</span> grid_row[[<span class="st">&quot;b1&quot;</span>]],</span>
+<span id="cb49-60"><a href="#cb49-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">model =</span> <span class="fu">c</span>(<span class="st">&quot;glm&quot;</span>, <span class="st">&quot;pml&quot;</span>),</span>
+<span id="cb49-61"><a href="#cb49-61" aria-hidden="true" tabindex="-1"></a>    out</span>
+<span id="cb49-62"><a href="#cb49-62" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb49-63"><a href="#cb49-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-64"><a href="#cb49-64" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-65"><a href="#cb49-65" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb49-66"><a href="#cb49-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-67"><a href="#cb49-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-68"><a href="#cb49-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-69"><a href="#cb49-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-70"><a href="#cb49-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-71"><a href="#cb49-71" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">500</span></span>
+<span id="cb49-72"><a href="#cb49-72" aria-hidden="true" tabindex="-1"></a>b1 <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">5</span>, <span class="fl">1.2</span>, <span class="fl">2.7</span>, <span class="fl">3.3</span>)</span>
+<span id="cb49-73"><a href="#cb49-73" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">70</span>, <span class="dv">100</span>, <span class="dv">150</span>, <span class="dv">200</span>)</span>
+<span id="cb49-74"><a href="#cb49-74" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">b1 =</span> b1, </span>
+<span id="cb49-75"><a href="#cb49-75" aria-hidden="true" tabindex="-1"></a>                   <span class="at">n =</span> n</span>
+<span id="cb49-76"><a href="#cb49-76" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb49-77"><a href="#cb49-77" aria-hidden="true" tabindex="-1"></a>chunks <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from =</span> nsims, </span>
+<span id="cb49-78"><a href="#cb49-78" aria-hidden="true" tabindex="-1"></a>             <span class="at">to =</span> nsims<span class="sc">*</span><span class="fu">nrow</span>(grid), </span>
+<span id="cb49-79"><a href="#cb49-79" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> nsims</span>
+<span id="cb49-80"><a href="#cb49-80" aria-hidden="true" tabindex="-1"></a>          )</span>
+<span id="cb49-81"><a href="#cb49-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-82"><a href="#cb49-82" aria-hidden="true" tabindex="-1"></a><span class="fu">setup_cl</span>()</span>
+<span id="cb49-83"><a href="#cb49-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-84"><a href="#cb49-84" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> </span>
+<span id="cb49-85"><a href="#cb49-85" aria-hidden="true" tabindex="-1"></a>  <span class="fu">foreach</span>(</span>
+<span id="cb49-86"><a href="#cb49-86" aria-hidden="true" tabindex="-1"></a>    <span class="at">i =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims),</span>
+<span id="cb49-87"><a href="#cb49-87" aria-hidden="true" tabindex="-1"></a>    <span class="at">.options.multicore =</span> <span class="fu">list</span>(<span class="at">preschedule=</span>T),</span>
+<span id="cb49-88"><a href="#cb49-88" aria-hidden="true" tabindex="-1"></a>    <span class="at">.maxcombine =</span> <span class="fu">nrow</span>(grid)<span class="sc">*</span>nsims,</span>
+<span id="cb49-89"><a href="#cb49-89" aria-hidden="true" tabindex="-1"></a>    <span class="at">.multicombine =</span> T,</span>
+<span id="cb49-90"><a href="#cb49-90" aria-hidden="true" tabindex="-1"></a>    <span class="at">.packages =</span> <span class="fu">c</span>(<span class="st">&#39;RhpcBLASctl&#39;</span>, <span class="st">&#39;brglm2&#39;</span>)</span>
+<span id="cb49-91"><a href="#cb49-91" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%dorng%</span> {</span>
+<span id="cb49-92"><a href="#cb49-92" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-93"><a href="#cb49-93" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-94"><a href="#cb49-94" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(brglm2)</span>
+<span id="cb49-95"><a href="#cb49-95" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb49-96"><a href="#cb49-96" aria-hidden="true" tabindex="-1"></a>  RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb49-97"><a href="#cb49-97" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb49-98"><a href="#cb49-98" aria-hidden="true" tabindex="-1"></a>  grid_row <span class="ot">=</span> grid[<span class="fu">which.max</span>(i <span class="sc">&lt;=</span> chunks),]</span>
+<span id="cb49-99"><a href="#cb49-99" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-100"><a href="#cb49-100" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">=</span> <span class="fu">simulation_fn</span>(grid_row)</span>
+<span id="cb49-101"><a href="#cb49-101" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-102"><a href="#cb49-102" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estimation_fn</span>(dat, grid_row, i)</span>
+<span id="cb49-103"><a href="#cb49-103" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-104"><a href="#cb49-104" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb49-105"><a href="#cb49-105" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb49-106"><a href="#cb49-106" aria-hidden="true" tabindex="-1"></a><span class="fu">clear_cl</span>()</span></code></pre></div>
 </div>
 
 

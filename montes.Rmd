@@ -840,21 +840,170 @@ Using the Monte Carlo method, we will show that $\E(\hat\rho) - \rho \neq 0$, me
 
 In the below, I will simply apply what was discussed in the previous sections without further discussion. The intention here is to give example code for more complicated problems, but the principles in application are identical to those already discussed. 
 
+# Helpers
+
+```{r, echo=F, eval=T}
+setup_cl = function(nframes=1){
+
+  eval.parent(
+    expression({
+    
+      old_blas = blas_get_num_procs()
+      old_omp = omp_get_num_procs()
+      blas_set_num_threads(1)
+      omp_set_num_threads(1)
+
+      ncpus = parallel::detectCores()-1
+      type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
+      cl = makeCluster(ncpus, type = type)
+      registerDoParallel(cl)
+    
+    }), 
+    n = nframes
+  )  
+}
+
+clear_cl = function(nframes=1){
+  
+  eval.parent(
+    expression({
+    
+      stopCluster(cl)
+    
+      # From https://stackoverflow.com/questions/25097729/un-register-a-doparallel-cluster
+      rm(list = ls(name=foreach:::.foreachGlobals), 
+         pos=foreach:::.foreachGlobals
+      )
+    
+      rm(cl)
+    
+      blas_set_num_threads(old_blas)
+      omp_set_num_threads(old_omp)
+      rm(list = c("old_blas", "old_omp"))
+    
+    }),
+    n = nframes
+  )
+  
+}
+
+inst_load = function(pks = NULL,
+                     nframes = 1
+                     ){
+  
+  pks =  c(pks, 'RhpcBLASctl', 'doParallel', 'doRNG')
+  
+  eval.parent(
+    substitute({
+    
+      needed = setdiff(pks, rownames(installed.packages()))
+      
+      if(length(needed) > 0)
+        install.packages(needed, Ncpus = parallel::detectCores() - 1)
+
+      invisible(sapply(pks, library, character.only=T))
+      rm(needed)
+    
+      },
+      env = list(pks = pks)
+    ),
+    n = nframes
+  )
+  
+}
+
+```
+
+# Spurious Regression
 ```{r, cache=T}
-# Install, load necessary packages
-pks = c("RhpcBLASctl", "doParallel", "doRNG")
-needed = setdiff(pks, rownames(installed.packages()))
-if(length(needed) > 0)
-  install.packages("pks", Ncpus = parallel::detectCores() - 1)
+inst_load()
 
-invisible(sapply(pks, library, character.only=T))
+sim_and_est = function(n, iter_id){
+  
+  x = y = list()
+  
+  x[[1]] = rnorm(1)
+  y[[1]] = rnorm(1)
+  
+  for(i in 2:n){
+    
+    x[[i]] =  x[[i-1]] + rnorm(1)
+    y[[i]] =  y[[i-1]] + rnorm(1)
+    
+  }
+  
+  y = unlist(y)
+  x = unlist(x)
+  
+  mod = lm(y ~ x)
+  sumr = summary(mod)
+  
+  out = c(iter_id = iter_id, 
+          n = n,
+          sumr$coefficients[2, 1:2], 
+          r2 = sumr$adj.r.squared
+        )
+  
+  return(out)
+  
+}
 
-n = c(30, 50, 100, 500, 10000)
-p = c(.2, .5, .75, .95)
+n = c(100, 500, 1000, 10000)
+nsims = 1000
+chunks = seq(from = nsims, 
+             to = nsims * length(n), 
+             by = nsims
+             )
 
-nsims = 500
-grid = expand.grid(n = n, p = p)
-grid_multi = do.call(rbind.data.frame, replicate(nsims, grid, simplify = F))
+
+setup_cl()
+out = 
+  foreach(
+  i = seq_len(length(n)*nsims),
+  .options.multicore = list(preschedule=T),
+  .maxcombine = length(n)*nsims,
+  .multicombine = T,
+  .packages = 'RhpcBLASctl'
+) %dorng% {
+  
+
+  RhpcBLASctl::blas_set_num_threads(1)
+  RhpcBLASctl::omp_set_num_threads(1)
+          
+  grid_row = n[which.max(i <= chunks)]
+  
+  out = sim_and_est(grid_row, i)
+  
+  return(out)
+  
+}
+
+clear_cl()
+
+res = as.data.frame(do.call(rbind, out))
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+colnames(res)= c("iter_id", "n", "est", "se", "r2")
+
+sums = res %>% 
+  group_by(n) %>% 
+  summarize(size = mean(abs(est/se) > qt(.95, n - 2)),
+            r2_avg = mean(r2)) %>%
+  pivot_longer(cols = c(size, r2_avg))
+
+ggplot(data=sums, aes(x = factor(n), y = value, fill=name)) + geom_col(position="dodge", alpha=.75)
+
+
+
+
+```
+
+# Bias of AR(1)
+```{r, cache=T}
+
+inst_load()
 
 simulation_fn = function(grid_row){
   
@@ -878,27 +1027,32 @@ simulation_fn = function(grid_row){
   
 }
 
-estimation_fn = function(dat, grid_row){
+estimation_fn = function(dat, grid_row, iter_id){
   
   grid_row = unlist(grid_row)
   mod = lm(y ~ lag_y, data = dat)
   
   return(
     
-    c(coef(mod), grid_row)
+    c(iter_id, coef(mod), grid_row)
     
     )
   
 }
 
-RhpcBLASctl::blas_set_num_threads(1)
-RhpcBLASctl::omp_set_num_threads(1)
+n = c(30, 50, 100, 500, 10000)
+p = c(.2, .5, .75, .95)
 
-ncpus = parallel::detectCores()-1
-type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
-cl = makeCluster(ncpus, type=type)
-registerDoParallel(cl)
+nsims = 1000
+grid = expand.grid(n = n, 
+                   p = p
+        )
+chunks = seq(from = nsims, 
+             to = nsims * nrow(grid), 
+             by = nsims
+          )
 
+setup_cl()
 
 out = 
   foreach(
@@ -912,45 +1066,48 @@ out =
   RhpcBLASctl::blas_set_num_threads(1)
   RhpcBLASctl::omp_set_num_threads(1)
           
-  grid_row = grid_multi[i, ]
+  grid_row = grid[which.max(i <= chunks),]
   
   dat = simulation_fn(grid_row)
   
-  return(estimation_fn(dat, grid_row))
+  return(estimation_fn(dat, grid_row, i))
   
 }
 
-
-stopCluster(cl)
-rm(cl)
-
-out2 = 
-  foreach(
-  i = seq_len(nrow(grid_multi)),
-  .options.multicore = list(preschedule=T),
-  .maxcombine = nrow(grid_multi),
-  .multicombine = T,
-  .packages = 'RhpcBLASctl'
-) %do% {
-  
-  RhpcBLASctl::blas_set_num_threads(1)
-  RhpcBLASctl::omp_set_num_threads(1)
-          
-  grid_row = grid_multi[i, ]
-  
-  dat = simulation_fn(grid_row)
-  
-  return(estimation_fn(dat, grid_row))
-  
-}
-
-
+clear_cl()
 ```
 
 
-# Example 2: Inefficiency of Heckman 2-Step
+
+# Heckman
 
 ```{r, echo=T, eval=T, cache=T}
+inst_load()
+
+### Likelihood to custom reg fn
+fiml_ll = function(parms,  y, X, tau = 0){
+  
+  b = head(parms, -1)
+  sig = tail(parms, 1)
+
+  obs =  y > tau
+  
+  y_obs = y[obs]
+  y_cen = y[!obs]
+  eta = as.vector(X %*% b)
+  eta_obs = eta[obs]
+  eta_cen = eta[!obs]
+  
+  ll_uncens = sum(dnorm((y_obs - eta_obs)/sig, log=T) - log(sig))
+  ll_cens = sum(pnorm((tau - eta_cen)/sig, log.p = T))
+  
+  ll = -(ll_uncens + ll_cens)
+  
+  return(ll)
+  
+}
+
+
 ### Define custom regression function
 fiml_reg = function(formula, data){
   
@@ -972,32 +1129,6 @@ fiml_reg = function(formula, data){
 }
 
 
-### Likelihood to custom reg fn
-fiml_ll = function(parms,  y, X, tau = 0){
-  
-  b = head(parms, -1)
-  sig = tail(parms, 1)
-
-  obs =  y > tau
-  
-  y_obs = y[obs]
-  y_cen = y[!obs]
-  eta = as.vector(X %*% b)
-  eta_obs = eta[obs]
-  eta_cen = eta[!obs]
-  
-  ll_uncens = sum(dnorm((y_obs - eta_obs)/sig, log=T) - log(sig))
-  ll_cens = sum(pnorm((tau - eta_cen)/sig, log.p = T))
-  
-  ll = -(ll_uncens + ll_cens)
-  
-  # if(is.na(ll))
-  #   ll = .Machine$double.xmax
-  # 
-  # cat(ll, "\n")
-  return(ll)
-  
-}
 
 
 ### Simulation function
@@ -1025,7 +1156,7 @@ simulation_fn = function(grid_row) {
 }
 
 
-#### Estimation function
+### Estimation function
 estimation_fn = function(dat, grid_row, iter){
   
   grid_row = unname(unlist(grid_row))
@@ -1073,7 +1204,7 @@ estimation_fn = function(dat, grid_row, iter){
   out = cbind.data.frame(
     model = model,
     rbind.data.frame(out_ols, out_2step, out_fiml)
-    )
+  )
 
   rownames(out) = NULL
  
@@ -1092,31 +1223,20 @@ estimation_fn = function(dat, grid_row, iter){
 
 
 
-
-### Install, load necessary packages
-pks = c("RhpcBLASctl", "doParallel", "doRNG")
-needed = setdiff(pks, rownames(installed.packages()))
-if(length(needed) > 0)
-  install.packages("pks", Ncpus = parallel::detectCores() - 1)
-
-invisible(sapply(pks, library, character.only=T))
-
-
 ### Set up for simulations
 n = c(50, 500, 5000)
 b1 = c(1, 2, 3)
 
-nsims = 500
-grid = expand.grid(n = n, b1 = b1)
-chunks = seq(from = nsims, to = nsims*nrow(grid), by = nsims)
+nsims = 1000
+grid = expand.grid(n = n, 
+                   b1 = b1
+        )
+chunks = seq(from = nsims, 
+             to = nsims*nrow(grid), 
+             by = nsims
+          )
 
-RhpcBLASctl::blas_set_num_threads(1)
-RhpcBLASctl::omp_set_num_threads(1)
-
-ncpus = parallel::detectCores()-1
-type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
-cl = makeCluster(ncpus, type=type)
-registerDoParallel(cl)
+setup_cl()
 
 
 ### Main simulations
@@ -1146,9 +1266,11 @@ stopCluster(cl)
 
 ```
 
-# Example 3: Small Sample Bias of Logit Models 
+# Logit Bias 
 
 ```{r, cache=T}
+inst_load(pks = 'brglm2')
+
 simulation_fn = function(grid_row){
   b1 = grid_row[["b1"]]
   n = grid_row[["n"]]
@@ -1215,36 +1337,28 @@ estimation_fn = function(data, grid_row, iter_id){
 
 
 
-### Install, load necessary packages
-pks = c("RhpcBLASctl", "doParallel", "doRNG", "brglm2")
-needed = setdiff(pks, rownames(installed.packages()))
-if(length(needed) > 0)
-  install.packages("pks", Ncpus = parallel::detectCores() - 1)
-
-invisible(sapply(pks, library, character.only=T))
 
 
-nsims = 500
+nsims = 1000
 b1 = c(-.5, 1.2, 2.7, 3.3)
 n = c(70, 100, 150, 200)
-grid = expand.grid(b1 = b1, n = n)
-chunks = seq(from = nsims, to = nsims*nrow(grid), by = nsims)
+grid = expand.grid(b1 = b1, 
+                   n = n
+        )
+chunks = seq(from = nsims, 
+             to = nsims*nrow(grid), 
+             by = nsims
+          )
 
-RhpcBLASctl::blas_set_num_threads(1)
-RhpcBLASctl::omp_set_num_threads(1)
-
-ncpus = parallel::detectCores()-1
-type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
-cl = makeCluster(ncpus, type=type)
-registerDoParallel(cl)
+setup_cl()
 
 out = 
   foreach(
-  i = seq_len(nrow(grid)*nsims),
-  .options.multicore = list(preschedule=T),
-  .maxcombine = nrow(grid)*nsims,
-  .multicombine = T,
-  .packages = c('RhpcBLASctl', 'brglm2')
+    i = seq_len(nrow(grid)*nsims),
+    .options.multicore = list(preschedule=T),
+    .maxcombine = nrow(grid)*nsims,
+    .multicombine = T,
+    .packages = c('RhpcBLASctl', 'brglm2')
 ) %dorng% {
   
   
@@ -1260,7 +1374,7 @@ out =
   
 }
   
-stopCluster(cl)
+clear_cl()
 
 
 ```
