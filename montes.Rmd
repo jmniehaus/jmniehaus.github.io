@@ -843,22 +843,27 @@ In the below, I will simply apply what was discussed in the previous sections wi
 # Helpers
 
 ```{r, echo=F, eval=T}
-setup_cl = function(nframes=1){
+setup_cl = function(ncpus = (parallel::detectCores() - 1),
+                    nframes = 1 ){
+  
+  stopifnot(round(ncpus) == ncpus) # ensures ncpus is numerically integer
+  stopifnot(ncpus <= parallel::detectCores())
 
   eval.parent(
-    expression({
+    substitute({
     
       old_blas = blas_get_num_procs()
-      old_omp = omp_get_num_procs()
+      old_omp = omp_get_max_threads()
       blas_set_num_threads(1)
       omp_set_num_threads(1)
 
-      ncpus = parallel::detectCores()-1
       type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
       cl = makeCluster(ncpus, type = type)
       registerDoParallel(cl)
     
-    }), 
+      }, 
+      env = list(ncpus = ncpus)
+    ), 
     n = nframes
   )  
 }
@@ -868,7 +873,7 @@ clear_cl = function(nframes=1){
   eval.parent(
     expression({
     
-      stopCluster(cl)
+      try(stopCluster(cl), silent = T)
     
       # From https://stackoverflow.com/questions/25097729/un-register-a-doparallel-cluster
       rm(list = ls(name=foreach:::.foreachGlobals), 
@@ -979,24 +984,47 @@ out =
 }
 
 clear_cl()
+```
 
+# Plotting Spurious Reg
+```{r}
 res = as.data.frame(do.call(rbind, out))
+library(tidyr)
 library(ggplot2)
 library(dplyr)
-library(tidyr)
+
 
 colnames(res)= c("iter_id", "n", "est", "se", "r2")
 
 sums = res %>% 
   group_by(n) %>% 
-  summarize(size = mean(abs(est/se) > qt(.95, n - 2)),
-            r2_avg = mean(r2)) %>%
-  pivot_longer(cols = c(size, r2_avg))
+  summarize(size = mean(abs(est/se) > qt(.975, n - 2)),
+            r2_avg = mean(r2),
+            r2_med = median(r2)) %>%
+  tidyr::pivot_longer(cols = c(size, r2_avg, r2_med))
 
-ggplot(data=sums, aes(x = factor(n), y = value, fill=name)) + geom_col(position="dodge", alpha=.75)
-
-
-
+ggplot(data = sums, aes(x = factor(name), y = value, fill = factor(n))) + 
+  geom_col(position="dodge", alpha=.6) + 
+  scale_fill_viridis_d(begin = .25, 
+                       end = .75, 
+                       name = "Sample Size"
+                       ) + 
+  labs(title = expression(paste("Type I Error Rates (", alpha==0.05,") and R-Squared in Spurious Regression")),
+       x = "Quantity",
+       y = "Value"
+       ) +
+  scale_x_discrete(labels = c(expression(paste(R^2, " Avg.")), 
+                              expression(paste(R^2, " Med.")), 
+                              "Type I Rate")
+                   ) +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 17),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(size=13),
+        axis.title=element_text(size=15,face="bold")
+        ) 
+ 
 
 ```
 
@@ -1034,7 +1062,7 @@ estimation_fn = function(dat, grid_row, iter_id){
   
   return(
     
-    c(iter_id, coef(mod), grid_row)
+    c(iter_id = iter_id, coef(mod), grid_row)
     
     )
   
@@ -1056,9 +1084,9 @@ setup_cl()
 
 out = 
   foreach(
-  i = seq_len(nrow(grid_multi)),
+  i = seq_len(nrow(grid)*nsims),
   .options.multicore = list(preschedule=T),
-  .maxcombine = nrow(grid_multi),
+  .maxcombine = nrow(grid)*nsims,
   .multicombine = T,
   .packages = 'RhpcBLASctl'
 ) %dorng% {
@@ -1075,6 +1103,36 @@ out =
 }
 
 clear_cl()
+
+```
+
+# Plotting AR(1) Bias
+```{r}
+
+res = as.data.frame(do.call(rbind, out))
+
+sums = res %>% 
+  dplyr::group_by(n, p) %>% 
+  dplyr::summarize(mean_lag = mean(lag_y)) %>% 
+  dplyr::mutate(bias = 100*(mean_lag/p - 1))
+
+ggplot(sums, aes(y = bias, x = factor(p), fill = factor(n))) +  
+  geom_col(position="dodge", alpha = .6) +
+  scale_fill_viridis_d(begin = .2, 
+                       end = .8, 
+                       name = "Sample Size"
+                       ) +
+  scale_x_discrete(position = "top") +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 17),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(size=13),
+        axis.title=element_text(size=15,face="bold")
+        ) +
+  labs(x = expression(paste("True Autoregressive Parameter (", rho, ")")),
+       y = "% Bias",
+       title = "AR(1) Models are Downward Biased")
 ```
 
 
@@ -1166,7 +1224,7 @@ estimation_fn = function(dat, grid_row, iter){
   
   # Model 2 - Heckman
   hecksel = suppressWarnings(
-    glm(obs ~ X.2 + X.3,
+    glm(as.integer(obs) ~ X.2 + X.3,
         family=binomial(link="probit"),
         data = dat
         )
@@ -1260,11 +1318,36 @@ out =
   
 }
   
-stopCluster(cl)
-
-  
+clear_cl()
 
 ```
+
+# Plotting Selection Mods
+
+```{r}
+res = as.data.frame(do.call(rbind, out))
+res_sub = res[res$param == "b2",]
+res_sub[,c("n", "b1", "prop_obs", "est", "se")] = lapply(res_sub[,c("n", "b1", "prop_obs", "est", "se")], as.numeric)
+
+sums = res_sub %>% 
+  dplyr::group_by(n, b1, model) %>%
+  dplyr::summarize(avg_b = mean(est),
+                   avg_obs = mean(prop_obs)) %>%
+  dplyr::mutate(bias = 100*(-avg_b/1.2 - 1))
+  
+ggplot(sums, aes(x=model, y=bias, fill=factor(round(avg_obs, 2)))) + 
+  geom_col(position="dodge", alpha = .6) +
+  facet_wrap(vars(n)) +
+  scale_fill_viridis_d(begin = .25, 
+                       end = .75, 
+                       name = "Proportion Observed"
+                       ) 
+
+```
+
+
+
+
 
 # Logit Bias 
 
