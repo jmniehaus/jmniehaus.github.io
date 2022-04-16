@@ -843,11 +843,13 @@ In the below, I will simply apply what was discussed in the previous sections wi
 # Helpers
 
 ```{r, echo=F, eval=T}
-setup_cl = function(ncpus = (parallel::detectCores() - 1),
+setup_cl = function(seed = 123,
+                    ncpus = (parallel::detectCores() - 1),
                     nframes = 1 ){
   
   stopifnot(round(ncpus) == ncpus) # ensures ncpus is numerically integer
   stopifnot(ncpus <= parallel::detectCores())
+  
   
   if(
     length(ls(foreach:::.foreachGlobals)) > 0 || 
@@ -860,6 +862,8 @@ setup_cl = function(ncpus = (parallel::detectCores() - 1),
 
   eval.parent(
     substitute({
+      
+      set.seed(round(seed))
     
       .old_blas = blas_get_num_procs()
       .old_omp = omp_get_max_threads()
@@ -871,7 +875,7 @@ setup_cl = function(ncpus = (parallel::detectCores() - 1),
       registerDoParallel(cl)
     
       }, 
-      env = list(ncpus = ncpus)
+      env = list(ncpus = ncpus, seed = seed)
     ), 
     n = nframes
   )  
@@ -1379,19 +1383,15 @@ inst_load(pks = 'brglm2')
 simulation_fn = function(grid_row){
   b1 = grid_row[["b1"]]
   n = grid_row[["n"]]
+  btrue = grid_row[["btrue"]]
   
   X = cbind(
     1,
-    runif(n, -5, 5),
-    rbinom(n, 1, .5),
-    rexp(n, .33),
-    rbeta(n, 12, 4),
-    rt(n, 5),
-    rnorm(n, sd=1.75),
-    rpois(n, 4)
+    rexp(n, .25),
+    matrix(rnorm(n * 4), ncol=4)
     )
   
-  b = c(-1, b1, 2, -.25, 1.2, .8, -1.5, .33)
+  b = c(b1, btrue, 1.75, -.25, .5, -2.33)
   eta = X%*%b
   
   y = rbinom(n, 1, plogis(eta))
@@ -1405,51 +1405,58 @@ estimation_fn = function(data, grid_row, iter_id){
   
   grid_row = unlist(grid_row)
   
-  mod_bad = suppressWarnings(
+  mod_bad = tryCatch(
     glm(y ~ . , 
         data = dat, 
         family=binomial(link="logit")
-        )
-    )
-  mod_good = suppressWarnings(
-    glm(y ~ . , 
-        data = dat, 
-        method = "brglmFit", 
-        type = 'AS_mean', 
-        family=binomial(link="logit")
-        )
-    )
+      ), 
+    warning = function(w) if(grepl("fitted probabilities || not converge", w$message)) return(NULL) else warning(w$message)
+  )
+
   
-  
-  if(!(mod_bad$converged && mod_good$converged))
+  if(is.null(mod_bad))
     return(NULL)
   
+  mod_good = glm(y ~ . , 
+                 data = dat,
+                 method = "brglmFit",
+                 type = 'AS_mean',
+                 family = binomial(link = "logit")
+              )
+
+  
+
+  
+  success = mean(dat$y)
   out_bad = summary(mod_bad)$coefficients[2, 1:2]
   out_good = summary(mod_good)$coefficients[2, 1:2]
   
   out = rbind(out_bad, out_good)
+  colnames(out) = c("est", "se")
   
   cbind.data.frame(
     iter_id = iter_id,
     n = grid_row[["n"]],
     b1 = grid_row[["b1"]],
+    success = success,
+    btrue = grid_row[["btrue"]],
     model = c("glm", "pml"),
     out
-    )
+  )
 
   
 }
 
 
-
-
-
 nsims = 1000
-b1 = c(-.5, 1.2, 2.7, 3.3)
-n = c(70, 100, 150, 200)
+b1 = 2:5
+n = c(50, 100, 150, 200, 500)
 grid = expand.grid(b1 = b1, 
                    n = n
         )
+
+grid$btrue = -.75
+
 chunks = seq(from = nsims, 
              to = nsims*nrow(grid), 
              by = nsims
@@ -1471,9 +1478,11 @@ out =
   RhpcBLASctl::blas_set_num_threads(1)
   RhpcBLASctl::omp_set_num_threads(1)
           
+  stopifnot(i >= 1 && i <= tail(chunks, 1))
   grid_row = grid[which.max(i <= chunks),]
   
   dat = simulation_fn(grid_row)
+  summary(dat)
   
   estimation_fn(dat, grid_row, i)
   
@@ -1481,5 +1490,43 @@ out =
   
 clear_cl()
 
+
+```
+
+# plotting logit bias 
+
+```{r}
+res = do.call(rbind.data.frame, out)
+res$est_c = (res$est - res$btrue)/res$btrue
+
+sums = res %>%
+  group_by(n, b1, btrue, model) %>%
+  mutate(reject = abs(est/se) > qnorm(.975)) %>%
+  summarise(avg = mean(est),
+            power = mean(reject)) %>% 
+  mutate(bias = 100*(avg - btrue)/btrue)
+
+ggplot(sums, aes(y = bias, x = factor(model), fill = factor(n))) +  
+  geom_col(position="dodge", alpha = .6) +
+  scale_fill_viridis_d(begin = .2, 
+                       end = .8, 
+                       name = "Sample Size"
+                       ) +
+  facet_wrap(vars(b1)) +
+  theme_bw()
+
+ggplot(sums, aes(y = power, x = factor(model), fill = factor(n))) +  
+  geom_col(position="dodge", alpha = .6) +
+  scale_fill_viridis_d(begin = .2, 
+                       end = .8, 
+                       name = "Sample Size"
+                       ) +
+  facet_wrap(vars(b1)) +
+  theme_bw()
+
+ggplot(res, aes(x = est_c, fill = model, color = model)) +
+  geom_density(trim=T, alpha=.15, bw="SJ") +
+  facet_grid(b1 ~ n) + 
+  theme_bw()
 
 ```
