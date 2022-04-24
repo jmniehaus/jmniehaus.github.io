@@ -32,10 +32,10 @@ editor_options:
 knitr::opts_chunk$set(class.output = "bg-success",
                       class.source = "fold-show",
                       tidy = F,
-                      echo=T, 
-                      eval=T,
-                      message=F,
-                      cache=T)
+                      echo = T, 
+                      eval = T,
+                      message = F,
+                      cache = T)
 
 ```
 
@@ -916,37 +916,34 @@ clear_cl = function(nframes=1){
   
 }
 
-inst_load = function(pks = NULL,
-                     nframes = 1
+inst_load = function(pks = NULL
                      ){
   
-  pks =  c(pks, 'RhpcBLASctl', 'doParallel', 'doRNG')
-  
-  eval.parent(
-    substitute({
-    
-      needed = setdiff(pks, rownames(installed.packages()))
-      
-      if(length(needed) > 0)
-        install.packages(needed, Ncpus = parallel::detectCores() - 1)
+  pks =  c(pks, 
+           'RhpcBLASctl', 
+           'doParallel', 
+           'doRNG'
+          )
 
-      invisible(sapply(pks, library, character.only=T))
-      rm(needed)
-    
-      },
-      env = list(pks = pks)
-    ),
-    n = nframes
-  )
+  needed = setdiff(pks, rownames(installed.packages()))
+      
+  if(length(needed) > 0)
+    install.packages(needed, Ncpus = parallel::detectCores() - 1)
+
+  invisible(sapply(pks, library, character.only=T))
   
 }
+
 
 ```
 
 # Spurious Regression
 ```{r, cache=T}
+### Install and Load the necessary packages (see `Helper Functions`)
 inst_load()
 
+
+### Define BOTH simulation and estimation in single function
 sim_and_est = function(n, iter_id){
   
   x = y = list()
@@ -967,9 +964,11 @@ sim_and_est = function(n, iter_id){
   mod = lm(y ~ x)
   sumr = summary(mod)
   
-  out = c(iter_id = iter_id, 
+  out = data.frame(
+          iter_id = iter_id, 
           n = n,
-          sumr$coefficients[2, 1:2], 
+          est = sumr$coefficients[2, 1],
+          se = sumr$coefficients[2, 2],
           r2 = sumr$adj.r.squared
         )
   
@@ -977,6 +976,8 @@ sim_and_est = function(n, iter_id){
   
 }
 
+
+### Set up grid
 n = c(100, 500, 1000, 10000)
 nsims = 1000
 chunks = seq(from = nsims, 
@@ -985,7 +986,9 @@ chunks = seq(from = nsims,
              )
 
 
+### Simulate
 setup_cl()
+
 out = 
   foreach(
   i = seq_len(length(n)*nsims),
@@ -1011,15 +1014,18 @@ clear_cl()
 ```
 
 # Plotting Spurious Reg
-```{r}
-res = as.data.frame(do.call(rbind, out))
+```{r, fig.dim=c(9.25,.618*9.25)}
+### Bind up the results
+res = do.call(rbind.data.frame, out)
+
+
+### Load in plotting/cleaning packages
 library(tidyr)
 library(ggplot2)
 library(dplyr)
 
 
-colnames(res)= c("iter_id", "n", "est", "se", "r2")
-
+### Summarize data, pivot to long
 sums = res %>% 
   group_by(n) %>% 
   summarize(size = mean(abs(est/se) > qt(.975, n - 2)),
@@ -1027,13 +1033,17 @@ sums = res %>%
             r2_med = median(r2)) %>%
   tidyr::pivot_longer(cols = c(size, r2_avg, r2_med))
 
+
+### Plot
 ggplot(data = sums, aes(x = factor(name), y = value, fill = factor(n))) + 
   geom_col(position="dodge", alpha=.6) + 
   scale_fill_viridis_d(begin = .25, 
                        end = .75, 
                        name = "Sample Size"
                        ) + 
-  labs(title = expression(paste("Type I Error Rates (", alpha==0.05,") and R-Squared in Spurious Regression")),
+  labs(title = expression(paste("Type I Error Rates (", 
+                                alpha==0.05,
+                                " test, two-tailed) and R-Squared in Spurious Regression")),
        x = "Quantity",
        y = "Value"
        ) +
@@ -1048,15 +1058,14 @@ ggplot(data = sums, aes(x = factor(name), y = value, fill = factor(n))) +
         axis.text = element_text(size=13),
         axis.title=element_text(size=15,face="bold")
         ) 
- 
-
 ```
 
 # Bias of AR(1)
 ```{r, cache=T}
-
+### Install, load default packages (see `Helper Functions`)
 inst_load()
 
+### Define AR(1) Simulation function, with intercept
 simulation_fn = function(grid_row){
   
   grid_row = unlist(grid_row)
@@ -1067,32 +1076,38 @@ simulation_fn = function(grid_row){
   y[[1]] = rnorm(1)
   
   for(j in 2:grid_row["n"]) {
-    y[[j]] = rnorm(1, mean = rho*y[[j-1]])
+    y[[j]] = rnorm(1, mean = .5 + rho*y[[j-1]])
   }
     
   return(
     data.frame(
       y = unlist(y),
-      lag_y = c(NA, head(unlist(y), -1))
+      lag_y = c(NA, head(unlist(y), -1)) # Base lag() function conflicts with dplyr namespace, safest to lag manually
     )
   )
   
 }
 
+
+### Define estimation function
 estimation_fn = function(dat, grid_row, iter_id){
   
-  grid_row = unlist(grid_row)
+
   mod = lm(y ~ lag_y, data = dat)
   
   return(
-    
-    c(iter_id = iter_id, coef(mod), grid_row)
-    
+    data.frame(iter_id = iter_id, 
+               est = coef(mod)[2], 
+               n = grid_row[["n"]],
+               p = grid_row[["p"]]
+               )
     )
   
 }
 
-n = c(30, 50, 100, 500, 10000)
+
+### Define grid
+n = c(30, 50, 100, 500, 2500)
 p = c(.2, .5, .75, .95)
 
 nsims = 1000
@@ -1104,6 +1119,8 @@ chunks = seq(from = nsims,
              by = nsims
           )
 
+
+### Simulate
 setup_cl()
 
 out = 
@@ -1131,15 +1148,17 @@ clear_cl()
 ```
 
 # Plotting AR(1) Bias
-```{r}
-
-res = as.data.frame(do.call(rbind, out))
+```{r, fig.dim=c(9.25,.618*9.25)}
+### Bind up results and summarize
+res = do.call(rbind.data.frame, out)
 
 sums = res %>% 
   dplyr::group_by(n, p) %>% 
-  dplyr::summarize(mean_lag = mean(lag_y)) %>% 
+  dplyr::summarize(mean_lag = mean(est)) %>% 
   dplyr::mutate(bias = 100*(mean_lag/p - 1))
 
+
+### Plot
 ggplot(sums, aes(y = bias, x = factor(p), fill = factor(n))) +  
   geom_col(position="dodge", alpha = .6) +
   scale_fill_viridis_d(begin = .2, 
@@ -1164,9 +1183,11 @@ ggplot(sums, aes(y = bias, x = factor(p), fill = factor(n))) +
 # Heckman
 
 ```{r, echo=T, eval=T, cache=T}
+### Install and load necessary packages (see `Helper Functions`)
 inst_load()
 
-### Likelihood to custom reg fn
+
+### FIML likelihood function
 fiml_ll = function(parms,  y, X, tau = 0){
   
   b = head(parms, -1)
@@ -1190,7 +1211,7 @@ fiml_ll = function(parms,  y, X, tau = 0){
 }
 
 
-### Define custom regression function
+### Define custom FIML regression function
 fiml_reg = function(formula, data, ...){
   
   fr = model.frame(formula, data = data)
@@ -1205,12 +1226,10 @@ fiml_reg = function(formula, data, ...){
   mod = nlm(fiml_ll, p = starts, hessian = T, X=X, y = y, ...)
   se = sqrt(diag(solve(mod$hessian)))
 
-  out = cbind(mod$estimate, se)
+  out = cbind.data.frame(est = mod$estimate, se = se)
   return(out)
   
 }
-
-
 
 
 ### Simulation function
@@ -1243,8 +1262,10 @@ estimation_fn = function(dat, grid_row, iter, b){
   n = grid_row[,"n"]
   grid_row = unname(unlist(grid_row)) # to avoid naming conflicts later
   
+  
   # Model 1 - OLS
   ols = lm(y ~ X.2, data = dat)
+  
   
   # Model 2 - Heckman
   hecksel = suppressWarnings(
@@ -1264,11 +1285,14 @@ estimation_fn = function(dat, grid_row, iter, b){
                  subset = obs == 1
                  )
   
+  
   # Model 3 - FIML Tobit 1
   out_fiml = fiml_reg(y ~ X.2, data = dat, iterlim = 5000)[1:2,]
   
+  
   # Proportion observed, tells how censored 
   prop_obs = sum(dat$obs) / nrow(dat)
+  
   
   # Tidy everything for clean results
   out_2step = summary(heck2step)$coefficients[1:2, 1:2]
@@ -1296,9 +1320,7 @@ estimation_fn = function(dat, grid_row, iter, b){
     out
   )
   
-  
-}
-
+} ### End Estimation function
 
 
 ### Set up for simulations
@@ -1314,10 +1336,10 @@ chunks = seq(from = nsims,
              by = nsims
           )
 
-setup_cl()
-
 
 ### Main simulations
+setup_cl()
+
 out = 
   foreach(
   i = seq_len(nrow(grid)*nsims),
@@ -1342,32 +1364,73 @@ out =
 }
   
 clear_cl()
-
 ```
 
 # Plotting Selection Mods
 
-```{r}
-res = as.data.frame(do.call(rbind, out))
-res[,c("iter_id", "n", "b1", "b_tru", "prop_obs", "est", "se")] = lapply(res[,c("iter_id", "n", "b1", "b_tru", "prop_obs", "est", "se")], as.numeric)
+```{r, fig.dim = c(10, 7)}
+### Bind up the results list into a data.frame
+res = do.call(rbind.data.frame, out)
 
+### Summarize the data for plotting
 sums = res %>% 
   dplyr::group_by(b1) %>%
   dplyr::mutate(avg_obs = round(mean(prop_obs),2),
-                est_c = (est - b_tru)/b_tru
+                est_c = 100*(est - b_tru)/b_tru
   )
 
-ggplot(sums[sums$param == "b1",], aes(x = est_c, fill = model, color = model)) + 
-  geom_density(trim=T, alpha=.15, bw="SJ") +
-  facet_grid(avg_obs ~ n) + 
-  coord_cartesian(xlim = c(-.35, 1.5)) +
-  theme_bw()
 
+### Re-order brewer color palette so that green is the "best" model in plots
+clrs = RColorBrewer::brewer.pal(3, "Set1")[c(2,3,1)]
+
+### Plot Intercept, showing upward bias
+ggplot(sums[sums$param == "b1",], aes(x = est_c, fill = model, color = model)) + 
+  geom_density(trim = T, alpha = .25, bw = "SJ") +
+  scale_fill_manual(labels =  c("2-Step", "FIML", "OLS"),
+                    values = clrs) +
+  scale_color_manual(labels =  c("2-Step", "FIML", "OLS"),
+                     values = clrs) +
+  geom_vline(xintercept = 0, lty = "dashed") +
+  facet_grid(avg_obs ~ n,
+             labeller = label_bquote(
+               rows = "Prop. Observed" == .(avg_obs),
+               cols = "n" == .(n)
+              )) + 
+  coord_cartesian(xlim = c(-35, 150)) +
+  labs( x = expression(paste("% Difference  (", hat(beta)-beta,")/", beta)),
+        y = "Kernel Density Estimate",
+        title = "The Intercept is Biased Upwards Under Censoring, and 2-Step is Inefficient" ) +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 17),
+        axis.text = element_text(size=13, face = "bold"),
+        axis.title=element_text(size=15,face="bold"),
+        strip.text = element_text(size = 12, face = "bold")
+        ) 
+  
+
+### Plot slope, showing downward bias
 ggplot(sums[sums$param == "b2",], aes(x = est_c, fill = model, color = model)) + 
-  geom_density(trim=T, alpha=.15, bw="SJ") +
-  facet_grid(avg_obs ~ n) + 
-  coord_cartesian(xlim = c(-.55, .15)) +
-  theme_bw()
+  geom_density(trim = T, alpha = .25, bw = "SJ") +
+  scale_fill_manual(labels =  c("2-Step", "FIML", "OLS"),
+                    values = clrs) +
+  scale_color_manual(labels =  c("2-Step", "FIML", "OLS"),
+                     values = clrs) +
+  geom_vline(xintercept = 0, lty = "dashed") +
+  facet_grid(avg_obs ~ n,
+             labeller = label_bquote(
+               rows = "Prop. Observed" == .(avg_obs),
+               cols = "n" == .(n)
+              )) + 
+  coord_cartesian(xlim = c(-60, 15)) +
+  labs( x = expression(paste("% Difference  (", hat(beta)-beta,")/", beta)),
+        y = "Kernel Density Estimate",
+        title = "The Slope is Biased Downwards Under Censoring, and 2-Step is Inefficient" ) +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 17),
+        axis.text = element_text(size=13, face="bold"),
+        axis.title=element_text(size=15,face="bold"),
+        strip.text = element_text(size = 12, face = "bold")
+        ) 
 
 ```
 
@@ -1378,8 +1441,11 @@ ggplot(sums[sums$param == "b2",], aes(x = est_c, fill = model, color = model)) +
 # Logit Bias 
 
 ```{r, cache=T}
+### Install, load necessary packages (see `Helper Functions`)
 inst_load(pks = 'brglm2')
 
+
+### Define Simulation function
 simulation_fn = function(grid_row){
   b1 = grid_row[["b1"]]
   n = grid_row[["n"]]
@@ -1401,10 +1467,12 @@ simulation_fn = function(grid_row){
   return(dat)
 }
 
+### Define Estimation Function
 estimation_fn = function(data, grid_row, iter_id){
   
   grid_row = unlist(grid_row)
   
+  # Model 1 - ML logit, filter out perfect prediction/non-convergence 
   mod_bad = tryCatch(
     glm(y ~ . , 
         data = dat, 
@@ -1417,17 +1485,18 @@ estimation_fn = function(data, grid_row, iter_id){
   if(is.null(mod_bad))
     return(NULL)
   
+  # Model 2 - PML "Firth" Logit
   mod_good = glm(y ~ . , 
                  data = dat,
                  method = "brglmFit",
                  type = 'AS_mean',
                  family = binomial(link = "logit")
               )
-
   
-
-  
+  # Get proportion of successes in model
   success = mean(dat$y)
+  
+  # Get coefs
   out_bad = summary(mod_bad)$coefficients[2, 1:2]
   out_good = summary(mod_good)$coefficients[2, 1:2]
   
@@ -1440,14 +1509,14 @@ estimation_fn = function(data, grid_row, iter_id){
     b1 = grid_row[["b1"]],
     success = success,
     btrue = grid_row[["btrue"]],
-    model = c("glm", "pml"),
+    model = c("ML", "PML"),
     out
   )
 
-  
 }
 
 
+### Set up Simulations
 nsims = 1000
 b1 = 2:5
 n = c(50, 100, 150, 200, 500)
@@ -1455,6 +1524,7 @@ grid = expand.grid(b1 = b1,
                    n = n
         )
 
+# True Slope coefficient (invariant)
 grid$btrue = -.75
 
 chunks = seq(from = nsims, 
@@ -1462,6 +1532,8 @@ chunks = seq(from = nsims,
              by = nsims
           )
 
+
+### Do simulations
 setup_cl()
 
 out = 
@@ -1489,44 +1561,107 @@ out =
 }
   
 clear_cl()
-
-
 ```
 
 # plotting logit bias 
 
-```{r}
+```{r,  fig.dim = c(10, 8.25)}
+### Bind everything up
 res = do.call(rbind.data.frame, out)
-res$est_c = (res$est - res$btrue)/res$btrue
 
-sums = res %>%
+
+### Add in percent difference (est_c) and compute average success rate (affected by intercept)
+res$est_c = 100*(res$est - res$btrue)/res$btrue
+res = res %>% 
+  group_by(b1) %>% 
+  mutate(success = round(mean(success), 2)) %>%
   group_by(n, b1, btrue, model) %>%
+  mutate(avg = mean(est_c))
+
+
+### Group level summaries for bar plots
+sums = res %>%
+  group_by(b1) %>% 
+  mutate(success = round(mean(success), 2)) %>%
+  group_by(n, success, btrue, model) %>%
   mutate(reject = abs(est/se) > qnorm(.975)) %>%
   summarise(avg = mean(est),
             power = mean(reject)) %>% 
   mutate(bias = 100*(avg - btrue)/btrue)
 
+
+### Density Plots
+ggplot(res, aes(x = est_c, fill = model, color = model)) +
+  geom_density(trim = T, alpha = .15, bw = "SJ") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = 'Set1') +
+  facet_grid(success ~ n,
+             labeller = label_bquote(
+               rows = "Prop. Success" == .(success),
+               cols = "n" == .(n)
+              )) + 
+  coord_cartesian(xlim = c(-100, 150)) +
+  geom_vline(data = res, 
+             aes(xintercept = avg, color = model), 
+             lty = "dashed") + 
+  geom_vline(xintercept = 0, lty = 'dotted') + 
+  labs(
+      x = expression(paste("% Difference  (", hat(beta)-beta,")/", beta)),
+      y = "Kernel Density Estimate",
+      title = "PML Models are Less Biased, More Efficient than ML Logit Models with small N"
+  ) +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 17),
+        axis.text = element_text(size=10),
+        axis.title=element_text(size=15,face="bold"),
+        strip.text = element_text(size = 12, face = "bold")
+        ) 
+
+
+### Barplot for Bias
 ggplot(sums, aes(y = bias, x = factor(model), fill = factor(n))) +  
   geom_col(position="dodge", alpha = .6) +
   scale_fill_viridis_d(begin = .2, 
                        end = .8, 
                        name = "Sample Size"
                        ) +
-  facet_wrap(vars(b1)) +
-  theme_bw()
+  facet_wrap(vars(success),
+             labeller = label_bquote("Prop. Success" == .(success))) +
+  labs(
+    x = "Model",
+    y = "% Bias",
+    title = "PML Logit Models are Less Biased than ML Logit Models"
+  ) +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 17),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(size=13, face = "bold"),
+        axis.title=element_text(size=15,face="bold"),
+        strip.text = element_text(size = 12, face = "bold")
+        ) 
 
+  
+### Barplot for power
 ggplot(sums, aes(y = power, x = factor(model), fill = factor(n))) +  
   geom_col(position="dodge", alpha = .6) +
   scale_fill_viridis_d(begin = .2, 
                        end = .8, 
                        name = "Sample Size"
                        ) +
-  facet_wrap(vars(b1)) +
-  theme_bw()
-
-ggplot(res, aes(x = est_c, fill = model, color = model)) +
-  geom_density(trim=T, alpha=.15, bw="SJ") +
-  facet_grid(b1 ~ n) + 
-  theme_bw()
-
+  facet_wrap(vars(success),
+             labeller = label_bquote("Prop. Success" == .(success))) +
+  labs(
+    x = "Model",
+    y = "Power",
+    title = "PML Logit Models Retain Power Despite Downward Bias"
+  ) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 17),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(size = 13, face = "bold"),
+        axis.title=element_text(size = 15,face="bold"),
+        strip.text = element_text(size = 12, face = "bold")
+        ) 
 ```
