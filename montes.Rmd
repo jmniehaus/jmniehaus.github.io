@@ -5,6 +5,7 @@ pagetitle: "Monte Carlos"
 header-includes:
 - \usepackage{mathtools}
 - \usepackage{amsmath}
+- \usepackage{dsfont}
 output:
   html_document:
     toc: yes
@@ -53,17 +54,31 @@ In this guide I discuss in-depth five steps to setting up parallel Monte Carlo a
 
 First, I will walk through each of these five points with toy examples to drive ideas home where applicable. Finally, I will take all of this and put it together in some more serious applications showing the downward bias of autoregressive parameters in time series models, small sample bias of logistic regression parameters (as well as a correction), and the inefficiency of the Heckman-correction in selection modeling. 
 
-Before getting started though, there are **a few items to take note of**: 
+**Note** that this guide will applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. 
 
-* I assume that you are familiar with the basics of the [Monte Carlo method](https://en.wikipedia.org/wiki/Monte_Carlo_method). I won't be covering its principles at all here. If you are unfamiliar with the method, it would be wise to read up on it before reading through this guide, as most of this won't make much sense otherwise. An in-depth book on the topic is available (for purchase) [here](https://onlinelibrary.wiley.com/doi/book/10.1002/9781118014967), but there are lots of free online resources available elsewhere.
-
-* This guide will applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. 
-
-* This guide won't be as useful for most extremely simple Monte Carlo problems because I emphasize doing things in parallel, but parallel processing can actually slow down simple Monte Carlos relative to a serial processing. Some of the principles in this guide apply regardless, but all examples and discussion assume the parallel case. 
 
 \
 
-# Serial vs Parallel
+# Brief Review of Monte Carlo Methods 
+***
+
+Recall that the Weak Law of Large Numbers (WLLN) states$$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n g(X_i) \longrightarrow \E[g(X)] = \int_{X} g(x)f_X(x) \mathrm dx$$ for random variables $X_i \overset{iid}{\sim} f_X, \,\, i\in 1,2,...,n$, and (almost) any function $g$. This effectively says that the sample average of nearly any function of the data converges in probability to the true expected value. For example $$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n X_i = \mu_x $$ meaning that the sample mean converges to the population mean as the sample size tends to infinity, where $g$ in this case was the identity function, $g(X_i) = X_i$. (*Note*: although the definition here assumes a continuous density $f$, the same law holds for discrete densities and can be denoted using either summation or a Riemann-Stieltjes integral when taking the expectation.) 
+
+Despite being extremely simple, the power of the WLLN as it relates to Monte Carlo analysis cannot be overstated. This lies in the fact that nearly everything we are interested in analyzing about a random variable (e.g., estimators, in particular) is a function $g$ of a random variable, and is therefore subject to the WLLN. A few examples (in addition to the identity function above): 
+
+* The variance: $$g(X_i) = \frac{1}{n-1} \sum_{i=1}^n (X_i - \bar X)^2 \longrightarrow \mathrm{var}(X)$$
+
+* The CDF: $$g(X_i) = \frac{1}{n} \sum_{i=1}^n \mathbb{I}_{(-\infty, x)}(X_i) \longrightarrow F_X(x)$$
+
+* The density function: $$g(X_i) = \text{The empirical density/mass function} \longrightarrow f_X(x)$$
+
+* The quantile function: $$g(X_i) = \text{The empirical } \alpha\text{-quantile of } X_i, ..., X_n \longrightarrow \text{inf}(y: F(x) \geq \alpha)$$
+
+So effectively we can simulate random variables, compute some function of those realizations, and then take the mean of the function, and the WLLN tells us that we converge to the expected value of that function. For example, we can simulate data, compute least squares coefficients in a linear regression for that data, and then compute the mean/variance/CDF/PDF/quantiles of these coefficients. These computations converge in probability to their true values. With these quantities in hand, we can then assess things like the bias of estimators, the variance of estimators, their power and size, type II error, etc, *all just because the sample average converges to the true average*. 
+
+\
+
+# Simulations: Serial vs Parallel
 ***
 
 If you're working in R, then the first step to better Monte Carlo analysis is implementing parallel simulations. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
