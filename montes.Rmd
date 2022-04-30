@@ -28,6 +28,17 @@ editor_options:
 }
 </style>
 
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { 
+      equationNumbers: { 
+            autoNumber: "AMS",
+      } 
+  }
+});
+</script>
+
+
 
 ```{r, echo=F, eval=T}
 knitr::opts_chunk$set(class.output = "bg-success",
@@ -62,26 +73,98 @@ First, I will walk through each of these five points with toy examples to drive 
 # Brief Review of Monte Carlo Methods 
 ***
 
-Recall that the Weak Law of Large Numbers (WLLN) states$$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n g(X_i) \longrightarrow \E[g(X)] = \int_{X} g(x)f_X(x) \mathrm dx$$ for random variables $X_i \overset{iid}{\sim} f_X, \,\, i\in 1,2,...,n$, and (almost) any function $g$. This effectively says that the sample average of nearly any function of the data converges in probability to the true expected value. For example $$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n X_i = \mu_x $$ meaning that the sample mean converges to the population mean as the sample size tends to infinity, where $g$ in this case was the identity function, $g(X_i) = X_i$. (*Note*: although the definition here assumes a continuous density $f$, the same law holds for discrete densities and can be denoted using either summation or a Riemann-Stieltjes integral when taking the expectation.) 
+All of Monte Carlo analysis hinges on a Law of Large numbers. These laws effectively state that the sample mean of a random variable converges to its population mean. In the context of investigating the behavior of estimators under particular conditions, these laws of large numbers imply that if we simulate a large number of estimates, then the sample mean of these estimates converges to the true mean of the estimator. With that idea in mind, we can also compute a whole host of other interesting quantities, such as the variance, the density function, or the quantile function, *because all of these can be re-written as a sample mean of a random variable.* **Without any math, this is the primary intuition of Monte Carlo analysis: many of the quantities that we are interested in can be expressed as a sample mean of a random variable, so we know they converge to the true value of the quantity of interest due to a law of large numbers.** 
 
-Despite being extremely simple, the power of the WLLN as it relates to Monte Carlo analysis cannot be overstated. This lies in the fact that nearly everything we are interested in analyzing about a random variable (e.g., estimators, in particular) is a function $g$ of a random variable, and is therefore subject to the WLLN. A few examples (in addition to the identity function above): 
+For example $$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n X_i = \mu_x $$ meaning that the sample mean converges to the population mean as the sample size tends to infinity. However, as the bold text above indicates, *a whole host of other quantities converge to their true expected values*, for example:
 
-* The variance: $$g(X_i) = \frac{1}{n-1} \sum_{i=1}^n (X_i - \bar X)^2 \longrightarrow \mathrm{var}(X)$$
+* The variance: $$\frac{1}{n-1} \sum_{i=1}^n (X_i - \bar X)^2 \longrightarrow \mathrm{var}(X)$$
 
-* The CDF: $$g(X_i) = \frac{1}{n} \sum_{i=1}^n \mathbb{I}_{(-\infty, x)}(X_i) \longrightarrow F_X(x)$$
+* The CDF: $$\frac{1}{n} \sum_{i=1}^n \mathbb{I}_{(-\infty, x)}(X_i) \longrightarrow F_X(x)$$
 
-* The density function: $$g(X_i) = \text{The empirical density/mass function} \longrightarrow f_X(x)$$
+* The density function: $$\text{The empirical density/mass function} \longrightarrow f_X(x)$$
 
-* The quantile function: $$g(X_i) = \text{The empirical } \alpha\text{-quantile of } X_i, ..., X_n \longrightarrow \text{inf}(y: F(x) \geq \alpha)$$
+* The quantile function: $$\text{The empirical } \alpha\text{-quantile of } X_i, ..., X_n \longrightarrow \text{inf}(y: F(x) \geq \alpha)$$
 
-So effectively we can simulate random variables, compute some function of those realizations, and then take the mean of the function, and the WLLN tells us that we converge to the expected value of that function. For example, we can simulate data, compute least squares coefficients in a linear regression for that data, and then compute the mean/variance/CDF/PDF/quantiles of these coefficients. These computations converge in probability to their true values. With these quantities in hand, we can then assess things like the bias of estimators, the variance of estimators, their power and size, type II error, etc, *all just because the sample average converges to the true average*. 
+So effectively we can simulate random variables, compute some function of those realizations, then take the mean of the resulting quantity, and the WLLN tells us that we converge to the expected value of that function. 
+
+<details>
+  <summary><span style="color: #0888a8;">Show Me the Math</span></summary>
+
+To show that this is indeed true, we will need a a few pieces of background information, namely Markov's Inequality, Chebyshev's inequality, and the definition of convergence in probability (note that all of this information can also be found in most math-stat textbooks, or on Wikipedia).
+
+* **Markov's Inequality:** Let $X$ be a random variable with support over the non-negative real line, i.e., $\Pr(X \geq 0) = 1$. Then for every number $c > 0$, $\,\,\Pr(X \geq c) \leq \frac{\E(X)}{c}$. 
+  
+  <div style="margin-top:-22px;">
+  <details>
+  <summary><span style="color: #0888a8;">Proof</span></summary>
+  \vspace{1em}
+  Assuming continuous $X$ with pdf $f$:
+  \begin{align*}
+  \E(X) &= \int_0^\infty x f(x) \,dx \\
+        &= \int_0^c x f(x) \,dx + \int_c^\infty x f(x) \,dx \\
+        &\geq \int_0^c x f(x) \,dx + \int_c^\infty c f(x) \,dx \\
+        &= \int_0^c x f(x) \,dx + c \int_c^\infty f(x) \,dx \\
+        &=  c \Pr(X \geq c) + \int_0^c x f(x) \,dx\\
+        &\geq c\Pr(X \geq c) \\[1em]
+        \implies \Pr(X \geq c) &\leq \frac{\E(X)}{c}
+  \end{align*}
+  </details>
+  </div>
+  
+\vspace{1em}
+
+
+* **Chebyshev's Inequality:** Let $X$ be a random variable with finite first and second moments, $\mu_X < \infty$ and $\sigma^2_X < \infty$ respectively. Then for all numbers $c > 0$, $\,\, \Pr(|X - \mu_X| \geq c) \leq \frac{\sigma^2_X}{c^2}$ 
+
+  <div style="margin-top:-24px;">
+  <details>
+  <summary><span style="color: #0888a8;">Proof</span></summary>
+  \vspace{1em}
+  Let $Y = (X - \mu_X)^2$ and $c^2 = k$, then:
+  
+    * $\Pr(|X - \mu_X| \geq c) = \Pr\left[(X-\mu_X)^2 \geq c^2\right] = \Pr(Y \geq k)$, and 
+    
+    * $\E(Y) = \E\left[(X - \mu_X)^2\right] = \sigma^2_X$ by definition.
+  
+    * Then by Markov's Inequality, we have: $$\Pr(|X - \mu_X| \geq c) = \Pr(Y \geq k) \leq \frac{\E(Y)}{k} = \frac{\sigma^2_X}{c^2}$$ 
+
+  </details>
+  </div>
+  
+  
+\vspace{1em}
+
+
+* **Convergence in Probability (to a constant):** For a sequence of independent random variables $X_n = X_1, X_2, ...$ with the same mean $\mu_X < \infty$ and same variance $\sigma^2_X < \infty$, and for constants $c$ and $\varepsilon$: if \hspace{1ex} $\lim_{n\to\infty} \Pr(|X_n - c|>\varepsilon) = 0 \hspace{1em} \forall \hspace{1em} \varepsilon > 0$ then $\,\,X_n \overset{p}{\longrightarrow} c$.  
+
+\vspace{1em}
+ 
+The WLLN then states that 
+
+\begin{equation*}\frac{1}{n} \sum_{i=1}^{n} X_i \overset{p}{\longrightarrow} \mu_X \end{equation*}
+
+which can be generalized to functions $g$ of $X$: 
+
+\begin{equation*} \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n g(X_i) \overset{p}\longrightarrow \E[g(X_n)] = \int_{X} g(x)f_X(x) \mathrm dx \end{equation*} 
+
+for random variables $X_i \overset{iid}{\sim} f_X, \,\, i\in 1,2,...,n$, and (almost) any function $g$. This effectively says that the sample average of nearly any function of the data converges in probability to the true expected value. 
+
+This is proven using Chebyshevs inquality. First, by the linearity of expectation, we know that $\E(\bar X) = \mu_X$ and $\mathrm{var}(\bar X) = \sigma^2_X/n$. Then,
+
+\begin{align*}
+\Pr(|\bar X - \mu_X| \geq \varepsilon) &\leq \frac{\sigma^2_X}{n\varepsilon^2} \\[1ex]
+\implies \lim_{n\to\infty} \Pr(|\bar X - \mu_X| \geq \varepsilon) &\leq \lim_{n\to\infty} \frac{\sigma^2_X}{n\varepsilon^2} \\[1em]
+&= 0
+\end{align*}
+where this last equality follows because $0 \leq \lim_{n\to\infty} \Pr(|\bar X - \mu_X| \geq \varepsilon) \leq 0$ by the definition of a density function for the lower bound, which concludes the proof.
+</details> 
 
 \
 
 # Simulations: Serial vs Parallel
 ***
 
-If you're working in R, then the first step to better Monte Carlo analysis is implementing parallel simulations. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
+As implied by the review of Monte Carlo analysis, simulations will involve a great number of iterations in order to obtain a sufficiently large sample to be averaged over, such that a law of large numbers can take adequate effect. In many cases, implementing these Monte Carlo analyses in parallel will be the first step to obtaining results efficiently. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
 
 For going parallel, there are essentially two options:
 
