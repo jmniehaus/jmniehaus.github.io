@@ -480,7 +480,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Monte Carlo Analysis in R: An in Depth
 Guide, with Examples</h1>
-<h4 class="date">Updated: 30 Apr, 2022</h4>
+<h4 class="date">Updated: 11 May, 2022</h4>
 
 </div>
 
@@ -501,8 +501,9 @@ MathJax.Hub.Config({
 </script>
 <p><br />
 </p>
-<p>In this guide I discuss in-depth five steps to setting up parallel
-Monte Carlo analyses using R. Generally, these steps consist of:</p>
+<p>In this guide I first review the intuition of Monte Carlo methods,
+and then discuss five steps to efficient, publication-quality Monte
+Carlo analyses using R. Generally, these steps consist of:</p>
 <ol style="list-style-type: decimal">
 <li><a href="#serial-vs-parallel">Switching from serial to parallel
 loops</a></li>
@@ -517,14 +518,10 @@ simulation and estimation functions</a></li>
 </ol>
 <p>First, I will walk through each of these five points with toy
 examples to drive ideas home where applicable. Finally, I will take all
-of this and put it together in some more serious applications showing
-the downward bias of autoregressive parameters in time series models,
-small sample bias of logistic regression parameters (as well as a
-correction), and the inefficiency of the Heckman-correction in selection
-modeling.</p>
-<p><strong>Note</strong> that this guide will applies mostly to the case
-of trivial parallelism, i.e., simulations that are independent of each
-other. However some concepts can be extended to dependent simulations,
+of this and put it together in some more serious applications.</p>
+<p><strong>Note</strong> that this guide applies mostly to the case of
+trivial parallelism, i.e., simulations that are independent of each
+other. However, some concepts can be extended to dependent simulations,
 particularly in MCMC algorithms that rely on full-conditionals. Where
 this is the case, I note it in the Caveats subsection of a topic.</p>
 <p><br />
@@ -534,18 +531,19 @@ this is the case, I note it in the Caveats subsection of a topic.</p>
 <hr />
 <p>All of Monte Carlo analysis hinges on a Law of Large numbers. These
 laws effectively state that the sample mean of a random variable
-converges to its population mean. In the context of investigating the
-behavior of estimators under particular conditions, these laws of large
-numbers imply that if we simulate a large number of estimates, then the
-sample mean of these estimates converges to the true mean of the
-estimator. With that idea in mind, we can also compute a whole host of
-other interesting quantities, such as the variance, the density
-function, or the quantile function, <em>because all of these can be
-re-written as a sample mean of a random variable.</em> <strong>Without
-any math, this is the primary intuition of Monte Carlo analysis: many of
-the quantities that we are interested in can be expressed as a sample
-mean of a random variable, so we know they converge to the true value of
-the quantity of interest due to a law of large numbers.</strong></p>
+converges to its population mean, i.e., that the sample mean is a
+consistent estimator. In the context of investigating the behavior of
+estimators under particular conditions, these laws of large numbers
+imply that if we simulate a large number of estimates, then the sample
+mean of these estimates converges to the true mean of the estimator.
+With that idea in mind, we can also compute a whole host of other
+interesting quantities, such as the variance, the density function, or
+the quantile function, <em>because all of these can be re-written as a
+sample mean of a random variable.</em> <strong>Without any math, this is
+the primary intuition of Monte Carlo analysis: many of the quantities
+that we are interested in can be expressed as a sample mean of a random
+variable, so we know they converge to the true value of the quantity of
+interest due to a law of large numbers.</strong></p>
 <p>For example <span class="math display">\[ \lim_{n\to\infty}
 \frac{1}{n}\sum_{i=1}^n X_i = \mu_x \]</span> meaning that the sample
 mean converges to the population mean as the sample size tends to
@@ -553,17 +551,24 @@ infinity. However, as the bold text above indicates, <em>a whole host of
 other quantities converge to their true expected values</em>, for
 example:</p>
 <ul>
-<li><p>The variance: <span class="math display">\[\frac{1}{n-1}
+<li><p>The variance:<a href="#fn1" class="footnote-ref"
+id="fnref1"><sup>1</sup></a> <span class="math display">\[\frac{1}{n}
 \sum_{i=1}^n (X_i - \bar X)^2 \longrightarrow
 \mathrm{var}(X)\]</span></p></li>
-<li><p>The CDF: <span class="math display">\[\frac{1}{n} \sum_{i=1}^n
-\mathbb{I}_{(-\infty, x)}(X_i) \longrightarrow F_X(x)\]</span></p></li>
-<li><p>The density function: <span class="math display">\[\text{The
-empirical density/mass function} \longrightarrow
-f_X(x)\]</span></p></li>
-<li><p>The quantile function: <span class="math display">\[\text{The
-empirical } \alpha\text{-quantile of } X_i, ..., X_n \longrightarrow
-\text{inf}(y: F(x) \geq \alpha)\]</span></p></li>
+<li><p>The CDF: <span class="math display">\[\hat F(x) = \frac{1}{n}
+\sum_{i=1}^n \underset{(-\infty, x]}{\mathbb{I}}(X_i) \longrightarrow
+F_X(x)\]</span></p></li>
+<li><p>The density function (using kernel <span
+class="math inline">\(K\)</span> and bandwidth <span
+class="math inline">\(h\)</span>):<a href="#fn2" class="footnote-ref"
+id="fnref2"><sup>2</sup></a> <span class="math display">\[\hat f(x) =
+\frac{1}{n} \sum_{i=1}^{n} \frac{1}{h} K\left(\frac{x - X_i}{h}\right)
+\longrightarrow f_X(x)\]</span></p></li>
+<li><p>The quantile function:<a href="#fn3" class="footnote-ref"
+id="fnref3"><sup>3</sup></a> <span class="math display">\[\hat Q\{\hat
+F(x)\} = \text{inf}\left\{x:\frac{1}{n}\sum_{i=1}^{n}\underset{(-\infty,
+x]}{\mathbb{I}}(X_i) \geq \alpha)\right\}  \longrightarrow \text{inf}(y:
+F(x) \geq \alpha)\]</span></p></li>
 </ul>
 <p>So effectively we can simulate random variables, compute some
 function of those realizations, then take the mean of the resulting
@@ -571,18 +576,19 @@ quantity, and the WLLN tells us that we converge to the expected value
 of that function.</p>
 <details>
 <summary>
-<span style="color: #0888a8;">Show Me the Math</span>
+<span style="color: #0888a8;">Show me the math</span>
 </summary>
-<p>To show that this is indeed true, we will need a a few pieces of
-background information, namely Markov’s Inequality, Chebyshev’s
-inequality, and the definition of convergence in probability.</p>
+<p>To prove the WLLN, we will need a a few pieces of background
+information, namely Markov’s Inequality (used only to prove
+Chebyshev’s), Chebyshev’s inequality, and the definition of convergence
+in probability (note that all of this information can also be found in
+most math-stat textbooks, or on Wikipedia).</p>
 <ul>
 <li><p><strong>Markov’s Inequality:</strong> Let <span
 class="math inline">\(X\)</span> be a random variable with support over
-the non-negative real line, i.e., <span class="math inline">\(\Pr(X
-&gt;= 0) = 1\)</span>. Then for every number <span
-class="math inline">\(c &gt; 0\)</span>, <span
-class="math inline">\(\,\,\Pr(X \geq c) \leq
+the non-negative real line, i.e., <span class="math inline">\(\Pr(X \geq
+0) = 1\)</span>. Then for every number <span class="math inline">\(c
+&gt; 0\)</span>, <span class="math inline">\(\,\,\Pr(X \geq c) \leq
 \frac{\mathbb{E}(X)}{c}\)</span>.</p>
 <div style="margin-top:-22px;">
 <details>
@@ -603,6 +609,8 @@ class="math display">\[\begin{align*}
 </details>
 </div></li>
 </ul>
+<p>
+</p>
 <ul>
 <li><p><strong>Chebyshev’s Inequality:</strong> Let <span
 class="math inline">\(X\)</span> be a random variable with finite first
@@ -611,8 +619,7 @@ and second moments, <span class="math inline">\(\mu_X &lt;
 \infty\)</span> respectively. Then for all numbers <span
 class="math inline">\(c &gt; 0\)</span>, <span
 class="math inline">\(\,\, \Pr(|X - \mu_X| \geq c) \leq
-\frac{\sigma^2_X}{c^2}\)</span> (note that all of this information can
-also be found in most math-stat textbooks, or on Wikipedia).</p>
+\frac{\sigma^2_X}{c^2}\)</span></p>
 <div style="margin-top:-24px;">
 <details>
 <summary>
@@ -633,6 +640,8 @@ class="math display">\[\Pr(|X - \mu_X| \geq c) = \Pr(Y \geq k) \leq
 </details>
 </div></li>
 </ul>
+<p>
+</p>
 <ul>
 <li><strong>Convergence in Probability (to a constant):</strong> For a
 sequence of independent random variables <span class="math inline">\(X_n
@@ -646,6 +655,8 @@ class="math inline">\(\lim_{n\to\infty} \Pr(|X_n - c|&gt;\varepsilon) =
 <span class="math inline">\(\,\,X_n \overset{p}{\longrightarrow}
 c\)</span>.</li>
 </ul>
+<p>
+</p>
 <p>The WLLN then states that</p>
 <p><span class="math display">\[\begin{equation*}\frac{1}{n}
 \sum_{i=1}^{n} X_i \overset{p}{\longrightarrow} \mu_X
@@ -655,7 +666,7 @@ class="math inline">\(g\)</span> of <span
 class="math inline">\(X\)</span>:</p>
 <p><span class="math display">\[\begin{equation*} \lim_{n\to\infty}
 \frac{1}{n}\sum_{i=1}^n g(X_i) \overset{p}\longrightarrow
-\mathbb{E}[g(X_n)] = \int_{X} g(x)f_X(x) \mathrm dx
+\mathbb{E}[g(X_n)] = \int_{X} g(x) \,\, \mathrm dF_X(x)
 \end{equation*}\]</span></p>
 <p>for random variables <span class="math inline">\(X_i
 \overset{iid}{\sim} f_X, \,\, i\in 1,2,...,n\)</span>, and (almost) any
@@ -685,9 +696,10 @@ the lower bound, which concludes the proof.
 <hr />
 <p>As implied by the review of Monte Carlo analysis, simulations will
 involve a great number of iterations in order to obtain a sufficiently
-large sample to be averaged over. In many cases, implementing these
-Monte Carlo analyses in parallel will be the first step to obtaining
-results efficiently. There are exceptions to this rule (e.g., reserving
+large sample to be averaged over, such that a law of large numbers can
+take adequate effect. In many cases, implementing these Monte Carlo
+analyses in parallel will be the first step to obtaining results
+efficiently. There are exceptions to this rule (e.g., reserving
 computing resources for other tasks, parallel overhead making things
 slower), but if the reason you are not using parallel processing is
 simply because you do not know how, then I’ll walk you through a few
@@ -710,6 +722,7 @@ loops in appearance</p></li>
 <li><p>Doesn’t require nested function calls for complicated
 simulations</p></li>
 <li><p>Permits nested parallel looping</p></li>
+<li><p>Can be more memory efficient</p></li>
 </ol>
 <p>For these reasons, I won’t be covering the <code>apply</code> family
 of functions here. I may eventually extend the principles and examples
@@ -847,11 +860,11 @@ unified way to several child processes for execution, keep track of that
 execution, combine the results, and return them in a sensible way. In
 contrast, <code>for</code> loops are running on a single process, so the
 instructions can just be executed on that process in real-time.</p>
-<p>If any of this is confusing, the main takeaway is that
+<p>If any of this is confusing, <strong>the main takeaway is that
 <code>foreach</code> loops are actually functions. Since functions have
 a <code>return</code> value, we stored the results in the
 <code>out_foreach</code> object, and gave the <code>foreach</code> loop
-an explicit <code>return()</code> call at the end.</p>
+an explicit <code>return()</code> call at the end.</strong></p>
 <p><br />
 </p>
 </div>
@@ -874,6 +887,9 @@ we’ll see that a better alternative is actually
 <li><p>Shut down the parallel backend (<strong>this is extremely
 important for PC longevity</strong>).</p></li>
 </ol>
+<p>Using the same example of just adding 1 to each element of a vector,
+each of these steps for going parallel are implemented in the code
+below.</p>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -996,6 +1012,14 @@ as being <a
 href="https://www.r-bloggers.com/2019/06/parallel-r-socket-or-fork/">roughly
 40% faster than socket clusters</a>. Again though, if you’re using
 Windows, you won’t be able to leverage this forking speed bonus.</p>
+<p>
+</p>
+<div>
+<details>
+<summary>
+<span style="color: #0888a8;">But I’m on Windows and I want to
+FORK…</span>
+</summary>
 <p>If you would like to be able to fork but are on Windows, then <a
 href="https://opensource.com/article/18/5/dual-boot-linux">dual-booting</a>
 a Linux OS alongside your Windows installation is a free way to do so
@@ -1016,6 +1040,8 @@ Linux distributions are like any other operating system in that they
 have a graphical user interface and can be completely navigated using
 point-and-click actions, in case you mistakenly think that using Linux
 implies knowing a bunch about computer science.</p>
+</details>
+</div>
 <p><br />
 </p>
 </div>
@@ -2757,6 +2783,27 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb56-1"><a h
 <span id="cb56-21"><a href="#cb56-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>)</span>
 <span id="cb56-22"><a href="#cb56-22" aria-hidden="true" tabindex="-1"></a>        ) </span></code></pre></div>
 <p><img src="montes_files/figure-html/unnamed-chunk-34-3.png" width="960" /></p>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>This is in fact the <em>biased</em> sample variance.
+Despite being biased, it is still weakly consistent/convergent. So as
+not to confuse readers, I did not delve into the biased sample variance,
+as it does not admit a simple “sample mean” formulation (i.e., 1/n…)
+without some manipulation. Note however that the unbiased sample
+variance also does converge in probability to the true mean, i.e., it is
+consistent.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>Here I use a kernel-based estimator of the density
+function to highlight its interpretation as a sample mean. However,
+other estimators exist which are consistent for the population density
+function.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>This is a simplistic sample estimator of the quantile
+function, used here primarily for presentation purposes. In reality,
+other estimators exist that are superior, and are still weakly
+consistent/convergent.<a href="#fnref3"
+class="footnote-back">↩︎</a></p></li>
+</ol>
 </div>
 
 

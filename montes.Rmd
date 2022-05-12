@@ -53,7 +53,7 @@ knitr::opts_chunk$set(class.output = "bg-success",
 
 \
 
-In this guide I discuss in-depth five steps to setting up parallel Monte Carlo analyses using R. Generally, these steps consist of:
+In this guide I first review the intuition of Monte Carlo methods, and then discuss five steps to efficient, publication-quality Monte Carlo analyses using R. Generally, these steps consist of:
 
 
 1. [Switching from serial to parallel loops](#serial-vs-parallel)
@@ -63,9 +63,9 @@ In this guide I discuss in-depth five steps to setting up parallel Monte Carlo a
 5. [Compartmentalizing code into simulation and estimation functions](#using-functions-properly)
 
 
-First, I will walk through each of these five points with toy examples to drive ideas home where applicable. Finally, I will take all of this and put it together in some more serious applications showing the downward bias of autoregressive parameters in time series models, small sample bias of logistic regression parameters (as well as a correction), and the inefficiency of the Heckman-correction in selection modeling. 
+First, I will walk through each of these five points with toy examples to drive ideas home where applicable. Finally, I will take all of this and put it together in some more serious applications. 
 
-**Note** that this guide will applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. 
+**Note** that this guide applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However, some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. 
 
 
 \
@@ -73,24 +73,24 @@ First, I will walk through each of these five points with toy examples to drive 
 # Brief Review of Monte Carlo Methods 
 ***
 
-All of Monte Carlo analysis hinges on a Law of Large numbers. These laws effectively state that the sample mean of a random variable converges to its population mean. In the context of investigating the behavior of estimators under particular conditions, these laws of large numbers imply that if we simulate a large number of estimates, then the sample mean of these estimates converges to the true mean of the estimator. With that idea in mind, we can also compute a whole host of other interesting quantities, such as the variance, the density function, or the quantile function, *because all of these can be re-written as a sample mean of a random variable.* **Without any math, this is the primary intuition of Monte Carlo analysis: many of the quantities that we are interested in can be expressed as a sample mean of a random variable, so we know they converge to the true value of the quantity of interest due to a law of large numbers.** 
+All of Monte Carlo analysis hinges on a Law of Large numbers. These laws effectively state that the sample mean of a random variable converges to its population mean, i.e., that the sample mean is a consistent estimator. In the context of investigating the behavior of estimators under particular conditions, these laws of large numbers imply that if we simulate a large number of estimates, then the sample mean of these estimates converges to the true mean of the estimator. With that idea in mind, we can also compute a whole host of other interesting quantities, such as the variance, the density function, or the quantile function, *because all of these can be re-written as a sample mean of a random variable.* **Without any math, this is the primary intuition of Monte Carlo analysis: many of the quantities that we are interested in can be expressed as a sample mean of a random variable, so we know they converge to the true value of the quantity of interest due to a law of large numbers.** 
 
 For example $$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n X_i = \mu_x $$ meaning that the sample mean converges to the population mean as the sample size tends to infinity. However, as the bold text above indicates, *a whole host of other quantities converge to their true expected values*, for example:
 
-* The variance: $$\frac{1}{n-1} \sum_{i=1}^n (X_i - \bar X)^2 \longrightarrow \mathrm{var}(X)$$
+* The variance:^[This is in fact the *biased* sample variance. Despite being biased, it is still weakly consistent/convergent. So as not to confuse readers, I did not delve into the biased sample variance, as it does not admit a simple "sample mean" formulation (i.e., 1/n...) without some manipulation. Note however that the unbiased sample variance also does converge in probability to the true mean, i.e., it is consistent.] $$\frac{1}{n} \sum_{i=1}^n (X_i - \bar X)^2 \longrightarrow \mathrm{var}(X)$$
 
-* The CDF: $$\frac{1}{n} \sum_{i=1}^n \mathbb{I}_{(-\infty, x)}(X_i) \longrightarrow F_X(x)$$
+* The CDF: $$\hat F(x) = \frac{1}{n} \sum_{i=1}^n \underset{(-\infty, x]}{\mathbb{I}}(X_i) \longrightarrow F_X(x)$$
 
-* The density function: $$\text{The empirical density/mass function} \longrightarrow f_X(x)$$
+* The density function (using kernel $K$ and bandwidth $h$):^[Here I use a kernel-based estimator of the density function to highlight its interpretation as a sample mean. However, other estimators exist which are consistent for the population density function.] $$\hat f(x) = \frac{1}{n} \sum_{i=1}^{n} \frac{1}{h} K\left(\frac{x - X_i}{h}\right) \longrightarrow f_X(x)$$
 
-* The quantile function: $$\text{The empirical } \alpha\text{-quantile of } X_i, ..., X_n \longrightarrow \text{inf}(y: F(x) \geq \alpha)$$
+* The quantile function:^[This is a simplistic sample estimator of the quantile function, used here primarily for presentation purposes. In reality, other estimators exist that are superior, and are still weakly consistent/convergent.] $$\hat Q\{\hat F(x)\} = \text{inf}\left\{x:\frac{1}{n}\sum_{i=1}^{n}\underset{(-\infty, x]}{\mathbb{I}}(X_i) \geq \alpha)\right\}  \longrightarrow \text{inf}(y: F(x) \geq \alpha)$$
 
 So effectively we can simulate random variables, compute some function of those realizations, then take the mean of the resulting quantity, and the WLLN tells us that we converge to the expected value of that function. 
 
 <details>
-  <summary><span style="color: #0888a8;">Show Me the Math</span></summary>
+  <summary><span style="color: #0888a8;">Show me the math</span></summary>
 
-To show that this is indeed true, we will need a a few pieces of background information, namely Markov's Inequality, Chebyshev's inequality, and the definition of convergence in probability (note that all of this information can also be found in most math-stat textbooks, or on Wikipedia).
+To prove the WLLN, we will need a a few pieces of background information, namely Markov's Inequality (used only to prove Chebyshev's), Chebyshev's inequality, and the definition of convergence in probability (note that all of this information can also be found in most math-stat textbooks, or on Wikipedia).
 
 * **Markov's Inequality:** Let $X$ be a random variable with support over the non-negative real line, i.e., $\Pr(X \geq 0) = 1$. Then for every number $c > 0$, $\,\,\Pr(X \geq c) \leq \frac{\E(X)}{c}$. 
   
@@ -111,7 +111,7 @@ To show that this is indeed true, we will need a a few pieces of background info
   </details>
   </div>
   
-\vspace{1em}
+<p> </p>
 
 
 * **Chebyshev's Inequality:** Let $X$ be a random variable with finite first and second moments, $\mu_X < \infty$ and $\sigma^2_X < \infty$ respectively. Then for all numbers $c > 0$, $\,\, \Pr(|X - \mu_X| \geq c) \leq \frac{\sigma^2_X}{c^2}$ 
@@ -132,12 +132,12 @@ To show that this is indeed true, we will need a a few pieces of background info
   </div>
   
   
-\vspace{1em}
+<p> </p>
 
 
 * **Convergence in Probability (to a constant):** For a sequence of independent random variables $X_n = X_1, X_2, ...$ with the same mean $\mu_X < \infty$ and same variance $\sigma^2_X < \infty$, and for constants $c$ and $\varepsilon$: if \hspace{1ex} $\lim_{n\to\infty} \Pr(|X_n - c|>\varepsilon) = 0 \hspace{1em} \forall \hspace{1em} \varepsilon > 0$ then $\,\,X_n \overset{p}{\longrightarrow} c$.  
 
-\vspace{1em}
+<p> </p>
  
 The WLLN then states that 
 
@@ -145,7 +145,7 @@ The WLLN then states that
 
 which can be generalized to functions $g$ of $X$: 
 
-\begin{equation*} \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n g(X_i) \overset{p}\longrightarrow \E[g(X_n)] = \int_{X} g(x)f_X(x) \mathrm dx \end{equation*} 
+\begin{equation*} \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n g(X_i) \overset{p}\longrightarrow \E[g(X_n)] = \int_{X} g(x) \,\, \mathrm dF_X(x) \end{equation*} 
 
 for random variables $X_i \overset{iid}{\sim} f_X, \,\, i\in 1,2,...,n$, and (almost) any function $g$. This effectively says that the sample average of nearly any function of the data converges in probability to the true expected value. 
 
@@ -181,6 +181,8 @@ I've used both approaches extensively (in the past I only used the `apply` appro
   c. Doesn't require nested function calls for complicated simulations
   
   d. Permits nested parallel looping
+  
+  e. Can be more memory efficient
   
 For these reasons, I won't be covering the `apply` family of functions here. I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`. This is only a quick introduction to `foreach` though, so I highly recommend taking a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). If you're more of a DataCamp or otherwise type of person, there is an entire course on [parallel processing in R](https://www.datacamp.com/courses/parallel-programming-in-r) available through them (I am not affiliated with DataCamp, nor do I receive anything from them for linking this). There are also more in-depth resources on parallel processing in R available [here](https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html), [here](https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html), and [here](https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html), although Googling around will definitely yield droves of additional content.
 
@@ -247,7 +249,7 @@ So `foreach()` returns a list, with a whole bunch of named elements. We'll touch
 
 Finally, on the right-hand side of `%do%` we have an `expression`-class object, which can just be thought of as our loop code. But, because these instructions will be executed on several CPUs simultaneously, we need to send them off to each core first, and _then_ execute the instructions and return their collective results. This is why `foreach` loops are actually function calls, because they have to send off a set of instructions in a unified way to several child processes for execution, keep track of that execution, combine the results, and return them in a sensible way. In contrast, `for` loops are running on a single process, so the instructions can just be executed on that process in real-time. 
 
-If any of this is confusing, the main takeaway is that `foreach` loops are actually functions. Since functions have a `return` value, we stored the results in the `out_foreach` object, and gave the `foreach` loop an explicit `return()` call at the end. 
+If any of this is confusing, **the main takeaway is that `foreach` loops are actually functions. Since functions have a `return` value, we stored the results in the `out_foreach` object, and gave the `foreach` loop an explicit `return()` call at the end.** 
 
 
 \
@@ -264,6 +266,8 @@ Now that you have the basics of how `foreach` and `for` differ, we can move on t
 3. Change `%do%` to `%dopar%` (though later we'll see that a better alternative is actually `%dorng%`).
 
 4. Shut down the parallel backend (**this is extremely important for PC longevity**).
+
+Using the same example of just adding 1 to each element of a vector, each of these steps for going parallel are implemented in the code below. 
 
 ```{r, echo=T, eval=T}
 library(doParallel)
@@ -321,7 +325,16 @@ When spinning up a parallel cluster, e.g., using `makeCluster(cl)` as we did [pr
 
 Because of the copying and ensuing communication required for `"PSOCK"` clusters, some estimates put `"FORKS"` as being [roughly 40% faster than socket clusters](https://www.r-bloggers.com/2019/06/parallel-r-socket-or-fork/). Again though, if you're using Windows, you won't be able to leverage this forking speed bonus. 
 
+<p> </p>
+
+ <div>
+  <details>
+  <summary><span style="color: #0888a8;">But I'm on Windows and I want to FORK...</span></summary>
+
 If you would like to be able to fork but are on Windows, then [dual-booting](https://opensource.com/article/18/5/dual-boot-linux) a Linux OS alongside your Windows installation is a free way to do so while keeping your Windows installation intact. Its also a great way to start learning about the Linux system, as this is often the system of choice in many industrial data science positions. The purpose of this guide is not to give instruction on how to do this, but a good starting Linux distribution is [Linux Mint Cinnamon Edition](https://linuxmint.com/edition.php?id=292), which is built on top of the popular Debian-based [Ubuntu](https://ubuntu.com/). If this interests you, I suggest reading up on dual-booting Windows with Linux, and starting with either of the two distributions listed here. After some more experience with Linux, the Arch-based [Manjaro KDE](https://manjaro.org/downloads/official/kde/) is great, and is in fact what I use daily. Finally note that most popular Linux distributions are like any other operating system in that they have a graphical user interface and can be completely navigated using point-and-click actions, in case you mistakenly think that using Linux implies knowing a bunch about computer science. 
+
+</details>
+</div>
 
 \
 
