@@ -164,9 +164,9 @@ where this last equality follows because $0 \leq \lim_{n\to\infty} \Pr(|\bar X -
 # Simulations: Serial vs Parallel
 ***
 
-As implied by the review of Monte Carlo analysis, simulations will involve a great number of iterations in order to obtain a sufficiently large sample to be averaged over, such that a law of large numbers can take adequate effect. In many cases, implementing these Monte Carlo analyses in parallel will be the first step to obtaining results efficiently. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
+As implied by the review of Monte Carlo analysis, simulations will involve a great number of iterations in order to obtain a sufficiently large sample to be averaged over, such that the error in our approxmiation is small. Unfortunately, R is single-threaded by default, meaning everything that you do in R is executed on a single CPU on your computer. So even if you have a quad-core processor that has 8 CPUs due to [multi-threading](https://www.cgdirector.com/cpu-cores-vs-logical-processors-threads/), only one of these 8 potential processes is being used by R by default. However, most Monte Carlo analyses would theoretically benefit from being able to compute quantities simultaneously: if we want to compute a bunch of sample means that are independent of eachother, then why not compute 8 means at a time, rather than one? Naturally then, implementing Monte Carlo analyses in parallel will be the first step to obtaining results efficiently. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
 
-For going parallel, there are essentially two options:
+**For going parallel in R, there are essentially two options**:
 
 1. Using `foreach` loops, which are similar, yet distinct from the typical `for` loop
 
@@ -184,18 +184,20 @@ I've used both approaches extensively (in the past I only used the `apply` appro
   
   e. Can be more memory efficient
   
-For these reasons, I won't be covering the `apply` family of functions here. I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`. This is only a quick introduction to `foreach` though, so I highly recommend taking a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). If you're more of a DataCamp or otherwise type of person, there is an entire course on [parallel processing in R](https://www.datacamp.com/courses/parallel-programming-in-r) available through them (I am not affiliated with DataCamp, nor do I receive anything from them for linking this). There are also more in-depth resources on parallel processing in R available [here](https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html), [here](https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html), and [here](https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html), although Googling around will definitely yield droves of additional content.
-
+For these reasons, I won't be covering the `apply` family of functions here. I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`. 
 
 \
 
 ### Differences between `foreach` and `for`
 ***
 
+Before diving in, note that this is only a quick introduction to `foreach`. We'll go over how it differs from `for` loops and some of the key arguments, but if you want to learn more, I highly recommend taking a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). If you're more of a DataCamp or otherwise type of person, there is an entire course on [parallel processing in R](https://www.datacamp.com/courses/parallel-programming-in-r) available through them (I am not affiliated with DataCamp, nor do I receive anything from them for linking this). There are also more in-depth resources on parallel processing in R available [here](https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html), [here](https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html), and [here](https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html), although Googling around will definitely yield droves of additional content.
+
+
 To see how `foreach` works, its useful to compare and contrast it with a typical `for` loop. Suppose we just wanted to add 1 to each element in a vector, and for some reason we did this using a for loop in R (rather than leveraging vectorization). We might write the following:
 
 ```{r, echo=T, eval=T}
-# for loop
+### for loop
 vec = seq(1, 5)
 out_for = vector()
 
@@ -210,7 +212,7 @@ print(out_for)
 Then, using the `foreach` package, an equivalent loop could be written like so: 
 
 ```{r, echo=T, eval=T, message=F}
-# foreach 
+### foreach 
 library(foreach)
 
 vec = seq(1, 5)
@@ -227,17 +229,21 @@ out_foreach =
 print(out_foreach)
 ```
 
-Despite having a somewhat similar appearance to the `for` loop, `foreach` loops differ in two key ways:
+\
 
-1. They are functions. 
+Despite having a somewhat similar appearance to the `for` loop, **`foreach` loops are different because they are functions, while `for` loops are not.**
 
-2. Because they are functions, they have a `return` value. 
+In fact, `foreach` loops are composed of at least two functions, and one `expression`-class object:
 
-In fact, `foreach` loops are composed of at least two functions. The first is a bit obvious, its a call to `foreach(...)`. The second is actually the [infix function](https://adv-r.hadley.nz/functions.html#function-forms), `%do%`, or as we'll see later, `%dopar%` or `%dorng%`. 
+1. The first function is a bit obvious, its a call to `foreach(...)`. 
 
-Starting with the `%do%` infix function, notice its similar appearance to the matrix multiplication operator, `%*%`. Just as the `%*%` matrix multiplication operator takes its arguments on either side, so does the `%do%` or `%dopar%` operator (or any other arbitrary infix function). Thus, we can conclude that **the call to `foreach(...)` on the left-hand side, and the set of loop instructions on the right-hand side between the curly braces `{...}` are both arguments to the `%do%` function**. 
+2. The second function is actually the [infix function](https://adv-r.hadley.nz/functions.html#function-forms), `%do%`, or as we'll see later, `%dopar%` or `%dorng%`. 
 
-Moving to the second function, the call to `foreach(...)` on the left-hand side of `%do%`, we've just learned that this function (or rather, the _return value_ of this function) is an argument to the `%do%` operator. Its reasonable to ask what the `foreach()` function returns, then. Lets take a look:
+3. The `expression`-class object is the loop code inside the curly braces `{...}`, and can be thought of as a string for our purposes.
+
+We'll start with (2), the `%do%` infix function. Notice its similar appearance to the matrix multiplication operator, `%*%`. Just as the `%*%` matrix multiplication operator takes its arguments on either side, so does the `%do%` or `%dopar%` operator (or any other arbitrary infix function). Thus, we can conclude that **the call to `foreach(...)` on the left-hand side, and the set of loop instructions on the right-hand side between the curly braces `{...}` are both arguments to the `%do%` function**. 
+
+Moving to the call to `foreach(...)` on the left-hand side of `%do%`, we've just learned that this function (or rather, the _return value_ of this function) is an argument to the `%do%` operator. Its reasonable to ask what the `foreach()` function returns, then, as its return value is an input to another function. Lets take a look:
 
 ```{r}
 fe_call = foreach(i = 1:3)
@@ -245,11 +251,13 @@ fe_call = foreach(i = 1:3)
 str(fe_call)
 ```
 
+\
+
 So `foreach()` returns a list, with a whole bunch of named elements. We'll touch on some of these later on, but for now you can roughly think of `foreach()` as being the same as the serial case when we call `for(i in something)`: it is creating an object to be iterated over. In reality things are a bit more complicated than that, but the details are not too important here. It is enough to know that `foreach()` is a function, and it returns an object that is in some way useful for iterating and executing a loop in parallel. The results of calling this `foreach(...)` function are then used as the inputs on the left-hand side of `%do%`. 
 
 Finally, on the right-hand side of `%do%` we have an `expression`-class object, which can just be thought of as our loop code. But, because these instructions will be executed on several CPUs simultaneously, we need to send them off to each core first, and _then_ execute the instructions and return their collective results. This is why `foreach` loops are actually function calls, because they have to send off a set of instructions in a unified way to several child processes for execution, keep track of that execution, combine the results, and return them in a sensible way. In contrast, `for` loops are running on a single process, so the instructions can just be executed on that process in real-time. 
 
-If any of this is confusing, **the main takeaway is that `foreach` loops are actually functions. Since functions have a `return` value, we stored the results in the `out_foreach` object, and gave the `foreach` loop an explicit `return()` call at the end.** 
+If any of this is confusing, **the main takeaway is that `foreach` loops are actually functions. Since functions have a `return` value, we stored the results in the `out_foreach` object, and gave the `foreach` loop an explicit `return()` call at the end. This is because we send off our code to several R processes, and each process needs to know what to be working on, and what to return.** 
 
 
 \
@@ -257,29 +265,30 @@ If any of this is confusing, **the main takeaway is that `foreach` loops are act
 ### Making `foreach` Run in Parallel
 ***
 
-Now that you have the basics of how `foreach` and `for` differ, we can move on to making things work in parallel. The above toy example is in fact running serially in both the `foreach` and `for` loops. However, to make the `foreach` loop run in parallel requires trivial alterations:
+Now that you have the basics of how `foreach` and `for` differ, we can move on to making things work in parallel. The above toy example is in fact running serially in both the `foreach` and `for` loops. However, to make the `foreach` loop run in parallel requires trivial alterations to the code above:
 
-1. Tell R how many cores to use.
+1. Tell R how many cores to use. This should be one less than the max if using R-studio, so that R-studio still has resources to run.
 
-2. Register those cores as a parallel back-end using the `doParallel` package.
+2. Create a cluster and register it as a parallel back-end using the `doParallel` package.
 
 3. Change `%do%` to `%dopar%` (though later we'll see that a better alternative is actually `%dorng%`).
 
 4. Shut down the parallel backend (**this is extremely important for PC longevity**).
 
-Using the same example of just adding 1 to each element of a vector, each of these steps for going parallel are implemented in the code below. 
+Using the same example from the previous section of adding 1 to each element of a vector, each of these steps for going parallel are implemented in the code below. 
 
 ```{r, echo=T, eval=T}
+### 0. Need the doParallel package for this
 library(doParallel)
 
-# 1. Use one fewer cores than max available due to using R studio
+### 1. Tell number of cores to use (one less than max, if using Rstudio)
 ncores = parallel::detectCores() - 1 
 
-# 2. spin up the cluster
+### 2. Create cluster, and register parallel backend
 cl = makeCluster(ncores)
 registerDoParallel(cl)
 
-# 3. Change `%do%` to `%dopar%` 
+### 3. Change `%do%` to `%dopar%` 
 out_foreach = foreach(i = seq_along(vec),
                       .combine = "c"
                       ) %dopar% {
@@ -287,7 +296,7 @@ out_foreach = foreach(i = seq_along(vec),
     return(vec[i] + 1)
   }
 
-#4.shut down the cluster DONT FORGET THIS
+### 4.shut down the cluster DONT FORGET THIS
 stopCluster(cl)
 ```
 
@@ -296,7 +305,7 @@ stopCluster(cl)
 ### Important `foreach` Parameters
 ***
 
-Although this is certainly not a guide on the `foreach` package (see the [previous links](#serial-vs-parallel) for more detail on the package), there are a few parameters worth discussing here. 
+Although this is certainly not a guide on the `foreach` package (see the [previous links](#differences-between-foreach-and-for) for more detail on the package), there are a few parameters worth discussing here. 
 
 * `.combine` --- This is a function that tells `foreach` how to combine the results, e.g., `list`, `c` (for concatenate), `rbind`, etc. (or some custom function). I typically leave this `NULL`, which returns the results in a list. I do this because combining results takes time, and I don't necessarily want to take that time immediately after simulations complete. 
 
@@ -317,7 +326,9 @@ Although this is certainly not a guide on the `foreach` package (see the [previo
 ### `FORK` or `PSOCK`?
 ***
 
-When spinning up a parallel cluster, e.g., using `makeCluster(cl)` as we did [previously](#making-foreach-run-in-parallel), there is a `type` parameter that controls the type of cluster that we create, which is one of either `"FORK"` or `"PSOCK"`. The default is `"PSOCK"`, but this can be set, e.g. by calling `makeCluster(your_cluster_object, type = "FORK")`. The details on each cluster type are as follows:
+When spinning up a parallel cluster, e.g., using `makeCluster(cl)` as we did [previously](#making-foreach-run-in-parallel), there is a `type` parameter that controls the type of cluster that we create, which is one of either `"FORK"` or `"PSOCK"`. The default is `"PSOCK"`, but this can be set, e.g. by calling `makeCluster(your_cluster_object, type = "FORK")`. 
+
+The details on each cluster type are as follows:
 
 * `"FORK"` --- This type of cluster duplicates the master process on each child process, but allows them all to access the same shared global environment from the master process. Think of the master process as the process that you are interacting with in R where you type your code. So, multiple R processes are spawned on your cores, but they all access the same single global environment. This minimizes parallel overhead communication between the processes. **NOTE:** This type of cluster is only available on UNIX-alike machines (i.e., GNU-Linux, Mac), so <span style="color: red;">**Windows users cannot use this cluster type**</span>.
 
@@ -325,13 +336,31 @@ When spinning up a parallel cluster, e.g., using `makeCluster(cl)` as we did [pr
 
 Because of the copying and ensuing communication required for `"PSOCK"` clusters, some estimates put `"FORKS"` as being [roughly 40% faster than socket clusters](https://www.r-bloggers.com/2019/06/parallel-r-socket-or-fork/). Again though, if you're using Windows, you won't be able to leverage this forking speed bonus. 
 
+Here's a useful bit of code that will determine the cluster type based on what operating system you're using. I use a rendition of this code for every set of Monte Carlos that I do, as I'd like to have a FORK cluster whenever possible, and I don't want to have to change code whenever I move to a computer with a different OS. 
+
+```{r, echo=T, eval=F}
+### Dynamically decide cluster type based on OS type
+
+ncpus = parallel::detectCores() - 1
+type = if(.Platform$OS.type == 'unix') 
+          'FORK' 
+       else 
+          'PSOCK'
+
+cl = makeCluster(ncpus, type = type)
+```
+
+As the [help files](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Platform.html) indicate, `.Platform$OS.type` will return `"unix"` _for both Linux and Mac_ (as Mac is unix-like). 
+
 <p> </p>
 
  <div>
   <details>
-  <summary><span style="color: #0888a8;">But I'm on Windows and I want to FORK...</span></summary>
+  <summary><span style="color: #0888a8;">What if I'm on Windows and I want to FORK...</span></summary>
 
 If you would like to be able to fork but are on Windows, then [dual-booting](https://opensource.com/article/18/5/dual-boot-linux) a Linux OS alongside your Windows installation is a free way to do so while keeping your Windows installation intact. Its also a great way to start learning about the Linux system, as this is often the system of choice in many industrial data science positions. The purpose of this guide is not to give instruction on how to do this, but a good starting Linux distribution is [Linux Mint Cinnamon Edition](https://linuxmint.com/edition.php?id=292), which is built on top of the popular Debian-based [Ubuntu](https://ubuntu.com/). If this interests you, I suggest reading up on dual-booting Windows with Linux, and starting with either of the two distributions listed here. After some more experience with Linux, the Arch-based [Manjaro KDE](https://manjaro.org/downloads/official/kde/) is great, and is in fact what I use daily. Finally note that most popular Linux distributions are like any other operating system in that they have a graphical user interface and can be completely navigated using point-and-click actions, in case you mistakenly think that using Linux implies knowing a bunch about computer science. 
+
+An alternative to dual-booting is to utilize [the Windows subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about), although this approach is command line interface (CLI) only, meaning there is no point-and-click functionality. So unless you're already familiar with Linux, this may be too much of a hassle. 
 
 </details>
 </div>
@@ -346,7 +375,7 @@ If you're running simulations, you probably want to be able to reproduce them, e
 For example, lets simulate some random variables using both a serial loop and parallel loop, and set the seed before hand. We'd expect that the results are the same, but this turns out to be false. First, serially:
 
 ```{r, echo=T, eval=T}
-# Serially
+### Serially
 serial_1 = serial_2 = c()
 
 set.seed(123)
@@ -365,7 +394,7 @@ which produces two vectors of the exact same numbers, as we'd expect given the a
 However, when we implement the "equivalent" in parallel (notice how the infix property becomes more apparent in the code below, too):
 
 ```{r, echo=T, eval=T, class.output = "bg-danger",}
-# Parallel
+### Parallel
 ncores = 3
 cl = makeCluster(ncores)
 registerDoParallel(cl)
@@ -395,7 +424,7 @@ The simplest solution is to use the [`doRNG`](https://cran.r-project.org/web/pac
 1. **`doRNG` Method 1**: Set your seed as usual, and replace `%dopar%` with `%dorng%`:
 
 ```{r, echo=T, eval=T, message=F}
-# set.seed and  %dorng%
+### set.seed and  %dorng%
 library(doRNG)
 ncores = 3
 cl = makeCluster(ncores)
@@ -418,7 +447,7 @@ identical(parallel_1, parallel_2)
 2. **`doRNG` Method 2**: Set your seed using `registerDoRNG()` instead, then use `%dopar%` as usual:
 
 ```{r, echo=T, eval=T, message=F}
-# doRNG backend, %dopar%
+### doRNG backend, %dopar%
 ncores = 3
 cl = makeCluster(ncores)
 registerDoParallel(cl)
@@ -445,7 +474,7 @@ Both approaches result in reproducible parallel loops.
 
 A bit of a hacky alternative to `doRNG` is to simply set the seed for each iteration. Remember from earlier that the instructions set on the right-hand side of `%dopar%` are passed to each core. Well, if every iteration passed to a core has a unique seed, then any time we run the loops, the same results will obtain. To do this we 
 
-1. Set an "outer" seed in the traditional way, i.e., using `set.seed()` outside `foreach`.
+1. Set an "outer" seed in the traditional way, i.e., using `set.seed()` outside the `foreach` block.
 
 2. `sample()` "inner" seeds to be used in each iteration. The number of inner seeds is equal to the number of simulations/iterations (i.e., the max of your iteration index). Note that this sampling will always produce the same inner seeds, because we've set our outer seed in step (1). 
 
@@ -453,7 +482,7 @@ A bit of a hacky alternative to `doRNG` is to simply set the seed for each itera
 
 To make this more clear:
 
-```{r, eval=T, echo=T, results='hide'}
+```{r, eval=T, echo=T}
 ncores = 3
 nsims = 10
 cl = makeCluster(ncores)
@@ -486,10 +515,14 @@ parallel_2 =
 
 stopCluster(cl)
 
+length(unique(inner_seeds)) == nsims
+
 identical(parallel_1, parallel_2)
 ```
 
-Now this is of course a bit hacky, but this approach does have practical utility. Namely, if you ever need nested parallel loops (using the `%:%` nesting operator detailed in the [`foreach` documentation](https://cran.r-project.org/web/packages/foreach/vignettes/nested.html)), then unfortunately the `%dorng%` backend is not supported. In this case, the only way I have found to successfully reproduce simulations is the above, iteration-level seed-setting approach. To be clear, this isn't setting the same exact seed on all cores. We made a vector of seeds, `inner_seeds`, and each simulation uses a seed from this vector before executing its instructions. You can think of this as setting a different seed across a bunch of different R sessions, and then combining the results; however, the universe of inner seeds remains the same, and therefore so does the results set across runs. 
+As the code `length(unique(inner_seeds)) == nsims` tells us, this isn't setting the same exact seed on all cores. We made a vector of distinct seeds, `inner_seeds`, and each simulation uses one of these distinct seeds before executing its instructions. You can think of this as setting a different seed across a bunch of different R sessions, and then combining the results; however, the universe of inner seeds to be used on each of these sessions remains the same, and therefore so do the results across runs. 
+
+Now this is of course a bit hacky, and is clearly more complex than using `doRNG`, but **this approach does have practical utility**. Namely, if you ever need nested parallel loops (using the `%:%` nesting operator detailed in the [`foreach` documentation](https://cran.r-project.org/web/packages/foreach/vignettes/nested.html)), then unfortunately the `%dorng%` backend is not supported. In other words, if you'd like nested, parallel loops, you will not be able to use `doRNG` to ensure reproducibility. In this case, the only way I have found to successfully reproduce simulations is the above, iteration-level seed-setting approach.
 
 
 \
@@ -498,14 +531,14 @@ Now this is of course a bit hacky, but this approach does have practical utility
 # Thread Competition
 ***
 
-Now we are running loops in parallel, and our pseudo-random numbers are reproducible as we would want. However, there is a potential lurking issue that will completely tank any simulations structured as we have here: other multit-hreaded/parallel tasks competing for CPU resources. In other words, if R is trying to execute simulations in parallel while also trying to execute some other task in parallel simultaneously, often times your computer will hang and eventually crash. 
-
-So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries while executing linear algebra-heavy simulations. This includes libraries like [Open BLAS](https://www.openblas.net/), [Intel's MKL](https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html), [AMD's Math Library](https://developer.amd.com/amd-aocl/amd-math-library-libm/), [Apple's Accelerate](https://developer.apple.com/documentation/accelerate) or [ATLAS BLAS](http://math-atlas.sourceforge.net/). In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multi-threaded matrix operations; i.e., they do common matrix operations in parallel, such as matrix multiplication, inversion, etc. Thus, if you are using these libraries and forget to disable their inherent multi-threading, they will compete with `foreach` when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give `foreach` 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you're trying to access 11 threads when you only have 8. The only option is to use the same thread for multiple tasks simultaneously, but this isn't possible so the computer hangs. A particularly egregious case of this is known as a [FORK bomb](https://en.wikipedia.org/wiki/Fork_bomb). 
+Now we are running loops in parallel, and our pseudo-random numbers are reproducible as we would want. However, there is a potential lurking issue that will completely tank any simulations structured as we have here: other multi-threaded/parallel tasks competing for CPU resources. In other words, if R is trying to execute simulations in parallel while also trying to execute some other task in parallel simultaneously, often times your R-session will hang and eventually crash. 
 
 \
 
-### Checking BLAS/LAPACK Threading
+### BLAS/LAPACK-Induced Deadlock
 ***
+
+So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries while executing linear algebra-heavy simulations. This includes libraries like [Open BLAS](https://www.openblas.net/), [Intel's MKL](https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html), [AMD's Math Library](https://developer.amd.com/amd-aocl/amd-math-library-libm/), [Apple's Accelerate](https://developer.apple.com/documentation/accelerate) or [ATLAS BLAS](http://math-atlas.sourceforge.net/). In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multi-threaded matrix operations; i.e., they do common matrix operations in parallel, such as matrix multiplication, inversion, etc.^[I'm aware that multi-threading and parallelism are not the same thing. To keep things simple I treat them as the same here, as their difference is not relevant for explaining the issue here.] Thus, if you are using these libraries and forget to disable their inherent multi-threading, they will compete with `foreach` when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give `foreach` 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you're trying to access $7 \times 4 = 28$ threads when you only have 8 (each of the 7 child processes will be linked to MKL, which reserves 4 threads). The only option is to use the same thread for multiple tasks simultaneously, but this isn't possible so the computer hangs. This is known as [deadlock](https://en.wikipedia.org/wiki/Deadlock) in multi-threaded computing, with a particularly egregious case caused by [FORK bombs](https://en.wikipedia.org/wiki/Fork_bomb). 
 
 To check if your PC is running multi-threaded matrix operations, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package:
 ```{r, echo=T, eval=T}
@@ -514,7 +547,7 @@ blas_get_num_procs()
 omp_get_num_procs()
 ```
 
-If either of these results is greater than 1, then you have multithreading enabled. We won't delve into the differences between BLAS and OMP here; suffice it so say that you want both of these at 1 for single-threaded matrix operations. <span style="color: red;">**IF YOU USE [MICROSOFT'S R-OPEN](https://mran.microsoft.com/open)**, **_then you definitely have MKL enabled as your BLAS/LAPACK library, and multi-threading is likely enabled by default_**</span>. 
+If either of these results is greater than 1, then you have multithreading enabled. We won't delve into the differences between BLAS and OMP here; suffice it so say that you want both of these at 1 for single-threaded matrix operations. <span style="color: red;">**IF YOU USE [MICROSOFT'S R-OPEN](https://mran.microsoft.com/open)**, **_then you probably have MKL enabled as your BLAS/LAPACK library, and multi-threading is likely enabled by default_**</span>. 
 
 Alternatively, you can check on the name of your BLAS library, which will tell you at least if its not the default library:
 
@@ -529,7 +562,7 @@ but this isn't conclusive, as it merely tells us that I'm using MKL, not that MK
 ### Multi-threaded Packages
 ***
 
-In addition to multi-threaded matrix operations, there are other R packages that are multithreaded by default and will therefore compete for CPU resources. The number one culprit here is probably [`data.table`](https://cran.r-project.org/web/packages/data.table/index.html). However, other machine learning libraries have the option for multithreading as well, such as [`caret`](https://topepo.github.io/caret/), and [`glmnet`](https://cran.r-project.org/web/packages/glmnet/index.html). To my knowledge neither of these last two are multithreaded by default, so this only becomes a problem if you accidentally tell them to use more than one CPU. 
+In addition to multi-threaded matrix operations, there are other R packages that are multi-threaded by default and will therefore compete for CPU resources. The number one culprit here is probably [`data.table`](https://cran.r-project.org/web/packages/data.table/index.html). However, other machine learning libraries have the option for multithreading as well, such as [`caret`](https://topepo.github.io/caret/), and [`glmnet`](https://cran.r-project.org/web/packages/glmnet/index.html). To my knowledge neither of these last two are multithreaded by default, so this only becomes a problem if you accidentally tell them to use more than one CPU. In any case, if you run some simulations and notice that your CPU usage is at zero and you know that you're not multi-threading for BLAS/LAPACK, then I would do a hard restart on you computer. If the problem persists, I would check into the details of the packages you're using as its likely that one is multi-threaded by default. 
 
 \
   
@@ -538,10 +571,10 @@ In addition to multi-threaded matrix operations, there are other R packages that
 
 Fortunately, it is extremely easy to solve thread competition.
 
-1. To disable _multi-threaded matrix operations_, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, **and be sure to disable multi-threading in your loop code as seen below, not just outside of it:**
+1. To disable _multi-threaded matrix operations_, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, <span style="color: red;">**and be sure to disable multi-threading in your loop code as seen below, not just outside of it:**</span>
 
     ```{r, echo=T, eval=T, results='hide'}
-# disable in parent process 
+### disable in parent process 
 library(RhpcBLASctl)
 library(doRNG)
 
@@ -554,18 +587,19 @@ cl = makeCluster(ncores)
 registerDoParallel(cl)
 set.seed(123)
 
-# disable in child processes 
-  foreach(i = 1:nsims,
-          .packages = "RhpcBLASctl"   # Dont forget to export RhpcBLASCtl pkg
+### disable in child processes 
+foreach(i = 1:nsims,
+          .packages = "RhpcBLASctl"         # Dont forget to export RhpcBLASCtl pkg
           ) %dorng% {
             
-    library(RhpcBLASctl)
-    blas_set_num_threads(1)           # DISABLE WITHIN LOOP HERE
-    omp_set_num_threads(1)   
+            library(RhpcBLASctl)
+            
+            blas_set_num_threads(1)         # DISABLE WITHIN LOOP HERE
+            omp_set_num_threads(1)
+            
+            rnorm(1) 
     
-    rnorm(1) 
-    
-          }
+}
   
 stopCluster(cl)
     ```
