@@ -8,12 +8,13 @@ header-includes:
 - \usepackage{dsfont}
 output:
   html_document:
+    number_sections: true
     toc: yes
-    number_sections: no
     toc_float:
       collapsed: yes
       smooth_scroll: yes
     code_folding: show
+    css: "styles.css"
 bibliography: bibliography.bib
 link-citations: yes
 editor_options: 
@@ -21,6 +22,8 @@ editor_options:
 ---
 
 \newcommand{\E}{\mathbb{E}}
+
+
 
 <style>
 .list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
@@ -61,19 +64,19 @@ In this guide I first review the intuition of Monte Carlo methods, and then disc
 3. [Ensuring that other parallel tasks are not competing for CPU resources](#thread-competition)
 4. [Properly setting up simulation parameter grids](#parameter-grids)
 5. [Compartmentalizing code into simulation and estimation functions](#using-functions-properly)
-
+6. A few things you should never do 
+7. Some tips on best-practices for plotting
 
 First, I will walk through each of these five points with toy examples to drive ideas home where applicable. Finally, I will take all of this and put it together in some more serious applications. 
 
 **Note** that this guide applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However, some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. 
 
-
 \
 
-# Brief Review of Monte Carlo Methods 
+# Brief Review of Monte Carlo Methods
 ***
 
-All of Monte Carlo analysis hinges on a Law of Large numbers. These laws effectively state that the sample mean of a random variable converges to its population mean, i.e., that the sample mean is a consistent estimator. In the context of investigating the behavior of estimators under particular conditions, these laws of large numbers imply that if we simulate a large number of estimates, then the sample mean of these estimates converges to the true mean of the estimator. With that idea in mind, we can also compute a whole host of other interesting quantities, such as the variance, the density function, or the quantile function, *because all of these can be re-written as a sample mean of a random variable.* **Without any math, this is the primary intuition of Monte Carlo analysis: many of the quantities that we are interested in can be expressed as a sample mean of a random variable, so we know they converge to the true value of the quantity of interest due to a law of large numbers.** 
+The goal of Monte Carlo analysis is to investigate the behavior of a statistic using an approximation of its sampling distribution. All of Monte Carlo analysis then hinges on a Law of Large numbers. These laws effectively state that the sample mean of a random variable converges to its population mean, i.e., that the sample mean is a consistent estimator. With that idea in mind, we can also compute a whole host of other interesting quantities, such as the variance, the density function, or the quantile function, *because all of these can be re-written as a sample mean of a random variable.* **Without any math, this is the primary intuition of Monte Carlo analysis: many of the quantities that we are interested in can be expressed as a sample mean of a random variable, so we know they converge to the true value of the quantity of interest due to a law of large numbers.** 
 
 For example $$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n X_i = \mu_x $$ meaning that the sample mean converges to the population mean as the sample size tends to infinity. However, as the bold text above indicates, *a whole host of other quantities converge to their true expected values*, for example:
 
@@ -164,7 +167,7 @@ where this last equality follows because $0 \leq \lim_{n\to\infty} \Pr(|\bar X -
 # Simulations: Serial vs Parallel
 ***
 
-As implied by the review of Monte Carlo analysis, simulations will involve a great number of iterations in order to obtain a sufficiently large sample to be averaged over, such that the error in our approxmiation is small. Unfortunately, R is single-threaded by default, meaning everything that you do in R is executed on a single CPU on your computer. So even if you have a quad-core processor that has 8 CPUs due to [multi-threading](https://www.cgdirector.com/cpu-cores-vs-logical-processors-threads/), only one of these 8 potential processes is being used by R by default. However, most Monte Carlo analyses would theoretically benefit from being able to compute quantities simultaneously: if we want to compute a bunch of sample means that are independent of eachother, then why not compute 8 means at a time, rather than one? Naturally then, implementing Monte Carlo analyses in parallel will be the first step to obtaining results efficiently. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
+As implied by the review of Monte Carlo analysis, simulations will involve a great number of iterations in order to obtain a sufficiently large sample to be averaged over, such that the error in our approximation is small (as we'll never actually have infinite simulations). Unfortunately, R is single-threaded by default, meaning everything that you do in R is executed on a single CPU on your computer. So even if you have a quad-core processor that has 8 CPUs due to [multi-threading](https://www.cgdirector.com/cpu-cores-vs-logical-processors-threads/), only one of these 8 potential processes is being used by R by default. However, given the fact that we'll be doing a lot of simulation iterations, most Monte Carlo analyses would theoretically benefit from being able to compute quantities simultaneously: if we want to compute a bunch of sample means that are independent of eachother, then why not compute 8 means at a time, rather than one at a time? Naturally then, implementing Monte Carlo analyses in parallel will be the first step to obtaining results efficiently. There are exceptions to this rule (e.g., reserving computing resources for other tasks, parallel overhead making things slower), but if the reason you are not using parallel processing is simply because you do not know how, then I'll walk you through a few approaches here. 
 
 **For going parallel in R, there are essentially two options**:
 
@@ -184,11 +187,11 @@ I've used both approaches extensively (in the past I only used the `apply` appro
   
   e. Can be more memory efficient
   
-For these reasons, I won't be covering the `apply` family of functions here. I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`. 
+For these reasons, **I won't be covering the `apply` family of functions here.** I may eventually extend the principles and examples below to the `apply` family, but for now we'll focus on `foreach`. 
 
 \
 
-### Differences between `foreach` and `for`
+## Differences between `foreach` and `for`
 ***
 
 Before diving in, note that this is only a quick introduction to `foreach`. We'll go over how it differs from `for` loops and some of the key arguments, but if you want to learn more, I highly recommend taking a look at its [vignette](https://cran.r-project.org/web/packages/foreach/vignettes/foreach.html). If you're more of a DataCamp or otherwise type of person, there is an entire course on [parallel processing in R](https://www.datacamp.com/courses/parallel-programming-in-r) available through them (I am not affiliated with DataCamp, nor do I receive anything from them for linking this). There are also more in-depth resources on parallel processing in R available [here](https://nceas.github.io/oss-lessons/parallel-computing-in-r/parallel-computing-in-r.html), [here](https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html), and [here](https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html), although Googling around will definitely yield droves of additional content.
@@ -262,7 +265,7 @@ If any of this is confusing, **the main takeaway is that `foreach` loops are act
 
 \
 
-### Making `foreach` Run in Parallel
+## Making `foreach` Run in Parallel
 ***
 
 Now that you have the basics of how `foreach` and `for` differ, we can move on to making things work in parallel. The above toy example is in fact running serially in both the `foreach` and `for` loops. However, to make the `foreach` loop run in parallel requires trivial alterations to the code above:
@@ -275,7 +278,7 @@ Now that you have the basics of how `foreach` and `for` differ, we can move on t
 
 4. Shut down the parallel backend (**this is extremely important for PC longevity**).
 
-Using the same example from the previous section of adding 1 to each element of a vector, each of these steps for going parallel are implemented in the code below. 
+Using the same example from the previous section of adding 1 to each element of a vector, each of these steps for going parallel is implemented in the code below. 
 
 ```{r, echo=T, eval=T}
 ### 0. Need the doParallel package for this
@@ -302,7 +305,7 @@ stopCluster(cl)
 
 \
 
-### Important `foreach` Parameters
+## Important `foreach` Parameters
 ***
 
 Although this is certainly not a guide on the `foreach` package (see the [previous links](#differences-between-foreach-and-for) for more detail on the package), there are a few parameters worth discussing here. 
@@ -323,7 +326,7 @@ Although this is certainly not a guide on the `foreach` package (see the [previo
 
 \
 
-### `FORK` or `PSOCK`?
+## `FORK` or `PSOCK`?
 ***
 
 When spinning up a parallel cluster, e.g., using `makeCluster(cl)` as we did [previously](#making-foreach-run-in-parallel), there is a `type` parameter that controls the type of cluster that we create, which is one of either `"FORK"` or `"PSOCK"`. The default is `"PSOCK"`, but this can be set, e.g. by calling `makeCluster(your_cluster_object, type = "FORK")`. 
@@ -342,10 +345,8 @@ Here's a useful bit of code that will determine the cluster type based on what o
 ### Dynamically decide cluster type based on OS type
 
 ncpus = parallel::detectCores() - 1
-type = if(.Platform$OS.type == 'unix') 
-          'FORK' 
-       else 
-          'PSOCK'
+
+type = if(.Platform$OS.type == 'unix') 'FORK' else 'PSOCK'
 
 cl = makeCluster(ncpus, type = type)
 ```
@@ -360,7 +361,7 @@ As the [help files](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Plat
 
 If you would like to be able to fork but are on Windows, then [dual-booting](https://opensource.com/article/18/5/dual-boot-linux) a Linux OS alongside your Windows installation is a free way to do so while keeping your Windows installation intact. Its also a great way to start learning about the Linux system, as this is often the system of choice in many industrial data science positions. The purpose of this guide is not to give instruction on how to do this, but a good starting Linux distribution is [Linux Mint Cinnamon Edition](https://linuxmint.com/edition.php?id=292), which is built on top of the popular Debian-based [Ubuntu](https://ubuntu.com/). If this interests you, I suggest reading up on dual-booting Windows with Linux, and starting with either of the two distributions listed here. After some more experience with Linux, the Arch-based [Manjaro KDE](https://manjaro.org/downloads/official/kde/) is great, and is in fact what I use daily. Finally note that most popular Linux distributions are like any other operating system in that they have a graphical user interface and can be completely navigated using point-and-click actions, in case you mistakenly think that using Linux implies knowing a bunch about computer science. 
 
-An alternative to dual-booting is to utilize [the Windows subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about), although this approach is command line interface (CLI) only, meaning there is no point-and-click functionality. So unless you're already familiar with Linux, this may be too much of a hassle. 
+An alternative to dual-booting is to utilize [the Windows subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about), although this approach is command line interface (CLI)-only, meaning there is no point-and-click functionality. So unless you're already familiar with Linux, this may be too much of a hassle. 
 
 </details>
 </div>
@@ -416,7 +417,7 @@ we end up with results which are not the same, despite setting the seed as one w
 
 \
 
-### Option 1: `doRNG`
+## Option 1: `doRNG`
 ***
 
 The simplest solution is to use the [`doRNG`](https://cran.r-project.org/web/packages/doRNG/vignettes/doRNG.pdf) package. There are two ways to use the package to reproduce simulation results. 
@@ -465,11 +466,13 @@ stopCluster(cl)
 identical(parallel_1, parallel_2)
 ```
 
+\
+
 Both approaches result in reproducible parallel loops. 
 
 \
 
-### Option 2: Iteration-level Seeds
+## Option 2: Iteration-level Seeds
 ***
 
 A bit of a hacky alternative to `doRNG` is to simply set the seed for each iteration. Remember from earlier that the instructions set on the right-hand side of `%dopar%` are passed to each core. Well, if every iteration passed to a core has a unique seed, then any time we run the loops, the same results will obtain. To do this we 
@@ -520,6 +523,8 @@ length(unique(inner_seeds)) == nsims
 identical(parallel_1, parallel_2)
 ```
 
+\
+
 As the code `length(unique(inner_seeds)) == nsims` tells us, this isn't setting the same exact seed on all cores. We made a vector of distinct seeds, `inner_seeds`, and each simulation uses one of these distinct seeds before executing its instructions. You can think of this as setting a different seed across a bunch of different R sessions, and then combining the results; however, the universe of inner seeds to be used on each of these sessions remains the same, and therefore so do the results across runs. 
 
 Now this is of course a bit hacky, and is clearly more complex than using `doRNG`, but **this approach does have practical utility**. Namely, if you ever need nested parallel loops (using the `%:%` nesting operator detailed in the [`foreach` documentation](https://cran.r-project.org/web/packages/foreach/vignettes/nested.html)), then unfortunately the `%dorng%` backend is not supported. In other words, if you'd like nested, parallel loops, you will not be able to use `doRNG` to ensure reproducibility. In this case, the only way I have found to successfully reproduce simulations is the above, iteration-level seed-setting approach.
@@ -535,7 +540,7 @@ Now we are running loops in parallel, and our pseudo-random numbers are reproduc
 
 \
 
-### BLAS/LAPACK-Induced Deadlock
+## BLAS/LAPACK-Induced Deadlock
 ***
 
 So why would anyone be doing multiple forms of parallel processing simultaneously? The most common reason for this is when you are using optimized BLAS/LAPACK libraries while executing linear algebra-heavy simulations. This includes libraries like [Open BLAS](https://www.openblas.net/), [Intel's MKL](https://www.intel.com/content/www/us/en/develop/documentation/get-started-with-mkl-for-dpcpp/top.html), [AMD's Math Library](https://developer.amd.com/amd-aocl/amd-math-library-libm/), [Apple's Accelerate](https://developer.apple.com/documentation/accelerate) or [ATLAS BLAS](http://math-atlas.sourceforge.net/). In addition to having superior algorithms that are optimized for your specific hardware, these libraries often times have multi-threaded matrix operations; i.e., they do common matrix operations in parallel, such as matrix multiplication, inversion, etc.^[I'm aware that multi-threading and parallelism are not the same thing. To keep things simple I treat them as the same here, as their difference is not relevant for explaining the issue here.] Thus, if you are using these libraries and forget to disable their inherent multi-threading, they will compete with `foreach` when accessing your CPUs, which will ultimately hang your system. For example, if your computer has 8 threads, and you tell R to give `foreach` 7 of them, but MKL reserves 4 of them for matrix operations, suddenly you're trying to access $7 \times 4 = 28$ threads when you only have 8 (each of the 7 child processes will be linked to MKL, which reserves 4 threads). The only option is to use the same thread for multiple tasks simultaneously, but this isn't possible so the computer hangs. This is known as [deadlock](https://en.wikipedia.org/wiki/Deadlock) in multi-threaded computing, with a particularly egregious case caused by [FORK bombs](https://en.wikipedia.org/wiki/Fork_bomb). 
@@ -559,21 +564,21 @@ but this isn't conclusive, as it merely tells us that I'm using MKL, not that MK
 
 \
 
-### Multi-threaded Packages
+## Multi-threaded Packages
 ***
 
 In addition to multi-threaded matrix operations, there are other R packages that are multi-threaded by default and will therefore compete for CPU resources. The number one culprit here is probably [`data.table`](https://cran.r-project.org/web/packages/data.table/index.html). However, other machine learning libraries have the option for multithreading as well, such as [`caret`](https://topepo.github.io/caret/), and [`glmnet`](https://cran.r-project.org/web/packages/glmnet/index.html). To my knowledge neither of these last two are multithreaded by default, so this only becomes a problem if you accidentally tell them to use more than one CPU. In any case, if you run some simulations and notice that your CPU usage is at zero and you know that you're not multi-threading for BLAS/LAPACK, then I would do a hard restart on you computer. If the problem persists, I would check into the details of the packages you're using as its likely that one is multi-threaded by default. 
 
 \
   
-### Solving Thread Competition
+## Solving Thread Competition
 ***
 
 Fortunately, it is extremely easy to solve thread competition.
 
-1. To disable _multi-threaded matrix operations_, use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, <span style="color: red;">**and be sure to disable multi-threading in your loop code as seen below, not just outside of it:**</span>
+1. **To disable multi-threaded matrix operations,** use the [`RhpcBLASctl`](https://cran.r-project.org/web/packages/RhpcBLASctl/index.html) package, <span style="color: red;">**and be sure to disable multi-threading in your loop code as seen below, not just outside of it:**</span>
 
-    ```{r, echo=T, eval=T, results='hide'}
+```{r, echo=T, eval=T, results='hide'}
 ### disable in parent process 
 library(RhpcBLASctl)
 library(doRNG)
@@ -599,17 +604,19 @@ foreach(i = 1:nsims,
             
             rnorm(1) 
     
-}
-  
+          }
+
 stopCluster(cl)
-    ```
+  
+```
+
 <br>
 
-2. To disable _packaged multithreading_, you'll just have to read the documentation for that package to determine how to set the max number of threads to 1. For example, browsing the documentation for `data.table` immediately tells us that the `setDTthreads()` function does what we want. 
+2. **To disable packaged multithreading,** you'll just have to read the documentation for that package to determine how to set the max number of threads to 1. For example, browsing the documentation for `data.table` immediately tells us that the `setDTthreads()` function does what we want. 
 
 \
 
-### Caveats
+## Caveats
 ***
 
 There are a few qualifiers worth mentioning here. 
@@ -629,7 +636,7 @@ Now that we're working in parallel without suffering thread competition and can 
 
 As a contrived toy example, suppose our task involves normal random variables with different means and variances. Specifically, we are interested in $X \sim \mathcal{N}\left(\mu \in \{0, -1 \}, \,\,\sigma^2 \in \{1, 3\}\right)$; that is, we'll vary the mean and variance of some random variable $X$. Additionally, we want to investigate how sample size affects the properties of these random draws. Right now its not important *why* we're doing this or what $X$ will be used for, only that we want random variables with every pairwise combination of these parameter values. 
 
-To do so, we create vectors of these parameters, and then use `expand.grid()` to get the pairwise combinations:
+To do so, we create vectors of these parameters, and then use `expand.grid()` to get their pairwise combinations:
 
 ```{r}
 mu = c(0, -1)
@@ -639,11 +646,12 @@ n = c(5, 10)
 (grid = expand.grid(mu = mu, sig2 = sig2, n = n))
 ```
 
+\
 
-So now we have the parameters we need for our simulations in a nice tabular format, which we can then loop over when creating data from our chosen data generating process. For example (omitting the back-end setup, etc. for clarity):
+So now we have every combination of the parameters we need for our simulations in a nice tabular format, with each row being a grid point. We can then loop over these points to generate data from our chosen process. For example (omitting the back-end setup, etc. for clarity):
 
 ```{r, eval=T, warning=F}
-# SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. 
+# BACKEND SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. 
 
 out = foreach(i = 1:nrow(grid)
         ) %dopar% {
@@ -654,19 +662,21 @@ out = foreach(i = 1:nrow(grid)
            sd = sqrt(grid[i, "sig2"])
     )
     
-        }
+}
 
 head(out)
 ```
 
-The main point here is that we've created a `grid` of all unique pairwise parameter combinations, and we've looped over each row of that `grid` to then get random numbers using every possible parameter combination. In this way we've ensured that we simulate data from each of the desired parameterizations, all without having to manually specify the parameters, and without having to do any sort of nested looping, e.g. `for(i in mu){ for j in sig2 {...}}`. This is akin to a grid-search in optimization, although here we're not searching for an optimal set of parameters, we're investigating the behavior of some procedure at pre-defined grid points in the parameter space. 
+\
+
+**The main point here is that we've created a `grid` of all unique pairwise parameter combinations, and we've looped over each row of that `grid` to generate our data.** In this way we've ensured that we simulate data from each of the desired parameterizations, all without having to manually specify the parameters, and without having to do any sort of nested looping, e.g. `for(i in mu){ for j in sig2 {...}}`. Although the example here is simple in nature, hopefully you can see that **any function(s) that takes in parameters from a grid could be used here**, for example, a function to simulate datasets that we'll subsequently run regression models on. 
 
 \
 
-### Extending Grids to Multiple Simulations
+## Extending Grids to Multiple Simulations
 ***
 
-Of course, *we've only done one simulation* here. That is, at each set of parameter values, we have one iteration. But in Monte Carlo analysis, we want some large number of simulations in order to see how things are behaving, so we'll need to replicate this grid. Suppose we want 2 simulations instead of 1, then we can use `do.call()`, `cbind.data.frame`, and `replicate()` together to get a grid with each grid point appearing twice, so that we'll have two simulations at that point instead of one:
+Of course, **we've only done one simulation** here. That is, at each set of parameter values, we have one iteration. But in Monte Carlo analysis, we want some large number of simulations at each point in order to see how our procedure behaves, so we'll need to replicate this grid. Suppose we want 2 simulations instead of 1, then we can use `do.call()`, `cbind.data.frame`, and `replicate()` together to get a grid with each grid point appearing twice, so that we'll have two simulations at that point instead of one:
 
 ```{r}
 nsims = 2 
@@ -676,16 +686,42 @@ sig2 = c(1, 3)
 n = c(5, 10)
 
 grid = expand.grid(mu = mu, sig2 = sig2, n = n)
+
 (grid_multi = do.call(rbind.data.frame, replicate(nsims, grid, simplify=F)))
+
+### Loop over grid_multi instead, now
+out = foreach(i = 1:nrow(grid_multi)
+        ) %do% {
+            
+    
+    rnorm( n = grid_multi[i, "n"],
+           mean = grid_multi[i, "mu"],
+           sd = sqrt(grid_multi[i, "sig2"])
+    )
+    
+}
 ```
 
-And we can now see that each grid point appears twice, so if we were to loop over this in the same as as we did previously, we produce results for each parameter combination twice. Inductively then, we know that for arbitrary values of `nsims`, we'll get `nsims`-many results for each parameter combination, which is precisely what we want in Monte Carlo analysis. 
+And we can now see that each grid point appears twice, so when loop over this in the same as as we did previously, we produce results for each parameter combination twice (we in fact loop over `grid_multi` in this case). Inductively then, we know that for arbitrary values of `nsims`, we'll get `nsims`-many results for each parameter combination, which is precisely what we want in Monte Carlo analysis. Notice finally that the _only_ changes to the simulation code were the calls to the `grid` object, which are now replaced with `grid_multi`. We could have even overwritten `grid` with the contents of `grid_multi`, e.g., `grid = do.call(...)`, and avoided changing the code at all. 
 
-Briefly explaining the above code, `replicate()` is replicating the `grid` dataframe `nsims`-many times, and storing these replicates in a list. Then, `do.call` calls the `rbind.data.frame` function with each element of the replicated list as its arguments. Mathematically, `do.call` is effectively executing $f(x_1, x_2, ..., x_{nsims})$ where $f()$ is `rbind.data.frame`, and each `x_j` is an element of a list. In this case, the list-elements are all the original, single-simulation `grid` object.  
+
+ <div>
+  <details>
+  <summary><span style="color: #0888a8;">Explain `grid_multi` more, please</span></summary>
+  Starting from the inside of the replication line: 
+  
+* `replicate()` is replicating the `grid` dataframe `nsims`-many times, and storing these replicates in a list.
+  
+* `do.call` calls the `rbind.data.frame` function with each element of the replicated list as its arguments. 
+  
+Mathematically, `do.call` is effectively executing $f(x_1, x_2, ..., x_{nsims})$ where $f()$ is `rbind.data.frame`, and each `x_j` is an element of a list, returned by `replicate`. In this case, the list-elements are all the original, single-simulation `grid` object, but replicated `nsims`-many times.  
+
+</details>
+</div>
 
 \
 
-### Why not use a nested loop? 
+## Why not use a nested loop? 
 ***
 
 One potential question is why not use a nested loop instead of replicating each grid point `nsims`-many times. That is, we could just repeatedly loop over the original `grid` object, rather than replicating it several times, like so (omitting the back-end setup, etc. for clarity): 
@@ -693,7 +729,7 @@ One potential question is why not use a nested loop instead of replicating each 
 ```{r, echo=T, eval=T, warning=F}
 # SETUP OMITTED FOR CLARITY. SEE ENDING EXAMPLES FOR FULL SETUP.
 
-# Make grid WITHOUT REPLICATING 
+### Make grid WITHOUT REPLICATING 
 mu = c(0, -1)
 sig2 = c(1, 1.5)
 n = c(5, 10)
@@ -708,10 +744,10 @@ out = foreach(i = 1:nrow(grid)
             
     res = list()
     
-    # create an inner, nested loop that repeatedly simulates from a gridpoint
-    # instead of replicating the gridpoint and looping over the replicates
+    ### create an inner, nested loop that repeatedly simulates from a gridpoint
+    ### instead of replicating the gridpoint and looping over the replicates
+    
     for(j in seq_len(nsims)){
-
       res[[j]] = rnorm( n = grid[i, "n"],
                       mean = grid[i, "mu"],
                       sd = sqrt(grid[i, "sig2"])
@@ -731,13 +767,13 @@ The key difference here is that we create a single set of grid points without du
 However, **the major disadvantage of the nested-loop approach is load balancing**. In most real-world applications we will be varying the sample size of our procedure, and by much more than we are doing so here; i.e., we'll estimate some model at small and large sample sizes. In doing so, the nested-loop approach becomes problematic for load balancing purposes, because the CPUs that have the small sample sizes will take way less time to complete their inner, nested loop (recall, the set of instructions on the right-hand side of `%dopar%` are executed on a single CPU). Eventually then, the CPUs with the large sample sizes will still be running their nested, inner-loops while the CPUs that had the smaller sample sizes have completed their tasks and are *sitting idle* doing nothing.
 \
 
-### Caveats 
+## Caveats 
 ***
 
 In most cases, the replicated-grid approach will be better, often times by several hours when compared with the parallel-outer, serial-inner approach. However, there are at least two instances where this won't hold.
 
 
-1. If the run-time of a single simulation is small, e.g., < 1 second, it is possible that the overhead from parallelizing at the simulation level---rather than the grid-point level---will exceed the gains from parallelizing. This is known as [parallel slow down](https://en.wikipedia.org/wiki/Parallel_slowdown). It's possible to mitigate this by using prescheduling, but even this won't always fix the issue if single simulations take a very small amount of time.  Prescheduling splits the total number of tasks into chunks (at random) and assigns these tasks to each CPU. So if you allocate 10 CPUs, and there are 100 tasks, the computer will randomly select 10 tasks to assign to each CPU. Without prescheduling, when a CPU finishes a task, it will communicate with the other CPUs in the network or the parent process and determine what tasks still need doing, and then it does one of the ones that remains. So, by prescheduling we reduce some of this communication overhead. There are advantages and disadvantages to prescheduling that I won't go into here, but a general rule is if your tasks are numerous and require little time individually, use prescheduling, otherwise don't. To enable presheduling in `foreach`, do the following:
+1. If the run-time of a single simulation is small, e.g., < 1 second, it is possible that the overhead from parallelizing at the simulation level---rather than the grid-point level---will exceed the gains from parallelizing. This is known as [parallel slow down](https://en.wikipedia.org/wiki/Parallel_slowdown). It's possible to mitigate this by using prescheduling, but even this won't always fix the issue if single simulations take a very small amount of time.  Prescheduling splits the total number of tasks into chunks (at random) and assigns these tasks to each CPU. So if you allocate 10 CPUs, and there are 100 tasks, the computer will randomly select 10 tasks to assign to each CPU. Without prescheduling, when a CPU finishes a task, it will communicate with the other CPUs in the network or the parent process and determine what tasks still need doing, and then it does one of the ones that remains. So, by prescheduling we reduce some of this communication overhead. There are advantages and disadvantages to prescheduling that I won't go into here, but a general rule is if your tasks are numerous and require little time individually, use prescheduling, otherwise don't. **To enable presheduling in `foreach`, do the following**:
 
     ```{r, eval=F}
 
@@ -774,7 +810,7 @@ This approach to Monte Carlo analysis---having a simulation function, and an est
 
 \
 
-### Simulation Function 
+## Simulation Function 
 ***
 
 The goal of the simulation function is to take in one row from our parameter grid, and use those parameters to create a dataset that will eventually be transformed via estimation or some other procedure of interest. Keeping with the toy example used previously, lets suppose we are just simulating some realizations of a normal random variable at various grid points and sample sizes. We have our grid from earlier: 
@@ -850,7 +886,7 @@ which is a numeric vector, as we would expect. Now we can do whatever transforma
 
 \ 
 
-### Estimation Function 
+## Estimation Function 
 ***
 The goal of the estimation function is to take in the data simulated from the simulation function (`simulate_fn()`, previously), and carry out whatever procedure on that data we are interested in analyzing via the Monte Carlo method. To keep up the toy example, lets say now that we're interested in the estimators of the first and second moments of a normal random variable after we've exponentiated it (that is, of the log-normal distribution). So we'll need a function that takes in the data, exponentiates it, and computes these estimates. **Importantly,** we want to know how the various parameters under consideration impact these estimators (if at all), so we need to also keep track of the parameters that we're using to generate the data for each iteration. One possibility is the following, where we again pass in the data-generating grid row:
 

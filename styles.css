@@ -14,4 +14,9 @@ p{
  border: none;
 }
 
+h2 { font-size: 22px; }
+
+.header-section-number::after{
+  content: ')';
+}
 
