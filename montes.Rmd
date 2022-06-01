@@ -86,7 +86,7 @@ For example $$ \lim_{n\to\infty} \frac{1}{n}\sum_{i=1}^n X_i = \mu_x $$ meaning 
 
 * The density function (using kernel $K$ and bandwidth $h$):^[Here I use a kernel-based estimator of the density function to highlight its interpretation as a sample mean. However, other estimators exist which are consistent for the population density function.] $$\hat f(x) = \frac{1}{n} \sum_{i=1}^{n} \frac{1}{h} K\left(\frac{x - X_i}{h}\right) \longrightarrow f_X(x)$$
 
-* The quantile function:^[This is a simplistic sample estimator of the quantile function, used here primarily for presentation purposes. In reality, other estimators exist that are superior, and are still weakly consistent/convergent.] $$\hat Q\{\hat F(x)\} = \text{inf}\left\{x:\frac{1}{n}\sum_{i=1}^{n}\underset{(-\infty, x]}{\mathbb{I}}(X_i) \geq \alpha)\right\}  \longrightarrow \text{inf}(y: F(x) \geq \alpha)$$
+* The quantile function:^[This is a simplistic sample estimator of the quantile function, used here primarily for presentation purposes. In reality, other estimators exist that are superior, and are still weakly consistent/convergent.] $$\hat Q\{\hat F(x)\} = \text{inf}\left\{x:\frac{1}{n}\sum_{i=1}^{n}\underset{(-\infty, x]}{\mathbb{I}}(X_i) \geq \alpha)\right\}  \longrightarrow \text{inf}\{x: F_X(x) \geq \alpha\}$$
 
 So effectively we can simulate random variables, compute some function of those realizations, then take the mean of the resulting quantity, and the WLLN tells us that we converge to the expected value of that function. 
 
@@ -790,6 +790,8 @@ In most cases, the replicated-grid approach will be better, often times by sever
 
 2. If you are doing some form of Markov Chain Monte Carlo (MCMC), rather than traditional Monte Carlo analysis, the nested loop approach will generally become **_necessary_**. For things like the Metropolis-Hastings algorithm and its derivatives (e.g., Metropolis, Gibbs), we are typically sampling from a full-conditional distribution that depends on some previous iteration. So parallelization here would occur at the chain-level, and within each chain we would have serial loops to sample from the full conditionals. The gridding approach would also not make as much sense anyway, as the proposal parameters are not fixed ex-ante aside from the starting values.
 
+3. Technically, there is a logical way to avoid both the nested loop approach, as well as using `replicate()`. This involves taking `foreach(i = nsims * nrow(grid))` and pre-computing a set of chunks, `chunks = seq(from = nsims, to = nrow(grid)*nsims, by = nsims)`, and using some basic inequality logic, `grid_row = grid[which.max(chunks < i), ]`. This approach is in fact substantially more memory efficient (in relative terms), but is far less readable and understandable to others, so I've opted for the `replicate()` approach as standard practice. It also turns out that the memory gains end up being somewhat trivial in absolute terms, at less than 100MB of difference. 
+
 \
 
 # Using Functions Properly 
@@ -813,69 +815,28 @@ This approach to Monte Carlo analysis---having a simulation function, and an est
 ## Simulation Function 
 ***
 
-The goal of the simulation function is to take in one row from our parameter grid, and use those parameters to create a dataset that will eventually be transformed via estimation or some other procedure of interest. Keeping with the toy example used previously, lets suppose we are just simulating some realizations of a normal random variable at various grid points and sample sizes. We have our grid from earlier: 
+The goal of the simulation function is to take in one row from our parameter grid, and use those parameters to create a dataset that will eventually be transformed via estimation or some other procedure of interest. The qualities of a good simulation function are: 
 
-```{r}
-print(grid_multi)
-```
+1. It takes in a vector of parameters as its first argument (not each parameter individually), so that updates to the grid don't require updates to the parameters of the simulation function. 
 
-which has 3 parameters, `mu`, `sig2` and `n`. So our simulation function will have to take in *at least* these parameters, and potentially others. It is my view that the easiest way to do this is just to take in a vector of parameters as a single parameter to the function, rather than explicitly naming each parameter to the function. This way, if the grid columns change, we don't have to then go and add or remove parameters from the simulation function. 
+2. It takes a minimal number of additional parameters that may be used to alter the simulations, or keep track of additional information. Ideally, there would be no additional parameters, but this isn't always possible. 
 
-For example, we could specify the parameters explicitly, then index our grid by row when passing the arguments (in this case, just row 1): 
+3. It returns a dataset, ideally a `data.frame`, that will have all relevant information for carrying out whatever procedure is under analysis, e.g., estimating some model(s). 
 
-```{r}
-simulate_fn = function(mu, sig2, n){
-  
-  return(
-    list(
-      mu = mu, 
-      sig2 = sig2, 
-      n = n
-    )
-  )
-  
-}
-
-simulate_fn(
-  mu = grid_multi[1, "mu"], 
-  sig2 = grid_multi[1, "sig2"],
-  n = grid_multi[1, "n"]
-  )
-```
-
-But if we later decide we want to add new parameter to the grid, we then have to update the `simulate_fn` function accordingly. Updating the function's parameters can be avoided if we just pass a named parameter vector as a single parameter, and unpack it inside the function:
-
-```{r}
-simulate_fn = function(grid_row){
-  
-  grid_row = unlist(grid_row) # re-class to vector from data.frame
-
-  return(
-    list(
-      mu = grid_row["mu"], 
-      sig2 = grid_row["sig2"], 
-      n = grid_row["n"]
-    )
-  )
-  
-}
-
-simulate_fn(grid_multi[1,])
-```
+Note that if you need to simulate from several different data generating processes, that is not an issue. Each process can be simulated from, and all data from the resulting process stored using different variable names in the same data frame. For several examples of real-world simulation functions, see the examples section. 
 
 \
 
-Using this second approach then, we can define a function to simulate the normal realizations, and see what it produces for a single iteration on our grid: 
+Keeping with the toy example of simulating normal random realizations from various normal distributions, we can define a simulation function and see what it produces for a single iteration on our grid: 
 
 ```{r}
 simulate_fn = function(grid_row){
   
-  grid_row = unlist(grid_row)
-  
+
   rnorm(
-    n = grid_row["n"], 
-    mean = grid_row["mu"],
-    sd = sqrt(grid_row["sig2"])
+    n = grid_row[["n"]], 
+    mean = grid_row[["mu"]],
+    sd = sqrt(grid_row[["sig2"]])
   )
   
 }
@@ -888,17 +849,38 @@ which is a numeric vector, as we would expect. Now we can do whatever transforma
 
 ## Estimation Function 
 ***
-The goal of the estimation function is to take in the data simulated from the simulation function (`simulate_fn()`, previously), and carry out whatever procedure on that data we are interested in analyzing via the Monte Carlo method. To keep up the toy example, lets say now that we're interested in the estimators of the first and second moments of a normal random variable after we've exponentiated it (that is, of the log-normal distribution). So we'll need a function that takes in the data, exponentiates it, and computes these estimates. **Importantly,** we want to know how the various parameters under consideration impact these estimators (if at all), so we need to also keep track of the parameters that we're using to generate the data for each iteration. One possibility is the following, where we again pass in the data-generating grid row:
+The goal of the estimation function is to take in the data simulated from the simulation function (`simulate_fn()`, previously), and carry out whatever procedure on that data we are interested in analyzing via the Monte Carlo method. The properties of a good estimation function are: 
+
+1. It takes in a `data.frame` as its first argument
+
+2. It takes in the same vector of parameters that the simulation function did, as its second argument. This is to keep track of the data-generating process. 
+
+3. It returns a `data.frame` (_not_ a matrix) of results *in long format, NOT wide* that clearly label the parameters used in the data generating process, the name of the DGP if there are multiple, and the name/type of model/procedure used if there are multiple. 
+
+Long formatted data is key to easy plotting later on. Yes, we could theoretically pivot the data to wide to long, but its way easier to just write the function to return the data in the format that we need it in. 
+
+
+
+To keep up the toy example, lets say now that we're interested in the estimators of the first and second moments of a normal random variable after we've exponentiated it (that is, of the log-normal distribution). So we'll need a function that takes in the data, exponentiates it, and computes these estimates. **Importantly,** we want to know how the various parameters under consideration impact these estimators (if at all), so we need to also keep track of the parameters that we're using to generate the data for each iteration. One possibility is the following, where we again pass in the data-generating grid row:
 
 ```{r}
+simulate_fn = function(grid_row){
+  
+  dat = rnorm(
+    n = grid_row[["n"]], 
+    mean = grid_row[["mu"]],
+    sd = sqrt(grid_row[["sig2"]])
+  )
+  
+  return(exp(dat))
+}
 
 estimate_fn = function(dat, grid_row){
   
-  dat_exp = exp(dat)
-  xbar = mean(dat_exp)
-  s2   = var(dat_exp)
+  xbar = mean(dat)
+  s2   = var(dat)
   
-  out = c(xbar = xbar, s2 = s2, grid_row)
+  out = data.frame(xbar = xbar, s2 = s2, grid_row)
   
   return(out)
 }
@@ -909,7 +891,7 @@ estimate_fn = function(dat, grid_row){
 So now we'll simulate some data using `simulate_fn` at a single grid-point, `grid_multi[1,]`, and return the quantities of interest from this data using the `estimate_fn()`:
 
 ```{r}
-grid_row = unlist(grid_multi[1,])
+grid_row = grid_multi[1,]
 
 dat = simulate_fn(grid_row = grid_row)
 
@@ -918,112 +900,88 @@ estimate_fn(
   grid_row = grid_row
 )
 ```
-which gives us the sample mean and variance for a single iteration of transforming data to log-normal realizations, as well as stores the data-generating parameters for use in post-simulation analysis. Inductively, we can imagine doing this for all rows in our grid, which would give us results for all parameter comibinations multiple times. We could then analyze these results graphically or otherwise. The next section puts all of this together in a comprehensive toy example. 
+which gives us the sample mean and variance for a single iteration of transforming data to log-normal realizations, as well as stores the data-generating parameters for use in post-simulation analysis. Inductively, we can imagine doing this for all rows in our grid, which would give us results for all parameter combinations multiple times. We could then analyze these results graphically or otherwise. The examples section puts all of this together in a few comprehensive examples that are more realistic. 
 
-\ 
+# Things You Should and Shouldn't Do
 
-# Putting it All Together
-*** 
+Before we dive into examples, theres just few notes worth mentioning here. 
 
-Before we jump into some more serious examples, we can combine everything we've learned using the toy example, just to give an idea about the structure. I'm not going to separate the code out for each step we've covered; all of it will appear in a single chunk with comments so as to mimic what we would actually have in a script. I'll also be doing things in a slightly different order than was presented in the guide for computational and presentation purposes. This is again for the example of analyzing the estimators of the first two moments of the log-normal distribution under various parameterizations. I'll do 30 simulations at each grid point for demonstration purposes, but in reality you'd probably want more. 
+**You should always:** 
 
-```{r}
-# Load up packages 
-pks = c("doParallel", "doRNG", "RhpcBLASctl")
-needed = setdiff(pks, rownames(installed.packages()))
+  1. Ensure that your computer is well ventilated, especially if it is a laptop. Running on all cores for extended periods of time 
+  will easily push a laptop into the 80C-90C range, which is the danger zone, and a tower PC with decent air cooling will still push into 60C-70C. Don't set a laptop on carpet or a blanket; ideally, prop it up so that air intake is maximized, and maybe even point a desk fan at it to disperse heat more efficiently (I am dead serious about this, I've burnt out a laptop doing things too brazenly).  
 
-if(length(needed) > 1)
-  install.packages(pks, Ncpus = parallel::detectCores() - 1)
-
-invisible(sapply(pks, library, character.only=T))
-
-# Define Simulation and Estimation Functions
-simulate_fn = function(grid_row){
+  2. Include a call to save your data at the end of your simulations, so that the results are automatically stored upon completion. For me, this looks like the following 
+        ```{r, eval=F, echo = T}
+dt = format(Sys.time(), format = '%Y_%m_%d-%H_%M')
   
-  rnorm(
-    n = grid_row["n"], 
-    mean = grid_row["mu"],
-    sd = sqrt(grid_row["sig2"])
-  )
+session = sessionInfo()
   
-}
-
-estimate_fn = function(dat, grid_row){
+f = paste0("montes_output_", dt, ".RData")
   
-  dat_exp = exp(dat)
-  xbar = mean(dat_exp)
-  s2   = var(dat_exp)
+save(simulation_output, session, file = f)
+        ```
+<p> </p>
+  3. As seen in the previous code block, please store your `sessionInfo()`, particularly if you're sharing the results around computers, or these will need to be replicated in the future. The session info will keep a record of the versions of R and the packages you used in your simulations. 
   
-  out = c(xbar = xbar, s2 = s2, grid_row)
+  4. Use lists and data.frames, don't use matrices and vectors. See below for an explanation.
   
-  return(out)
-}
+  4. Close your parallel backend religiously. 
+  
+  
+  
+**You should never:** 
 
-# Make the parameter grid 
-nsims = 300 
+1. Use a nested serial loop inside a parallel loop, if your serial simulations involve variable time complexities (this is the same thing as was mentioned in the [parameter grids](#why-not-use-a-nested-loop) section). 
 
-mu = c(0, -1)
-sig2 = c(1, 3)
-n = c(5, 10)
+2. Never use matrices and vectors for storing or returning your results. First, these data structures only can store one type of data, e.g., character, integer, etc. So if you store `c(model = "ols", beta = 1.2)`, you will infact be storing `beta` as a character-type, because it is coerced to character due to `model = "ols"` being character. This will be painful, as when you plot character variables, they will be coerced to factors, and then you'll be left wondering why your plots look very weird. Or even worse, you'll make completely eronious conclusions. Second, matrices and vectors have copy-on-modify behavior, so as you add entries to them, a copy must be made. This is very inefficient, and will cause your simulations to take drastically greater time depending on how they are written. This topic is covered in more depth [here in chapter 2](https://www.burns-stat.com/pages/Tutor/R_inferno.pdf), and [here](https://adv-r.hadley.nz/perf-improve.html?q=growing#avoid-copies), but effectively, never grow matrices and vectors in a loop. Just use a list or dataframe. Below is an example of a bad way to do things, and its equivalent using lists: 
 
-grid = expand.grid(mu = mu, sig2 = sig2, n = n)
-grid_multi = do.call(rbind.data.frame, replicate(nsims, grid, simplify=F))
+   ```{r, eval=F}
+    ### Bad, don't do this
+    out = c()
 
-# Disable BLAS/LAPACK multithreading in parent process 
-blas_set_num_threads(1)
-omp_set_num_threads(1)
-
-# Spin up backend
-nprocs = parallel::detectCores() - 1
-os = .Platform$OS.type
-type = if(grepl('unix', os)) 'FORK' else 'PSOCK'
-cl = makeCluster(nprocs, type = type)
-registerDoParallel(cl)
-
-# Run sims 
-set.seed(123)
-
-res = foreach(i = seq_len(nrow(grid_multi)),
-              .packages = 'RhpcBLASctl',
-              .errorhandling = "pass",
-              .inorder = F,
-              .options.multicore = list(preschedule=T)
-              ) %dorng% {
+    for(i in 1:10) out[i] = i
     
-  blas_set_num_threads(1)
-  omp_set_num_threads(1)
-  
-  grid_row = unlist(grid_multi[i,])
+
+
+    ### Do this instead
     
-  dat = simulate_fn(grid_row)
-  out = estimate_fn(dat, grid_row)
-  
-  return(out)
-  
-}
+    out = list()
 
-stopCluster(cl)
-
-head(res)
-```
+    for(i in 1:10) out[[i]] = i
+   ```
 
 \
 
+# Examples 
 
-# Example: Bias of AR(1) Model 
-***
+## Extremely Useful Functions 
 
-In this example I will utlize the steps outlined previously to show that order-1 time-series autoregressive models (AR(1) models) have biased estimators of the autoregressive parameter. This can be shown theoretically, as well, but pretend for the moment that we don't know such a closed form solution exists, or perhaps we're too lazy to find one. The Monte Carlo method is well suited for the task. 
+Before diving in, I've wrapped up a lot of the house-keeping tasks into functions below. Namely,
 
-Briefly, AR(1) models assume a data generating process of the form $$ y_t = \rho y_{t-1} + \varepsilon_t $$ where $t = 1, 2, ..., T$ indexes a time period, $|\rho| < 1$, and for the time being we'll assume that $\varepsilon_t \overset{iid}{\sim} \mathcal{N}(0, 1)$, although with large enough sample sizes normality is not required. Then we can estimate $\rho$ by $$\hat\rho = \frac{\sum_t (y_t - \bar y)(y_{t-1} - \bar y)}{\sum_t (y_{t-1} - \bar y)^2}$$ that is, by using its (ordinary) least squares estimator (which is also the sample autocorrelation function). 
+1. `setup_cl` will:
+    * Check if a parallel backend exists, and if it does, will close it with a warning.  
+    * Sets sets BLAS/LAPACK threads to 1 (see the section on [multithreaded matrix operations](#blas/lapack-induced-deadlock)). 
+    * Checks the operating system, and spins up a parallel backend, choosing a `FORK` if possible. 
+    * Registers the parallel backend. 
+    
+<p> </p>
+  
+2. `clear_cl` will:
+    * Do its best to determine if a parallel backend exists, and close it down (including zombie processes). 
+    * Restore BLAS/LAPACK values to their original values.
+    
+<p> </p>
 
-Using the Monte Carlo method, we will show that $\E(\hat\rho) - \rho \neq 0$, meaning that $\hat\rho$ is biased. In fact, we'll determine that $|\E(\hat\rho)| < |\rho|$, meaning that the AR parameter is biased towards zero. 
+  
+3. `inst_load` will:
+    * Check for, install, and load `'RhpcBLASctl', 'doParallel', 'doRNG'` if necessary, as well as any other packages specifed via the `pks` parameter.
+  
+  
+This was done primarily to avoid having to retype the same information for each of the following examples. However, as these are useful utility functions to have around to source from a separate file, I've put them here for anyone who would like to use them. 
 
-In the below, I will simply apply what was discussed in the previous sections without further discussion. The intention here is to give example code for more complicated problems, but the principles in application are identical to those already discussed. 
-
-# Helpers
-
-```{r, echo=F, eval=T}
+```{r, echo=T, eval=T}
+### Setup function
 setup_cl = function(seed = 123,
                     ncpus = (parallel::detectCores() - 1),
                     nframes = 1 ){
@@ -1031,13 +989,14 @@ setup_cl = function(seed = 123,
   stopifnot(round(ncpus) == ncpus) # ensures ncpus is numerically integer
   stopifnot(ncpus <= parallel::detectCores())
   
+  inst_load() # defined later
   
   if(
     length(ls(foreach:::.foreachGlobals)) > 0 || 
     any(grepl("sock", showConnections()[,"class"]))
   ){
     warning("Cluster or socket connections are already present, closing these will be attempted.")
-    clear_cl(nframes = 2)
+    clear_cl(nframes = 2) # defined later
   }
     
 
@@ -1062,6 +1021,7 @@ setup_cl = function(seed = 123,
   )  
 }
 
+### Clearing function
 clear_cl = function(nframes=1){
   
   out = try(eval.parent(
@@ -1097,6 +1057,7 @@ clear_cl = function(nframes=1){
   
 }
 
+### Installation/loading function
 inst_load = function(pks = NULL
                      ){
   
@@ -1117,6 +1078,22 @@ inst_load = function(pks = NULL
 
 
 ```
+
+
+# Example: Bias of AR(1) Model 
+***
+
+In this example I will utlize the steps outlined previously to show that order-1 time-series autoregressive models (AR(1) models) have biased estimators of the autoregressive parameter. This can be shown theoretically, as well, but pretend for the moment that we don't know such a closed form solution exists, or perhaps we're too lazy to find one. The Monte Carlo method is well suited for the task. 
+
+Briefly, AR(1) models assume a data generating process of the form $$ y_t = \rho y_{t-1} + \varepsilon_t $$ where $t = 1, 2, ..., T$ indexes a time period, $|\rho| < 1$, and for the time being we'll assume that $\varepsilon_t \overset{iid}{\sim} \mathcal{N}(0, 1)$, although with large enough sample sizes normality is not required. Then we can estimate $\rho$ by $$\hat\rho = \frac{\sum_t (y_t - \bar y)(y_{t-1} - \bar y)}{\sum_t (y_{t-1} - \bar y)^2}$$ that is, by using its (ordinary) least squares estimator (which is also the sample autocorrelation function). 
+
+Using the Monte Carlo method, we will show that $\E(\hat\rho) - \rho \neq 0$, meaning that $\hat\rho$ is biased. In fact, we'll determine that $|\E(\hat\rho)| < |\rho|$, meaning that the AR parameter is biased towards zero. 
+
+In the below, I will simply apply what was discussed in the previous sections without further discussion. The intention here is to give example code for more complicated problems, but the principles in application are identical to those already discussed. 
+
+# Helpers
+
+
 
 # Spurious Regression
 ```{r, cache=T}
