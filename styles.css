@@ -16,6 +16,8 @@ p{
 
 h2 { font-size: 22px; }
 
+h3 { font-size: 20px; }
+
 .header-section-number::after{
   content: ')';
 }

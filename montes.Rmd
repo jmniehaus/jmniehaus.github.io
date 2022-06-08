@@ -795,7 +795,6 @@ In most cases, the replicated-grid approach will be better, often times by sever
 \
 
 # Using Functions Properly 
-
 ***
 
 At this point we've set up our environment, and are ready to start with the actual simulations. To recap, we are using `foreach` combined with `%dopar%` or `%dorng%` for parallelism, we've ensured reproducability, we have handled thread competition with other parallel processes, and now we have a grid of parameter values at which to investigate the behavior of some procedure, with each grid value appearing once for each simulation iteration. Now we can make some functions that will automate the simulation and transformation of our data.
@@ -902,14 +901,17 @@ estimate_fn(
 ```
 which gives us the sample mean and variance for a single iteration of transforming data to log-normal realizations, as well as stores the data-generating parameters for use in post-simulation analysis. Inductively, we can imagine doing this for all rows in our grid, which would give us results for all parameter combinations multiple times. We could then analyze these results graphically or otherwise. The examples section puts all of this together in a few comprehensive examples that are more realistic. 
 
+\
+
 # Things You Should and Shouldn't Do
+***
 
 Before we dive into examples, theres just few notes worth mentioning here. 
 
 **You should always:** 
 
   1. Ensure that your computer is well ventilated, especially if it is a laptop. Running on all cores for extended periods of time 
-  will easily push a laptop into the 80C-90C range, which is the danger zone, and a tower PC with decent air cooling will still push into 60C-70C. Don't set a laptop on carpet or a blanket; ideally, prop it up so that air intake is maximized, and maybe even point a desk fan at it to disperse heat more efficiently (I am dead serious about this, I've burnt out a laptop doing things too brazenly).  
+  will easily push a laptop into the 80C-90C range, which is the danger zone, and a tower PC with decent air cooling will still push into 60C-70C. Don't set a laptop on carpet or a blanket; ideally, prop it up so that air intake is maximized, and maybe even point a desk fan at it to disperse heat more efficiently.  
 
   2. Include a call to save your data at the end of your simulations, so that the results are automatically stored upon completion. For me, this looks like the following 
         ```{r, eval=F, echo = T}
@@ -922,11 +924,13 @@ f = paste0("montes_output_", dt, ".RData")
 save(simulation_output, session, file = f)
         ```
 <p> </p>
-  3. As seen in the previous code block, please store your `sessionInfo()`, particularly if you're sharing the results around computers, or these will need to be replicated in the future. The session info will keep a record of the versions of R and the packages you used in your simulations. 
+  3. As seen in the previous code block, please store your `sessionInfo()`, particularly if you're sharing the results around computers, or these results will need to be replicated in the future. The session info will keep a record of the versions of R and the packages you used in your simulations. 
   
-  4. Use lists and data.frames, don't use matrices and vectors. See below for an explanation.
+  4. Use lists and data frames, don't use matrices and vectors. See below for an explanation.
   
-  4. Close your parallel backend religiously. 
+  5. Close your parallel backend religiously. 
+  
+  6. Save your results in long format. This makes plotting much easier using `ggplot`, and was discussed somewhat regarding [estimation functions](#estimation-function).
   
   
   
@@ -934,7 +938,7 @@ save(simulation_output, session, file = f)
 
 1. Use a nested serial loop inside a parallel loop, if your serial simulations involve variable time complexities (this is the same thing as was mentioned in the [parameter grids](#why-not-use-a-nested-loop) section). 
 
-2. Never use matrices and vectors for storing or returning your results. First, these data structures only can store one type of data, e.g., character, integer, etc. So if you store `c(model = "ols", beta = 1.2)`, you will infact be storing `beta` as a character-type, because it is coerced to character due to `model = "ols"` being character. This will be painful, as when you plot character variables, they will be coerced to factors, and then you'll be left wondering why your plots look very weird. Or even worse, you'll make completely eronious conclusions. Second, matrices and vectors have copy-on-modify behavior, so as you add entries to them, a copy must be made. This is very inefficient, and will cause your simulations to take drastically greater time depending on how they are written. This topic is covered in more depth [here in chapter 2](https://www.burns-stat.com/pages/Tutor/R_inferno.pdf), and [here](https://adv-r.hadley.nz/perf-improve.html?q=growing#avoid-copies), but effectively, never grow matrices and vectors in a loop. Just use a list or dataframe. Below is an example of a bad way to do things, and its equivalent using lists: 
+2. Never use matrices and vectors for storing or returning your results. First, these data structures only can store one type of data, e.g., character, integer, etc. So if you store `c(model = "ols", beta = 1.2)`, you will in fact be storing `beta` as a character-type, because it is coerced to character due to `model = "ols"` being character. This will be painful, as when you plot character variables, they will be coerced to factors, and then you'll be left wondering why your plots look very weird. Or even worse, you'll make completely eronious conclusions. Second, matrices and vectors have copy-on-modify behavior, so as you add entries to them, a copy must be made. This is very inefficient, and will cause your simulations to take drastically greater time depending on how they are written. This topic is covered in more depth [here in chapter 2](https://www.burns-stat.com/pages/Tutor/R_inferno.pdf), and [here](https://adv-r.hadley.nz/perf-improve.html?q=growing#avoid-copies), but effectively, never grow matrices and vectors in a loop. Just use a list or dataframe. Below is an example of a bad way to do things, and its equivalent using lists: 
 
    ```{r, eval=F}
     ### Bad, don't do this
@@ -952,8 +956,12 @@ save(simulation_output, session, file = f)
    ```
 
 \
+\
 
-# Examples 
+# **Examples** 
+***
+
+After providing some useful helper functions, this section goes into greater detail on the appraoches discussed throughout this guide. Included with these examples are plots and their associated code, in order to demonstrate some techniques for plotting the results of Monte Carlo analyses. However, the plotting code will not be discussed at length, and will--as they say--be left to be figured out as an "exercise." 
 
 ## Extremely Useful Functions 
 
@@ -1080,22 +1088,24 @@ inst_load = function(pks = NULL
 ```
 
 
-# Example: Bias of AR(1) Model 
+
+\
+
+## Example: Spurious Regression
+*** 
+
+In this example I'll use the steps outlined previously to show that two unit-root time-series that are independent of eachother will have a Type-I (a.k.a., false positive; size-$\alpha$) error rate well above the stated levels for traditional t-tests when these two series are regressed on eachother. This is a replication of an original paper by [Granger and Newbold (1974)](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.353.2946&rep=rep1&type=pdf), which effectively shows that regressing independent, unit-root series on eachother will lead to spurious inferences far more frequently than anticipated. 
+
+Mathematically, assume $X_T$ is a unit-root time series defined by $X_t = X_{t-1} + \varepsilon_t$ where $\varepsilon \overset{iid}{\sim} \mathcal{N}(0,1)$, and $Y_T$ is similarly defined as $Y_t = Y_{t-1} + \nu_t$. Assume that the errors are also homoskedastic, for simplicity. Then clearly $X_T$ and $Y_T$ are independent of eachother (but they each constitute a dependent, unit-root time series). The regression equation $Y_t = \beta X_t + u_t$ then has ordinary least squares estimates $\hat\beta$. Because we know that $Y_T$ and $X_T$ are independent of eachother, it may be natural to assume that if we carry out a test of significance for $\hat\beta$ at a confidence level of 1-$\alpha$ (e.g., a 1 - .05 = 95\% level), then we would expect to falsely reject the null hypothesis of no relationship in $\alpha$ proportion of cases, which is the stated size of our hypothesis test after all. However, it turns out that when regressing independent, unit-root series on eachother, the traditional critical levels used for a size-$\alpha$ t-test of the parameters are too low, thus leading to a false rejection rate in excess of $\alpha$, as will be shown in the simulations below. 
+
+\
+
+
+### Simulation: Spurious Regression 
 ***
 
-In this example I will utlize the steps outlined previously to show that order-1 time-series autoregressive models (AR(1) models) have biased estimators of the autoregressive parameter. This can be shown theoretically, as well, but pretend for the moment that we don't know such a closed form solution exists, or perhaps we're too lazy to find one. The Monte Carlo method is well suited for the task. 
+Note that due to the simplicity of the simulation and estimation of these models, the `simulation` and `estimation` functions are combined into a single function in this case, `sim_and_est.`
 
-Briefly, AR(1) models assume a data generating process of the form $$ y_t = \rho y_{t-1} + \varepsilon_t $$ where $t = 1, 2, ..., T$ indexes a time period, $|\rho| < 1$, and for the time being we'll assume that $\varepsilon_t \overset{iid}{\sim} \mathcal{N}(0, 1)$, although with large enough sample sizes normality is not required. Then we can estimate $\rho$ by $$\hat\rho = \frac{\sum_t (y_t - \bar y)(y_{t-1} - \bar y)}{\sum_t (y_{t-1} - \bar y)^2}$$ that is, by using its (ordinary) least squares estimator (which is also the sample autocorrelation function). 
-
-Using the Monte Carlo method, we will show that $\E(\hat\rho) - \rho \neq 0$, meaning that $\hat\rho$ is biased. In fact, we'll determine that $|\E(\hat\rho)| < |\rho|$, meaning that the AR parameter is biased towards zero. 
-
-In the below, I will simply apply what was discussed in the previous sections without further discussion. The intention here is to give example code for more complicated problems, but the principles in application are identical to those already discussed. 
-
-# Helpers
-
-
-
-# Spurious Regression
 ```{r, cache=T}
 ### Install and Load the necessary packages (see `Helper Functions`)
 inst_load()
@@ -1171,7 +1181,11 @@ out =
 clear_cl()
 ```
 
-# Plotting Spurious Reg
+
+\
+
+### Plotting: Spurious Regression
+*** 
 ```{r, fig.dim=c(9.25,.618*9.25)}
 ### Bind up the results
 res = do.call(rbind.data.frame, out)
@@ -1218,7 +1232,30 @@ ggplot(data = sums, aes(x = factor(name), y = value, fill = factor(n))) +
         ) 
 ```
 
-# Bias of AR(1)
+Glancing over the plot above, we can then see that: 
+
+1. We get $R^2$ statistics that are well above zero, which is strange given that the two series are independent. 
+2. The true Type-I error rate is between 75 - 97\% when using a critical value with a nominal $0.05$ error rate. Thus, we are very likely to make spurious conclusions when regressing two independent, unit-root series on eachother, if we use the traditional critical levels for the hypothesis test. 
+
+These results are identical to those found by Granger and Newbold (1974), who note that when using a sample size of 100, "Using the traditional t-test at the 5\% level, the null hypothesis of no relationship between the two series would be rejected (wrongly) on approximately three-
+quarters of all occasions" (115). For the same sample size, the false-rejection rate seen above is the same as stated by the authors. 
+
+\
+
+## Example: Bias of AR(1) Model 
+***
+
+In this example I will utlize the steps outlined previously to show that order-1 time-series autoregressive models (AR(1) models) have biased estimators of the autoregressive parameter. This can be shown theoretically, as well, but pretend for the moment that we don't know such a closed form solution exists, or perhaps we're too lazy to find one. The Monte Carlo method is well suited for the task. 
+
+Briefly, AR(1) models assume a data generating process of the form $$ y_t = \rho y_{t-1} + \varepsilon_t $$ where $t = 1, 2, ..., T$ indexes a time period, $|\rho| < 1$, and for the time being we'll assume that $\varepsilon_t \overset{iid}{\sim} \mathcal{N}(0, 1)$, although with large enough sample sizes normality is not required. Then we can estimate $\rho$ by $$\hat\rho = \frac{\sum_t (y_t - \bar y)(y_{t-1} - \bar y)}{\sum_t (y_{t-1} - \bar y)^2}$$ that is, by using its (ordinary) least squares estimator (which is also the sample autocorrelation function). 
+
+Using the Monte Carlo method, we will show that $\E(\hat\rho) - \rho \neq 0$, meaning that $\hat\rho$ is biased. In fact, we'll determine that $|\E(\hat\rho)| < |\rho|$, meaning that the AR parameter is biased towards zero. 
+
+In the below, I will simply apply what was discussed in the previous sections without further discussion. The intention here is to give example code for more complicated problems, but the principles in application are identical to those already discussed. 
+
+\
+
+### Simulation: Bias of AR(1)
 ```{r, cache=T}
 ### Install, load default packages (see `Helper Functions`)
 inst_load()
@@ -1305,7 +1342,7 @@ clear_cl()
 
 ```
 
-# Plotting AR(1) Bias
+### Plotting: Bias of AR(1)
 ```{r, fig.dim=c(9.25,.618*9.25)}
 ### Bind up results and summarize
 res = do.call(rbind.data.frame, out)
