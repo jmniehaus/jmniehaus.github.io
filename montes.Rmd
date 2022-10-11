@@ -1,6 +1,6 @@
 ---
 title: "Monte Carlo Analysis in R: An in Depth Guide, with Examples"
-date: "Updated: `r format(Sys.time(), '%d %b, %Y')`"
+date: "Updated: 10 Oct 2022"
 pagetitle: "Monte Carlos"
 header-includes:
 - \usepackage{mathtools}
@@ -28,6 +28,14 @@ editor_options:
 <style>
 .list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
     background-color: SlateGrey;
+}
+
+.nav-pills>li.active>a, .nav-pills>li.active>a:hover, .nav-pills>li.active>a:focus, .nav-pills>li.active>a:link {
+    background-color: SlateGrey;
+    color: white
+}
+.nav-pills>li>a:link{
+    color: black
 }
 </style>
 
@@ -59,15 +67,15 @@ knitr::opts_chunk$set(class.output = "bg-success",
 In this guide I first review the intuition of Monte Carlo methods, and then discuss five steps to efficient, publication-quality Monte Carlo analyses using R. Generally, these steps consist of:
 
 
-1. [Switching from serial to parallel loops](#serial-vs-parallel)
-2. [Ensuring reproducibility by setting seeds properly for parallel tasks](#seed-setting-and-parallelism)
-3. [Ensuring that other parallel tasks are not competing for CPU resources](#thread-competition)
-4. [Properly setting up simulation parameter grids](#parameter-grids)
-5. [Compartmentalizing code into simulation and estimation functions](#using-functions-properly)
-6. A few things you should never do 
-7. Some tips on best-practices for plotting
+* [Switching from serial to parallel loops](#simulations-serial-vs-parallel)
+* [Ensuring reproducibility by setting seeds properly for parallel tasks](#seed-setting-and-parallelism)
+* [Ensuring that other parallel tasks are not competing for CPU resources](#thread-competition)
+* [Properly setting up simulation parameter grids](#parameter-grids)
+* [Compartmentalizing code into simulation and estimation functions](#using-functions-properly)
+* [A few dos and don'ts](#things-you-should-and-shouldnt-do)
 
-First, I will walk through each of these five points with toy examples to drive ideas home where applicable. Finally, I will take all of this and put it together in some more serious applications. 
+
+First, I will walk through each of these five points with toy examples to drive ideas home where applicable. Finally, I will take all of this and put it together in some more [serious applications](#examples). 
 
 **Note** that this guide applies mostly to the case of trivial parallelism, i.e., simulations that are independent of each other. However, some concepts can be extended to dependent simulations, particularly in MCMC algorithms that rely on full-conditionals. Where this is the case, I note it in the Caveats subsection of a topic. 
 
@@ -654,7 +662,7 @@ So now we have every combination of the parameters we need for our simulations i
 # BACKEND SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. 
 
 out = foreach(i = 1:nrow(grid)
-        ) %dopar% {
+        ) %do% {
             
     
     rnorm( n = grid[i, "n"],
@@ -740,7 +748,7 @@ grid = expand.grid(mu = mu, sig2 = sig2, n = n)
 nsims = 2
 
 out = foreach(i = 1:nrow(grid)
-        ) %dopar% {
+        ) %do% {
             
     res = list()
     
@@ -958,12 +966,15 @@ save(simulation_output, session, file = f)
 \
 \
 
-# **Examples** 
+# *Examples*
 ***
 
 After providing some useful helper functions, this section goes into greater detail on the appraoches discussed throughout this guide. Included with these examples are plots and their associated code, in order to demonstrate some techniques for plotting the results of Monte Carlo analyses. However, the plotting code will not be discussed at length, and will--as they say--be left to be figured out as an "exercise." 
 
+\
+
 ## Extremely Useful Functions 
+***
 
 Before diving in, I've wrapped up a lot of the house-keeping tasks into functions below. Namely,
 
@@ -1091,7 +1102,7 @@ inst_load = function(pks = NULL
 
 \
 
-## Example: Spurious Regression
+## Example: **Spurious Regression**
 *** 
 
 In this example I'll use the steps outlined previously to show that two unit-root time-series that are independent of eachother will have a Type-I (a.k.a., false positive; size-$\alpha$) error rate well above the stated levels for traditional t-tests when these two series are regressed on eachother. This is a replication of an original paper by [Granger and Newbold (1974)](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.353.2946&rep=rep1&type=pdf), which effectively shows that regressing independent, unit-root series on eachother will lead to spurious inferences far more frequently than anticipated. 
@@ -1242,7 +1253,7 @@ quarters of all occasions" (115). For the same sample size, the false-rejection 
 
 \
 
-## Example: Bias of AR(1) Model 
+## Example: **Bias of AR(1) Model**
 ***
 
 In this example I will utlize the steps outlined previously to show that order-1 time-series autoregressive models (AR(1) models) have biased estimators of the autoregressive parameter. This can be shown theoretically, as well, but pretend for the moment that we don't know such a closed form solution exists, or perhaps we're too lazy to find one. The Monte Carlo method is well suited for the task. 
@@ -1256,6 +1267,7 @@ In the below, I will simply apply what was discussed in the previous sections wi
 \
 
 ### Simulation: Bias of AR(1)
+***
 ```{r, cache=T}
 ### Install, load default packages (see `Helper Functions`)
 inst_load()
@@ -1342,7 +1354,10 @@ clear_cl()
 
 ```
 
+\
+
 ### Plotting: Bias of AR(1)
+***
 ```{r, fig.dim=c(9.25,.618*9.25)}
 ### Bind up results and summarize
 res = do.call(rbind.data.frame, out)
@@ -1374,9 +1389,49 @@ ggplot(sums, aes(y = bias, x = factor(p), fill = factor(n))) +
 ```
 
 
+As the plots above show, AR(1) models are indeed biased downward, with this bias abating with increasing sample size. This is particularly informative for [Dickey-Fuller](https://en.wikipedia.org/wiki/Dickey%E2%80%93Fuller_test) tests or other tests for unit roots, as some of these tests implicitly rely on the parameter estimate from an auto-regressive model. In small samples, these parameter estimates are biased downards, implying that we will fail to conclude that the data have a unit-root more frequently, i.e., these tests have low power in small samples, and will have elevated Type II error. 
 
-# Heckman
+\
 
+## Example: **Censored Regression**
+***
+
+For a more complicated set of simulations, I investigate OLS' performance when the 
+outcome variable is censored, and compare it to both a Heckman 2-step procedure, and 
+a full-information maximum likelihood estimator. 
+
+Suppose we have some continuous outcome $y_i^*$, but instead of observing $y_i^*$, we observe $y_i$, defined as $$y_i = \begin{cases} y_i^* \,\, \text{if} \,\, y_i^* > 0 \\ 
+ 0 \,\,\,\,\, \text{if} \,\, y_i^* \leq 0 
+ \end{cases}
+ $$
+ 
+That is, we observe the true value only if it is above some threshold, in this case zero. Otherwise we set $y_i = 0$. This is one form of _censoring_. We could also delete the observations where we do not observe $y_i^*$, but this would neglect the fact that we may have other information available on that observation.
+ 
+Now suppose that $y_i^* = \boldsymbol x_i \boldsymbol\beta + \varepsilon_i$, with $\varepsilon \overset{iid}{\sim} \mathcal{N}(\mu, \sigma^2)$. That is, $y_i^*$ is normally distributed, and is a linear function of $\boldsymbol x$ with a well-behaved error term. Given that we don't observe $y_i^*$, we instead observe $y_i$, we are left to figure out how to estimate a regression model that will recover an unbiased, consistent estimate of the true quantity $\beta$. We'll consider three approaches here: 
+
+1. Estimating OLS on the observed data, setting unobserved values to zero, which ignores censoring in the data. 
+2. Incorporate the probability of censoring into our estimate of the conditional mean, using the Heckman 2-step procedure.
+3. Estimate the regression model using maximum likelihood, specifying a likelihood that accounts for censoring (full-information maximum likelihood, or FIML). 
+
+For the sake of brevity, I don't go into great detail on each approach here, leaving a deeper understanding of each method ``as an exercise," as they say. However, to get people started in the right direction, a few notes are in order. 
+
+* A good resource for these items is @long1997, Ch.7.
+
+* The Heckman 2-step procedure accounts for censoring by first estimating the probability of censoring via a probit GLM. The linear predictor from this probit model is then used to estimate the [inverse Mills ratio](https://en.wikipedia.org/wiki/Mills_ratio). Finally this *estimated* inverse Mills ratio is used as an additional "covariate'' in a second-stage OLS regression on the truncated data. Specifically, $\hat y = X\beta + \hat\gamma \hat \lambda(\hat\eta)$, where $\hat\gamma$ is the slope estimate on the inverse Mills ratio, $\hat\lambda$ which is estimated by evaluating it at $\hat\eta$, the linear predictor from the first-stage probit. 
+
+* The FIML estimator just specifies a likelihood for the generation of both censored and uncensored data, and maximizes it in the usual way. Specifically, $$L(\beta, \sigma^2 | y, X) = \prod_{obs} \frac{1}{\sigma}\phi\left(\frac{y - X\beta}{\sigma}\right) \prod_{cens} \Phi\left(\frac{\tau - X\beta}{\sigma}\right)$$ where:
+  * $\phi$ is the p.d.f. of the standard normal distribution, 
+  * $\Phi$ is the c.d.f. of the standard normal distribution,
+  * $\tau$ is the censoring threshold; in the case above, this is $\tau = 0$. 
+  * $cens$ indicates that the portion of the likelihood is for censored observations.
+  * $obs$ indicates that the portion of the likelihood is for uncensored observations.
+  
+From this we can see that FIML is just composed of a normal linear model's likelihood for the observed data, and the probability of censoring for the censored data. We can then take logs and maximize the resulting log-likelihood as usual. This is done in the below code. 
+
+\
+
+### Simulation: Censored Regression
+***
 ```{r, echo=T, eval=T, cache=T}
 ### Install and load necessary packages (see `Helper Functions`)
 inst_load()
@@ -1561,8 +1616,10 @@ out =
 clear_cl()
 ```
 
-# Plotting Selection Mods
+\
 
+### Plotting: Censored Regression
+***
 ```{r, fig.dim = c(10, 7)}
 ### Bind up the results list into a data.frame
 res = do.call(rbind.data.frame, out)
@@ -1630,11 +1687,31 @@ ggplot(sums[sums$param == "b2",], aes(x = est_c, fill = model, color = model)) +
 ```
 
 
+Briefly, we can make three primary conclusions from the above plots: 
 
+1. OLS intercepts are biased upward, while the slope is biased downwards in the presence of censoring. 
+2. The Heckman 2-step procedure is unbiased for both the intercept and slope. 
+3. FIML regression is unbiased, and is more efficient than the Heckman procedure. This makes sense, as the Heckman model
+has less data, and treats the Mills ratio as if it isn't also a random variable, when in fact it is. Thus, if using the Heckman,
+bootstrapping standard errors would be necessary. 
 
+\
 
-# Logit Bias 
+## Example: **Bias of Logistic Regression**
+***
 
+Finally, the Monte Carlo methods presented here are applied to the case of logistic regression, 
+specifically to show that logistic regression coefficients are biased upwards in small samples, 
+and to show that one solution to this is to add a penalty to the likelihood function as a correction. 
+
+For references on the subject, see [Firth (1993)](https://www.jstor.org/stable/2336755), [Rainey and McCaskey (2021)](http://www.carlislerainey.com/papers/small.pdf), and the R-package [brglm2](https://cran.r-project.org/web/packages/brglm2/index.html). 
+
+If you are familiar with ridge regression or Least Angular Shrinkage and Selection Operator (LASSO) regression, the intuition of [Firth (1993)](https://www.jstor.org/stable/2336755) is similar: we add a penalty to the log-loss function that is increasing in some norm of the coefficients, which causes us to push coefficients towards zero. Because logistic regression coefficients are biased upwards in small samples, pushing them a bit towards zero is what we need for unbiasedness. 
+
+\
+
+### Simulation: Bias of Logistic Regression
+***
 ```{r, cache=T}
 ### Install, load necessary packages (see `Helper Functions`)
 inst_load(pks = 'brglm2')
@@ -1758,7 +1835,10 @@ out =
 clear_cl()
 ```
 
-# plotting logit bias 
+\
+
+### Plotting: Bias of Logistic Regression
+***
 
 ```{r,  fig.dim = c(10, 8.25)}
 ### Bind everything up
@@ -1860,3 +1940,9 @@ ggplot(sums, aes(y = power, x = factor(model), fill = factor(n))) +
         strip.text = element_text(size = 12, face = "bold")
         ) 
 ```
+
+Briefly describing the above plots, I vary the intercept of the data generating process in order to affect the proportion of successes and failures in the data, which affects the estimator. The average number of sucesses over all simulations for that value of the intercept is then used to label the proportion of successes in each plot. 
+
+In the density plots we can clearly see that the PML estimator has lower variance than the naive logistic model in small samples, but that this reduction abates as we get more data. It is hard to establish the bias of each estimator using the density plots, but I've drawn dashed vertical lines to denote the mean of each distribution. However, below the density plots we can directly see the percent bias explicitly in the bar plot. In very small samples, the PML estimator is over aggressive, so the coefficients actually end up biased downward. However, in all other cases, it is substantially less biased than the naive logistic model. 
+
+Because we are pushing the coefficients towards zero, we may be fearful that our type II error rates may go up, i.e., that the model loses power. However, because of the simultaneous reduction in variance (meaning there is no bias-variance tradeoff, as noted in the citations provided earlier), it turns out that the shrinkage of the coefficients does not result in lower power, as seen in the third plot (or second set of bar plots). 

@@ -95,7 +95,7 @@ code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code span.at { color: #7d9029; } /* Attribute */
 code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
+code span.bu { color: #008000; } /* BuiltIn */
 code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
 code span.ch { color: #4070a0; } /* Char */
 code span.cn { color: #880000; } /* Constant */
@@ -108,7 +108,7 @@ code span.er { color: #ff0000; font-weight: bold; } /* Error */
 code span.ex { } /* Extension */
 code span.fl { color: #40a070; } /* Float */
 code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
+code span.im { color: #008000; font-weight: bold; } /* Import */
 code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
 code span.kw { color: #007020; font-weight: bold; } /* Keyword */
 code span.op { color: #666666; } /* Operator */
@@ -155,6 +155,28 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 
 
+<style type="text/css">
+/* for pandoc --citeproc since 2.11 */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
 
 <link rel="stylesheet" href="styles.css" type="text/css" />
 
@@ -424,7 +446,7 @@ div.tocify {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="./files/niehaus_cv_2022_online.pdf">CV</a>
+  <a href="./files/niehaus_cv_2022_online.pdf">Resume</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -440,16 +462,8 @@ div.tocify {
       <a href="mvnorm.html">Multivariate Normal Draws</a>
     </li>
     <li>
-      <a href="montes.html">An In-depth Guide to Monte Carlos in R, with Examples</a>
+      <a href="montes.html">Monte Carlo Analysis using R, with Examples</a>
     </li>
-    <li class="dropdown-header">COMING SOON:</li>
-    <li class="dropdown-header">Numerical Maximum Likelihood Estimation in R, with Examples</li>
-    <li class="dropdown-header">Copulas and Copula Regression</li>
-    <li class="dropdown-header">Bias of MLE for Gamma Rate Parameter</li>
-    <li class="dropdown-header">Derivation of Negative Binomial Regression</li>
-    <li class="dropdown-header">Spurious Regression Problem in Time Series</li>
-    <li class="dropdown-header">Omitted Variables Bias in Probit Models</li>
-    <li class="dropdown-header">Building this Website</li>
   </ul>
 </li>
       </ul>
@@ -458,7 +472,14 @@ div.tocify {
   <a href="http://github.com/jmniehaus">
     <span class="fab fa-github"></span>
      
-    Github
+    GitHub
+  </a>
+</li>
+<li>
+  <a href="https://www.linkedin.com/in/john-niehaus/">
+    <span class="fa fa-brands fa-linkedin"></span>
+     
+    LinkedIn
   </a>
 </li>
       </ul>
@@ -480,7 +501,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Monte Carlo Analysis in R: An in Depth
 Guide, with Examples</h1>
-<h4 class="date">Updated: 07 Jun, 2022</h4>
+<h4 class="date">Updated: 10 Oct 2022</h4>
 
 </div>
 
@@ -488,6 +509,14 @@ Guide, with Examples</h1>
 <style>
 .list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
     background-color: SlateGrey;
+}
+
+.nav-pills>li.active>a, .nav-pills>li.active>a:hover, .nav-pills>li.active>a:focus, .nav-pills>li.active>a:link {
+    background-color: SlateGrey;
+    color: white
+}
+.nav-pills>li>a:link{
+    color: black
 }
 </style>
 <script type="text/x-mathjax-config">
@@ -504,9 +533,9 @@ MathJax.Hub.Config({
 <p>In this guide I first review the intuition of Monte Carlo methods,
 and then discuss five steps to efficient, publication-quality Monte
 Carlo analyses using R. Generally, these steps consist of:</p>
-<ol style="list-style-type: decimal">
-<li><a href="#serial-vs-parallel">Switching from serial to parallel
-loops</a></li>
+<ul>
+<li><a href="#simulations-serial-vs-parallel">Switching from serial to
+parallel loops</a></li>
 <li><a href="#seed-setting-and-parallelism">Ensuring reproducibility by
 setting seeds properly for parallel tasks</a></li>
 <li><a href="#thread-competition">Ensuring that other parallel tasks are
@@ -515,12 +544,13 @@ not competing for CPU resources</a></li>
 grids</a></li>
 <li><a href="#using-functions-properly">Compartmentalizing code into
 simulation and estimation functions</a></li>
-<li>A few things you should never do</li>
-<li>Some tips on best-practices for plotting</li>
-</ol>
+<li><a href="#things-you-should-and-shouldnt-do">A few dos and
+don’ts</a></li>
+</ul>
 <p>First, I will walk through each of these five points with toy
 examples to drive ideas home where applicable. Finally, I will take all
-of this and put it together in some more serious applications.</p>
+of this and put it together in some more <a href="#examples">serious
+applications</a>.</p>
 <p><strong>Note</strong> that this guide applies mostly to the case of
 trivial parallelism, i.e., simulations that are independent of each
 other. However, some concepts can be extended to dependent simulations,
@@ -1364,7 +1394,7 @@ package:</p>
 <div class="sourceCode" id="cb21"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RhpcBLASctl)</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">blas_get_num_procs</span>()</span></code></pre></div>
-<pre class="bg-success"><code>## [1] 12</code></pre>
+<pre class="bg-success"><code>## [1] 1</code></pre>
 <div class="sourceCode" id="cb23"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">omp_get_num_procs</span>()</span></code></pre></div>
 <pre class="bg-success"><code>## [1] 20</code></pre>
@@ -1381,10 +1411,10 @@ will tell you at least if its not the default library:</p>
 <div class="sourceCode" id="cb25"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()[<span class="fu">c</span>(<span class="st">&quot;BLAS&quot;</span>, <span class="st">&quot;LAPACK&quot;</span>)]</span></code></pre></div>
 <pre class="bg-success"><code>## $BLAS
-## [1] &quot;/opt/intel/mkl/lib/intel64/libmkl_gf_lp64.so&quot;
+## [1] &quot;/opt/intel/oneapi/mkl/2022.1.0/lib/intel64/libmkl_gf_lp64.so.2&quot;
 ## 
 ## $LAPACK
-## [1] &quot;/opt/intel/mkl/lib/intel64/libmkl_gf_lp64.so&quot;</code></pre>
+## [1] &quot;/opt/intel/oneapi/mkl/2022.1.0/lib/intel64/libmkl_gf_lp64.so.2&quot;</code></pre>
 <p>but this isn’t conclusive, as it merely tells us that I’m using MKL,
 not that MKL is currently set to use multiple threads. For that reason,
 the <code>RhpcBLASctl</code> method is probably superior.</p>
@@ -1550,7 +1580,7 @@ clarity):</p>
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># BACKEND SETUP OMITTED FOR SIMPLICITY. SEE EXAMPLES SECTION FOR FULL SETUP. </span></span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid)</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dopar%</span> {</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%do%</span> {</span>
 <span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>            </span>
 <span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>( <span class="at">n =</span> grid[i, <span class="st">&quot;n&quot;</span>],</span>
@@ -1711,7 +1741,7 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb35-1"><a h
 <span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>nsims <span class="ot">=</span> <span class="dv">2</span></span>
 <span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>out <span class="ot">=</span> <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(grid)</span>
-<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%dopar%</span> {</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">%do%</span> {</span>
 <span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>            </span>
 <span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">=</span> <span class="fu">list</span>()</span>
 <span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a>    </span>
@@ -1930,7 +1960,7 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb38-1"><a h
 <span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a><span class="fu">simulate_fn</span>(<span class="at">grid_row =</span> grid_multi[<span class="dv">1</span>,])</span></code></pre></div>
-<pre class="bg-success"><code>## [1] -0.86756612 -0.50118759  0.78559116 -2.10224732 -0.04220493</code></pre>
+<pre class="bg-success"><code>## [1]  0.4859265 -0.4719126  0.8467386  0.9257706 -0.3208306</code></pre>
 <p>which is a numeric vector, as we would expect. Now we can do whatever
 transformation of this data to obtain statistics of interest for each
 iteration. However, we’ll need an estimation function first.</p>
@@ -2007,7 +2037,7 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb41-1"><a h
 <span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid_row =</span> grid_row</span>
 <span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <pre class="bg-success"><code>##       xbar       s2 mu sig2 n
-## 1 2.945893 9.805178  0    1 5</code></pre>
+## 1 3.265056 23.10145  0    1 5</code></pre>
 <p>which gives us the sample mean and variance for a single iteration of
 transforming data to log-normal realizations, as well as stores the
 data-generating parameters for use in post-simulation analysis.
@@ -2105,8 +2135,7 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb44-1"><a h
 </p>
 </div>
 <div id="examples" class="section level1" number="8">
-<h1><span class="header-section-number">8</span>
-<strong>Examples</strong></h1>
+<h1><span class="header-section-number">8</span> <em>Examples</em></h1>
 <hr />
 <p>After providing some useful helper functions, this section goes into
 greater detail on the appraoches discussed throughout this guide.
@@ -2115,10 +2144,13 @@ order to demonstrate some techniques for plotting the results of Monte
 Carlo analyses. However, the plotting code will not be discussed at
 length, and will–as they say–be left to be figured out as an
 “exercise.”</p>
+<p><br />
+</p>
 <div id="extremely-useful-functions" class="section level2"
 number="8.1">
 <h2><span class="header-section-number">8.1</span> Extremely Useful
 Functions</h2>
+<hr />
 <p>Before diving in, I’ve wrapped up a lot of the house-keeping tasks
 into functions below. Namely,</p>
 <ol style="list-style-type: decimal">
@@ -2259,8 +2291,8 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb45-1"><a h
 </div>
 <div id="example-spurious-regression" class="section level2"
 number="8.2">
-<h2><span class="header-section-number">8.2</span> Example: Spurious
-Regression</h2>
+<h2><span class="header-section-number">8.2</span> Example:
+<strong>Spurious Regression</strong></h2>
 <hr />
 <p>In this example I’ll use the steps outlined previously to show that
 two unit-root time-series that are independent of eachother will have a
@@ -2459,8 +2491,8 @@ by the authors.</p>
 </div>
 </div>
 <div id="example-bias-of-ar1-model" class="section level2" number="8.3">
-<h2><span class="header-section-number">8.3</span> Example: Bias of
-AR(1) Model</h2>
+<h2><span class="header-section-number">8.3</span> Example: <strong>Bias
+of AR(1) Model</strong></h2>
 <hr />
 <p>In this example I will utlize the steps outlined previously to show
 that order-1 time-series autoregressive models (AR(1) models) have
@@ -2490,9 +2522,12 @@ meaning that the AR parameter is biased towards zero.</p>
 sections without further discussion. The intention here is to give
 example code for more complicated problems, but the principles in
 application are identical to those already discussed.</p>
+<p><br />
+</p>
 <div id="simulation-bias-of-ar1" class="section level3" number="8.3.1">
-<h3><span class="header-section-number">8.3.1</span> Simulation:: Bias
-of AR(1)</h3>
+<h3><span class="header-section-number">8.3.1</span> Simulation: Bias of
+AR(1)</h3>
+<hr />
 <div class="sourceCode" id="cb48"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Install, load default packages (see `Helper Functions`)</span></span>
 <span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="fu">inst_load</span>()</span>
@@ -2576,10 +2611,13 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb48-1"><a h
 <span id="cb48-80"><a href="#cb48-80" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb48-81"><a href="#cb48-81" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb48-82"><a href="#cb48-82" aria-hidden="true" tabindex="-1"></a><span class="fu">clear_cl</span>()</span></code></pre></div>
+<p><br />
+</p>
 </div>
 <div id="plotting-bias-of-ar1" class="section level3" number="8.3.2">
 <h3><span class="header-section-number">8.3.2</span> Plotting: Bias of
 AR(1)</h3>
+<hr />
 <div class="sourceCode" id="cb49"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Bind up results and summarize</span></span>
 <span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>res <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, out)</span>
@@ -2609,11 +2647,119 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb49-1"><a h
 <span id="cb49-26"><a href="#cb49-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&quot;% Bias&quot;</span>,</span>
 <span id="cb49-27"><a href="#cb49-27" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">&quot;AR(1) Models are Downward Biased&quot;</span>)</span></code></pre></div>
 <p><img src="montes_files/figure-html/unnamed-chunk-29-1.png" width="888" /></p>
+<p>As the plots above show, AR(1) models are indeed biased downward,
+with this bias abating with increasing sample size. This is particularly
+informative for <a
+href="https://en.wikipedia.org/wiki/Dickey%E2%80%93Fuller_test">Dickey-Fuller</a>
+tests or other tests for unit roots, as some of these tests implicitly
+rely on the parameter estimate from an auto-regressive model. In small
+samples, these parameter estimates are biased downards, implying that we
+will fail to conclude that the data have a unit-root more frequently,
+i.e., these tests have low power in small samples, and will have
+elevated Type II error.</p>
+<p><br />
+</p>
 </div>
 </div>
-</div>
-<div id="heckman" class="section level1" number="9">
-<h1><span class="header-section-number">9</span> Heckman</h1>
+<div id="example-censored-regression" class="section level2"
+number="8.4">
+<h2><span class="header-section-number">8.4</span> Example:
+<strong>Censored Regression</strong></h2>
+<hr />
+<p>For a more complicated set of simulations, I investigate OLS’
+performance when the outcome variable is censored, and compare it to
+both a Heckman 2-step procedure, and a full-information maximum
+likelihood estimator.</p>
+<p>Suppose we have some continuous outcome <span
+class="math inline">\(y_i^*\)</span>, but instead of observing <span
+class="math inline">\(y_i^*\)</span>, we observe <span
+class="math inline">\(y_i\)</span>, defined as <span
+class="math display">\[y_i = \begin{cases} y_i^* \,\, \text{if} \,\,
+y_i^* &gt; 0 \\
+0 \,\,\,\,\, \text{if} \,\, y_i^* \leq 0
+\end{cases}
+\]</span></p>
+<p>That is, we observe the true value only if it is above some
+threshold, in this case zero. Otherwise we set <span
+class="math inline">\(y_i = 0\)</span>. This is one form of
+<em>censoring</em>. We could also delete the observations where we do
+not observe <span class="math inline">\(y_i^*\)</span>, but this would
+neglect the fact that we may have other information available on that
+observation.</p>
+<p>Now suppose that <span class="math inline">\(y_i^* = \boldsymbol x_i
+\boldsymbol\beta + \varepsilon_i\)</span>, with <span
+class="math inline">\(\varepsilon \overset{iid}{\sim} \mathcal{N}(\mu,
+\sigma^2)\)</span>. That is, <span class="math inline">\(y_i^*\)</span>
+is normally distributed, and is a linear function of <span
+class="math inline">\(\boldsymbol x\)</span> with a well-behaved error
+term. Given that we don’t observe <span
+class="math inline">\(y_i^*\)</span>, we instead observe <span
+class="math inline">\(y_i\)</span>, we are left to figure out how to
+estimate a regression model that will recover an unbiased, consistent
+estimate of the true quantity <span
+class="math inline">\(\beta\)</span>. We’ll consider three approaches
+here:</p>
+<ol style="list-style-type: decimal">
+<li>Estimating OLS on the observed data, setting unobserved values to
+zero, which ignores censoring in the data.</li>
+<li>Incorporate the probability of censoring into our estimate of the
+conditional mean, using the Heckman 2-step procedure.</li>
+<li>Estimate the regression model using maximum likelihood, specifying a
+likelihood that accounts for censoring (full-information maximum
+likelihood, or FIML).</li>
+</ol>
+<p>For the sake of brevity, I don’t go into great detail on each
+approach here, leaving a deeper understanding of each method ``as an
+exercise,” as they say. However, to get people started in the right
+direction, a few notes are in order.</p>
+<ul>
+<li><p>A good resource for these items is <span class="citation">Long
+(<a href="#ref-long1997" role="doc-biblioref">1997</a>)</span>,
+Ch.7.</p></li>
+<li><p>The Heckman 2-step procedure accounts for censoring by first
+estimating the probability of censoring via a probit GLM. The linear
+predictor from this probit model is then used to estimate the <a
+href="https://en.wikipedia.org/wiki/Mills_ratio">inverse Mills
+ratio</a>. Finally this <em>estimated</em> inverse Mills ratio is used
+as an additional “covariate’’ in a second-stage OLS regression on the
+truncated data. Specifically, <span class="math inline">\(\hat y =
+X\beta + \hat\gamma \hat \lambda(\hat\eta)\)</span>, where <span
+class="math inline">\(\hat\gamma\)</span> is the slope estimate on the
+inverse Mills ratio, <span class="math inline">\(\hat\lambda\)</span>
+which is estimated by evaluating it at <span
+class="math inline">\(\hat\eta\)</span>, the linear predictor from the
+first-stage probit.</p></li>
+<li><p>The FIML estimator just specifies a likelihood for the generation
+of both censored and uncensored data, and maximizes it in the usual way.
+Specifically, <span class="math display">\[L(\beta, \sigma^2 | y, X) =
+\prod_{obs} \frac{1}{\sigma}\phi\left(\frac{y - X\beta}{\sigma}\right)
+\prod_{cens} \Phi\left(\frac{\tau - X\beta}{\sigma}\right)\]</span>
+where:</p>
+<ul>
+<li><span class="math inline">\(\phi\)</span> is the p.d.f. of the
+standard normal distribution,</li>
+<li><span class="math inline">\(\Phi\)</span> is the c.d.f. of the
+standard normal distribution,</li>
+<li><span class="math inline">\(\tau\)</span> is the censoring
+threshold; in the case above, this is <span class="math inline">\(\tau =
+0\)</span>.</li>
+<li><span class="math inline">\(cens\)</span> indicates that the portion
+of the likelihood is for censored observations.</li>
+<li><span class="math inline">\(obs\)</span> indicates that the portion
+of the likelihood is for uncensored observations.</li>
+</ul></li>
+</ul>
+<p>From this we can see that FIML is just composed of a normal linear
+model’s likelihood for the observed data, and the probability of
+censoring for the censored data. We can then take logs and maximize the
+resulting log-likelihood as usual. This is done in the below code.</p>
+<p><br />
+</p>
+<div id="simulation-censored-regression" class="section level3"
+number="8.4.1">
+<h3><span class="header-section-number">8.4.1</span> Simulation:
+Censored Regression</h3>
+<hr />
 <div class="sourceCode" id="cb50"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Install and load necessary packages (see `Helper Functions`)</span></span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">inst_load</span>()</span>
@@ -2796,10 +2942,14 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb50-1"><a h
 <span id="cb50-179"><a href="#cb50-179" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb50-180"><a href="#cb50-180" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb50-181"><a href="#cb50-181" aria-hidden="true" tabindex="-1"></a><span class="fu">clear_cl</span>()</span></code></pre></div>
+<p><br />
+</p>
 </div>
-<div id="plotting-selection-mods" class="section level1" number="10">
-<h1><span class="header-section-number">10</span> Plotting Selection
-Mods</h1>
+<div id="plotting-censored-regression" class="section level3"
+number="8.4.2">
+<h3><span class="header-section-number">8.4.2</span> Plotting: Censored
+Regression</h3>
+<hr />
 <div class="sourceCode" id="cb51"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Bind up the results list into a data.frame</span></span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>res <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, out)</span>
@@ -2864,9 +3014,53 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb52-1"><a h
 <span id="cb52-22"><a href="#cb52-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>)</span>
 <span id="cb52-23"><a href="#cb52-23" aria-hidden="true" tabindex="-1"></a>        ) </span></code></pre></div>
 <p><img src="montes_files/figure-html/unnamed-chunk-31-2.png" width="960" /></p>
+<p>Briefly, we can make three primary conclusions from the above
+plots:</p>
+<ol style="list-style-type: decimal">
+<li>OLS intercepts are biased upward, while the slope is biased
+downwards in the presence of censoring.</li>
+<li>The Heckman 2-step procedure is unbiased for both the intercept and
+slope.</li>
+<li>FIML regression is unbiased, and is more efficient than the Heckman
+procedure. This makes sense, as the Heckman model has less data, and
+treats the Mills ratio as if it isn’t also a random variable, when in
+fact it is. Thus, if using the Heckman, bootstrapping standard errors
+would be necessary.</li>
+</ol>
+<p><br />
+</p>
 </div>
-<div id="logit-bias" class="section level1" number="11">
-<h1><span class="header-section-number">11</span> Logit Bias</h1>
+</div>
+<div id="example-bias-of-logistic-regression" class="section level2"
+number="8.5">
+<h2><span class="header-section-number">8.5</span> Example: <strong>Bias
+of Logistic Regression</strong></h2>
+<hr />
+<p>Finally, the Monte Carlo methods presented here are applied to the
+case of logistic regression, specifically to show that logistic
+regression coefficients are biased upwards in small samples, and to show
+that one solution to this is to add a penalty to the likelihood function
+as a correction.</p>
+<p>For references on the subject, see <a
+href="https://www.jstor.org/stable/2336755">Firth (1993)</a>, <a
+href="http://www.carlislerainey.com/papers/small.pdf">Rainey and
+McCaskey (2021)</a>, and the R-package <a
+href="https://cran.r-project.org/web/packages/brglm2/index.html">brglm2</a>.</p>
+<p>If you are familiar with ridge regression or Least Angular Shrinkage
+and Selection Operator (LASSO) regression, the intuition of <a
+href="https://www.jstor.org/stable/2336755">Firth (1993)</a> is similar:
+we add a penalty to the log-loss function that is increasing in some
+norm of the coefficients, which causes us to push coefficients towards
+zero. Because logistic regression coefficients are biased upwards in
+small samples, pushing them a bit towards zero is what we need for
+unbiasedness.</p>
+<p><br />
+</p>
+<div id="simulation-bias-of-logistic-regression" class="section level3"
+number="8.5.1">
+<h3><span class="header-section-number">8.5.1</span> Simulation: Bias of
+Logistic Regression</h3>
+<hr />
 <div class="sourceCode" id="cb53"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Install, load necessary packages (see `Helper Functions`)</span></span>
 <span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="fu">inst_load</span>(<span class="at">pks =</span> <span class="st">&#39;brglm2&#39;</span>)</span>
@@ -2988,10 +3182,14 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb53-1"><a h
 <span id="cb53-118"><a href="#cb53-118" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb53-119"><a href="#cb53-119" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb53-120"><a href="#cb53-120" aria-hidden="true" tabindex="-1"></a><span class="fu">clear_cl</span>()</span></code></pre></div>
+<p><br />
+</p>
 </div>
-<div id="plotting-logit-bias" class="section level1" number="12">
-<h1><span class="header-section-number">12</span> plotting logit
-bias</h1>
+<div id="plotting-bias-of-logistic-regression" class="section level3"
+number="8.5.2">
+<h3><span class="header-section-number">8.5.2</span> Plotting: Bias of
+Logistic Regression</h3>
+<hr />
 <div class="sourceCode" id="cb54"><pre
 class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Bind everything up</span></span>
 <span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>res <span class="ot">=</span> <span class="fu">do.call</span>(rbind.data.frame, out)</span>
@@ -3092,6 +3290,37 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb56-1"><a h
 <span id="cb56-21"><a href="#cb56-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>)</span>
 <span id="cb56-22"><a href="#cb56-22" aria-hidden="true" tabindex="-1"></a>        ) </span></code></pre></div>
 <p><img src="montes_files/figure-html/unnamed-chunk-33-3.png" width="960" /></p>
+<p>Briefly describing the above plots, I vary the intercept of the data
+generating process in order to affect the proportion of successes and
+failures in the data, which affects the estimator. The average number of
+sucesses over all simulations for that value of the intercept is then
+used to label the proportion of successes in each plot.</p>
+<p>In the density plots we can clearly see that the PML estimator has
+lower variance than the naive logistic model in small samples, but that
+this reduction abates as we get more data. It is hard to establish the
+bias of each estimator using the density plots, but I’ve drawn dashed
+vertical lines to denote the mean of each distribution. However, below
+the density plots we can directly see the percent bias explicitly in the
+bar plot. In very small samples, the PML estimator is over aggressive,
+so the coefficients actually end up biased downward. However, in all
+other cases, it is substantially less biased than the naive logistic
+model.</p>
+<p>Because we are pushing the coefficients towards zero, we may be
+fearful that our type II error rates may go up, i.e., that the model
+loses power. However, because of the simultaneous reduction in variance
+(meaning there is no bias-variance tradeoff, as noted in the citations
+provided earlier), it turns out that the shrinkage of the coefficients
+does not result in lower power, as seen in the third plot (or second set
+of bar plots).</p>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-long1997" class="csl-entry">
+Long, J Scott. 1997. <span>“Regression Models for Categorical and
+Limited Dependent Variables.”</span> <em>Advanced Quantitative
+Techniques in the Social Sciences</em> 7.
+</div>
+</div>
+</div>
+</div>
 </div>
 <div class="footnotes footnotes-end-of-document">
 <hr />

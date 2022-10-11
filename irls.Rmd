@@ -1,25 +1,50 @@
 ---
 title: "Iteratively Re-weighted Least Squares (IRLS):"
 subtitle: "Motivation, Derivation, and Programming in R"
-date: "Updated: `r format(Sys.time(), '%d %b, %Y')`"
+date: "Updated: 26 Feb, 2021"
 pagetitle: "IRLS in R"
 header-includes:
-   - \usepackage{mathtools}
-   - \usepackage{amsmath}
+- \usepackage{mathtools}
+- \usepackage{amsmath}
+- \usepackage{dsfont}
 output:
   html_document:
-    toc: true
-    number_sections: false
+    number_sections: true
+    toc: yes
     toc_float:
-      collapsed: true
-      smooth_scroll: true
+      collapsed: yes
+      smooth_scroll: yes
     code_folding: show
 bibliography: bibliography.bib
 link-citations: yes
+editor_options: 
+  chunk_output_type: console
 ---
     
 
+<style>
+.list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
+    background-color: SlateGrey;
+}
 
+.nav-pills>li.active>a, .nav-pills>li.active>a:hover, .nav-pills>li.active>a:focus, .nav-pills>li.active>a:link {
+    background-color: SlateGrey;
+    color: white
+}
+.nav-pills>li>a:link{
+    color: black
+}
+</style>
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { 
+      equationNumbers: { 
+            autoNumber: "AMS",
+      } 
+  }
+});
+</script>
 
 
 

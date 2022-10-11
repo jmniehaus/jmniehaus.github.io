@@ -13,7 +13,7 @@
 
 <title>MV Norm Draws</title>
 
-<script src="site_libs/header-attrs-2.12/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
@@ -95,7 +95,7 @@ code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code span.at { color: #7d9029; } /* Attribute */
 code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
+code span.bu { color: #008000; } /* BuiltIn */
 code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
 code span.ch { color: #4070a0; } /* Char */
 code span.cn { color: #880000; } /* Constant */
@@ -108,7 +108,7 @@ code span.er { color: #ff0000; font-weight: bold; } /* Error */
 code span.ex { } /* Extension */
 code span.fl { color: #40a070; } /* Float */
 code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
+code span.im { color: #008000; font-weight: bold; } /* Import */
 code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
 code span.kw { color: #007020; font-weight: bold; } /* Keyword */
 code span.op { color: #666666; } /* Operator */
@@ -446,7 +446,7 @@ div.tocify {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="./files/niehaus_cv_2022_online.pdf">CV</a>
+  <a href="./files/niehaus_cv_2022_online.pdf">Resume</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -462,16 +462,8 @@ div.tocify {
       <a href="mvnorm.html">Multivariate Normal Draws</a>
     </li>
     <li>
-      <a href="montes.html">An In-depth Guide to Monte Carlos in R, with Examples</a>
+      <a href="montes.html">Monte Carlo Analysis using R, with Examples</a>
     </li>
-    <li class="dropdown-header">COMING SOON:</li>
-    <li class="dropdown-header">Numerical Maximum Likelihood Estimation in R, with Examples</li>
-    <li class="dropdown-header">Copulas and Copula Regression</li>
-    <li class="dropdown-header">Bias of MLE for Gamma Rate Parameter</li>
-    <li class="dropdown-header">Derivation of Negative Binomial Regression</li>
-    <li class="dropdown-header">Spurious Regression Problem in Time Series</li>
-    <li class="dropdown-header">Omitted Variables Bias in Probit Models</li>
-    <li class="dropdown-header">Building this Website</li>
   </ul>
 </li>
       </ul>
@@ -480,7 +472,14 @@ div.tocify {
   <a href="http://github.com/jmniehaus">
     <span class="fab fa-github"></span>
      
-    Github
+    GitHub
+  </a>
+</li>
+<li>
+  <a href="https://www.linkedin.com/in/john-niehaus/">
+    <span class="fa fa-brands fa-linkedin"></span>
+     
+    LinkedIn
   </a>
 </li>
       </ul>
@@ -500,13 +499,38 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Drawing from the Multivariate Normal Distribution</h1>
+<h1 class="title toc-ignore">Drawing from the Multivariate Normal
+Distribution</h1>
 <h3 class="subtitle">Derivation, and Programming in R</h3>
-<h4 class="date">Updated: 06 Mar, 2022</h4>
+<h4 class="date">Updated: 26 Feb 2021</h4>
 
 </div>
 
 
+<style>
+
+.list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
+    background-color: SlateGrey;
+}
+
+.nav-pills>li.active>a, .nav-pills>li.active>a:hover, .nav-pills>li.active>a:focus, .nav-pills>li.active>a:link {
+    background-color: SlateGrey;
+    color: white
+}
+.nav-pills>li>a:link{
+    color: black
+}
+
+</style>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { 
+      equationNumbers: { 
+            autoNumber: "AMS",
+      } 
+  }
+});
+</script>
 <p><br />
 </p>
 <script type="text/x-mathjax-config">
@@ -518,186 +542,397 @@ MathJax.Hub.Config({
   }
 });
 </script>
-<p><strong>Note:</strong> <em>If you are unable to view the math properly, e.g. you see a bunch of raw latex code, ensure that any browser extensions (ublock, privacy badger, etc) are not blocking access to mathjax.js, as this site requires mathjax to display correctly.</em></p>
+<p><strong>Note:</strong> <em>If you are unable to view the math
+properly, e.g. you see a bunch of raw latex code, ensure that any
+browser extensions (ublock, privacy badger, etc) are not blocking access
+to mathjax.js, as this site requires mathjax to display
+correctly.</em></p>
 <p><br />
 </p>
-<div id="summary" class="section level1">
-<h1>Summary</h1>
+<div id="summary" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Summary</h1>
 <hr />
 <div style="margin-bottom:40px;">
-<p>To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can approximate any desired parameterization of the multivariate normal distribution. Some of what is presented here came as a result of taking <a href="https://darrenho.github.io/">Darren Homrighausen’s</a> class on multivariate statistics. However, two additional references were consulted, and are available <a href="https://www.math.kent.edu/~reichel/courses/monte.carlo/alt4.7c.pdf">here</a> and <a href="http://users.stat.umn.edu/~gary/classes/5401/handouts/09.mvn.handout.pdf">here</a>.</p>
+<p>To take draws from the multivariate normal distribution, we leverage
+the fact that linear transformations of normal random variables are also
+normal. By taking a suitable decomposition of the desired covariance
+matrix, multiplying this decomposition by independent normal random
+vectors, and adding a constant, we can approximate any desired
+parameterization of the multivariate normal distribution. Some of what
+is presented here came as a result of taking <a
+href="https://darrenho.github.io/">Darren Homrighausen’s</a> class on
+multivariate statistics. However, two additional references were
+consulted, and are available <a
+href="https://www.math.kent.edu/~reichel/courses/monte.carlo/alt4.7c.pdf">here</a>
+and <a
+href="http://users.stat.umn.edu/~gary/classes/5401/handouts/09.mvn.handout.pdf">here</a>.</p>
 </div>
 </div>
-<div id="transformations-of-normal-rvs" class="section level1 tabset tabset-fade tabset-pills">
-<h1 class="tabset tabset-fade tabset-pills">Transformations of Normal RVs</h1>
+<div id="transformations-of-normal-rvs"
+class="section level1 tabset tabset-fade tabset-pills" number="2">
+<h1 class="tabset tabset-fade tabset-pills"><span
+class="header-section-number">2</span> Transformations of Normal
+RVs</h1>
 <hr />
-<div id="the-univariate-case" class="section level2">
-<h2>The Univariate Case</h2>
+<div id="the-univariate-case" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> The Univariate
+Case</h2>
 <hr />
-<p>In order to understand how to take draws from a multivariate normal distribution, it is first important to know that if <span class="math inline">\(X \sim \mathcal{N}(\mu, \sigma^2)\)</span> and <span class="math inline">\(Y = cX + k\)</span>, then <span class="math inline">\(Y \sim \mathcal{N}(c\mu + k, c^2\sigma^2)\)</span>. In words, linear transformations of univariate normal random variables yield normal random variables with known location and scale parameters.</p>
+<p>In order to understand how to take draws from a multivariate normal
+distribution, it is first important to know that if <span
+class="math inline">\(X \sim \mathcal{N}(\mu, \sigma^2)\)</span> and
+<span class="math inline">\(Y = cX + k\)</span>, then <span
+class="math inline">\(Y \sim \mathcal{N}(c\mu + k,
+c^2\sigma^2)\)</span>. In words, linear transformations of univariate
+normal random variables yield normal random variables with known
+location and scale parameters.</p>
 <div style="margin-top:-20px;">
 <details>
 <summary>
 <span style="color: #0888a8;">Proof</span>
 </summary>
-<p>First, proving that the location and scale parameters are known in the univariate case is a straightforward application of the fact that expectations are a linear operator:</p>
+<p>First, proving that the location and scale parameters are known in
+the univariate case is a straightforward application of the fact that
+expectations are a linear operator:</p>
 <p><span class="math display">\[\begin{align}
 &amp;\text{Let:} \nonumber \\
 \nonumber \\
 &amp; \quad X \sim \mathcal{N}(\mu,\sigma^2) \nonumber \\[1ex]
-&amp; \quad Y = cX + k \quad \text{for constants $c$ and $k$} \nonumber \\
+&amp; \quad Y = cX + k \quad \text{for constants $c$ and $k$} \nonumber
+\\
 \nonumber \\
 &amp;\text{Then:}\nonumber \\
 \nonumber \\
-&amp;\quad \mathbb{E}(Y) = c\mathbb{E}(X) + k = c\mu + k \nonumber  \\[1ex]
-&amp;\quad \mathrm{Var}(Y) = c^2\mathrm{Var}(X) = c^2\sigma^2 \nonumber 
+&amp;\quad \mathbb{E}(Y) = c\mathbb{E}(X) + k = c\mu + k
+\nonumber  \\[1ex]
+&amp;\quad \mathrm{Var}(Y) = c^2\mathrm{Var}(X) = c^2\sigma^2 \nonumber
 \end{align}\]</span></p>
-<p>And second, to show that the resulting distribution is univariate normal, let <span class="math inline">\(F(\cdot)\)</span> be the (normal) CDF of <span class="math inline">\(X\)</span> and <span class="math inline">\(G(\cdot)\)</span> be the CDF of <span class="math inline">\(Y\)</span>. Then the CDF of Y is:</p>
+<p>And second, to show that the resulting distribution is univariate
+normal, let <span class="math inline">\(F(\cdot)\)</span> be the
+(normal) CDF of <span class="math inline">\(X\)</span> and <span
+class="math inline">\(G(\cdot)\)</span> be the CDF of <span
+class="math inline">\(Y\)</span>. Then the CDF of Y is:</p>
 <p><span class="math display">\[\begin{align}
 G_Y(y) &amp;= \Pr(Y \leq y) \nonumber \\[2ex]
 &amp;= \Pr(cX + k \leq y)  \nonumber \\[2ex]
 &amp;= \Pr\left(X \leq \frac{y-k}{c}\right) \nonumber \\[2ex]
 &amp;= F_X\left(\frac{y-k}{c}\right) \\[2ex]
 \end{align}\]</span></p>
-<p>And differentiating to obtain the pdf of <span class="math inline">\(Y\)</span>: <span class="math display">\[\begin{align}
-\implies g_Y(y) &amp;= \dfrac{\partial}{\partial y} F_X\left(\frac{y-k}{c}\right)  \nonumber \\[2ex]
+<p>And differentiating to obtain the pdf of <span
+class="math inline">\(Y\)</span>: <span
+class="math display">\[\begin{align}
+\implies g_Y(y) &amp;= \dfrac{\partial}{\partial y}
+F_X\left(\frac{y-k}{c}\right)  \nonumber \\[2ex]
 &amp;= f_X\left(\frac{y-k}{c}\right)\frac{1}{c} \nonumber \\[2ex]
-\implies f_X\left(\frac{y-k}{c}\right)\frac{1}{c} &amp;= \frac{1}{\sqrt{2\pi}c\sigma} e^{\dfrac{1}{2}\left(\cfrac{\dfrac{y-k}{c}-\mu}{\sigma}\right)^{\textstyle 2}} \nonumber \\[2ex]
-&amp;=\frac{1}{\sqrt{2\pi}c\sigma} e^{\dfrac{1}{2}\left(\cfrac{\dfrac{(cx+k)-k}{c}-\mu}{\sigma}\right)^{\textstyle 2}}\nonumber \\[2ex]
-&amp;=\frac{1}{\sqrt{2\pi}c\sigma} e^{\dfrac{\left[(cx+k)-(k+c\mu)\right]^2}{2c^2\sigma^2}} \label{pdf.y}
+\implies f_X\left(\frac{y-k}{c}\right)\frac{1}{c} &amp;=
+\frac{1}{\sqrt{2\pi}c\sigma}
+e^{\dfrac{1}{2}\left(\cfrac{\dfrac{y-k}{c}-\mu}{\sigma}\right)^{\textstyle
+2}} \nonumber \\[2ex]
+&amp;=\frac{1}{\sqrt{2\pi}c\sigma}
+e^{\dfrac{1}{2}\left(\cfrac{\dfrac{(cx+k)-k}{c}-\mu}{\sigma}\right)^{\textstyle
+2}}\nonumber \\[2ex]
+&amp;=\frac{1}{\sqrt{2\pi}c\sigma}
+e^{\dfrac{\left[(cx+k)-(k+c\mu)\right]^2}{2c^2\sigma^2}} \label{pdf.y}
 \end{align}\]</span></p>
-<p>Where \ref{pdf.y} is clearly a <span class="math inline">\(\mathcal{N}(c\mu+k, c^2\sigma^2)\)</span> distribution, which concludes the proof.</p>
-<p><span style="float:right"><span class="math inline">\(\blacksquare\)</span></span></p>
+<p>Where \ref{pdf.y} is clearly a <span
+class="math inline">\(\mathcal{N}(c\mu+k, c^2\sigma^2)\)</span>
+distribution, which concludes the proof.</p>
+<p><span style="float:right"><span
+class="math inline">\(\blacksquare\)</span></span></p>
 <p> </p>
 </details>
 </div>
 <div style="margin-top:15px; margin-bottom:60px;">
-<p>Thus, if we multiply <span class="math inline">\(X\)</span> by the standard deviation that we desire our transformed variable to have, and then add on a constant, we arrive at any desired normally distributed random variable. Although this is somewhat trivial in the univariate case due to software implementations easily drawing from arbitrary univariate normals, this understanding proves useful when trying to draw from a multivariate normal distribution.</p>
+<p>Thus, if we multiply <span class="math inline">\(X\)</span> by the
+standard deviation that we desire our transformed variable to have, and
+then add on a constant, we arrive at any desired normally distributed
+random variable. Although this is somewhat trivial in the univariate
+case due to software implementations easily drawing from arbitrary
+univariate normals, this understanding proves useful when trying to draw
+from a multivariate normal distribution.</p>
 </div>
 </div>
-<div id="the-multivariate-case" class="section level2">
-<h2>The Multivariate Case</h2>
+<div id="the-multivariate-case" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> The Multivariate
+Case</h2>
 <hr />
-<p>The next step is to extend the univariate case to the multivariate context by demonstrating that linear transformations of multivariate normal random vectors are also multivariate normal. First, let</p>
+<p>The next step is to extend the univariate case to the multivariate
+context by demonstrating that linear transformations of multivariate
+normal random vectors are also multivariate normal. First, let</p>
 <p><span class="math display">\[\begin{align}
-\boldsymbol{X} &amp;\sim \mathrm{MVN}(\boldsymbol{\mu}_x, \boldsymbol{\Sigma}_x) \nonumber \\[1ex]
+\boldsymbol{X} &amp;\sim \mathrm{MVN}(\boldsymbol{\mu}_x,
+\boldsymbol{\Sigma}_x) \nonumber \\[1ex]
 \boldsymbol{Y} &amp;= \boldsymbol{CX} + \boldsymbol{k} \nonumber
 \end{align}\]</span></p>
 <p>Then, it follows that <span class="math display">\[\begin{align}
-\boldsymbol{Y} \sim \mathrm{MVN}(\boldsymbol{C\mu_x} + \boldsymbol{k}, \boldsymbol{ C\Sigma_x C^\top}) \label{mvres}
+\boldsymbol{Y} \sim \mathrm{MVN}(\boldsymbol{C\mu_x} + \boldsymbol{k},
+\boldsymbol{ C\Sigma_x C^\top}) \label{mvres}
 \end{align}\]</span></p>
 <p>where:</p>
 <ul>
-<li><span class="math inline">\(\boldsymbol{Y}\)</span> is a <span class="math inline">\(n \times 1\)</span> MVN random vector</li>
-<li><span class="math inline">\(\boldsymbol{X}\)</span> is a <span class="math inline">\(p \times 1\)</span> MVN random vector</li>
-<li><span class="math inline">\(\boldsymbol{C}\)</span> is a <span class="math inline">\(n \times p\)</span> matrix of constants</li>
-<li><span class="math inline">\(\boldsymbol{k}\)</span> is a <span class="math inline">\(n \times 1\)</span> vector of constants</li>
-<li><span class="math inline">\(\boldsymbol{\mu}_x\)</span> is the <span class="math inline">\(p \times 1\)</span> mean vector of <span class="math inline">\(\boldsymbol{X}\)</span></li>
-<li><span class="math inline">\(\boldsymbol{\Sigma}_x\)</span> is the <span class="math inline">\(p \times p\)</span> covariance matrix of <span class="math inline">\(\boldsymbol{X}\)</span></li>
-<li><strong>Note that <span class="math inline">\(p\)</span> can be equal to <span class="math inline">\(n\)</span></strong></li>
+<li><span class="math inline">\(\boldsymbol{Y}\)</span> is a <span
+class="math inline">\(n \times 1\)</span> MVN random vector</li>
+<li><span class="math inline">\(\boldsymbol{X}\)</span> is a <span
+class="math inline">\(p \times 1\)</span> MVN random vector</li>
+<li><span class="math inline">\(\boldsymbol{C}\)</span> is a <span
+class="math inline">\(n \times p\)</span> matrix of constants</li>
+<li><span class="math inline">\(\boldsymbol{k}\)</span> is a <span
+class="math inline">\(n \times 1\)</span> vector of constants</li>
+<li><span class="math inline">\(\boldsymbol{\mu}_x\)</span> is the <span
+class="math inline">\(p \times 1\)</span> mean vector of <span
+class="math inline">\(\boldsymbol{X}\)</span></li>
+<li><span class="math inline">\(\boldsymbol{\Sigma}_x\)</span> is the
+<span class="math inline">\(p \times p\)</span> covariance matrix of
+<span class="math inline">\(\boldsymbol{X}\)</span></li>
+<li><strong>Note that <span class="math inline">\(p\)</span> can be
+equal to <span class="math inline">\(n\)</span></strong></li>
 </ul>
 <details>
 <summary>
 <span style="color: #0888a8;">Proof</span>
 </summary>
-<p>This proof calls directly on <span class="citation"><a href="#ref-statlect" role="doc-biblioref">Taboga</a> (<a href="#ref-statlect" role="doc-biblioref">2012, 447</a>)</span>, which is also a great book for all things math-stat.</p>
-<p>For proof, recall that the MGF of the MV normal distribution is <span class="math display">\[M_X(t): \mathbb{R}^p \rightarrow \mathbb{R}= \mathbb{E}(e^{t^\top X}) = e^{t^\top \boldsymbol{\mu }+ \frac{1}{2}t^\top \boldsymbol{\Sigma }t}\]</span> for <span class="math inline">\(t \in \mathbb{R}^p\)</span>.</p>
-<p>Then for <span class="math inline">\(t \in \mathbb{R}^n\)</span> (dropping bold for matrices and vectors), the joint MGF of <span class="math inline">\(Y\)</span>, <span class="math inline">\(M_Y(t): \mathbb{R}^n \rightarrow \mathbb{R}\)</span>, is:</p>
+<p>This proof calls directly on <span class="citation">Taboga (<a
+href="#ref-statlect" role="doc-biblioref">2012, 447</a>)</span>, which
+is also a great book for all things math-stat.</p>
+<p>For proof, recall that the MGF of the MV normal distribution is <span
+class="math display">\[M_X(t): \mathbb{R}^p \rightarrow \mathbb{R}=
+\mathbb{E}(e^{t^\top X}) = e^{t^\top \boldsymbol{\mu }+
+\frac{1}{2}t^\top \boldsymbol{\Sigma }t}\]</span> for <span
+class="math inline">\(t \in \mathbb{R}^p\)</span>.</p>
+<p>Then for <span class="math inline">\(t \in \mathbb{R}^n\)</span>
+(dropping bold for matrices and vectors), the joint MGF of <span
+class="math inline">\(Y\)</span>, <span class="math inline">\(M_Y(t):
+\mathbb{R}^n \rightarrow \mathbb{R}\)</span>, is:</p>
 <p><span class="math display">\[\begin{align}
 M_Y(t) &amp;= \mathbb{E}(e^{t^\top Y}) \nonumber \\[2ex]
-       &amp;= \mathbb{E}\left(e^{t^\top(CX + k)}\right) \nonumber \\[2ex]
-&amp;=  \mathbb{E}\left(e^{t^\top CX}e^{t^\top k}\right) \nonumber \\[2ex]
-&amp;= e^{t^\top k}\mathbb{E}\left(e^{t^\top CX}\right) \nonumber \\[2ex]
+       &amp;= \mathbb{E}\left(e^{t^\top(CX + k)}\right) \nonumber
+\\[2ex]
+&amp;=  \mathbb{E}\left(e^{t^\top CX}e^{t^\top k}\right) \nonumber
+\\[2ex]
+&amp;= e^{t^\top k}\mathbb{E}\left(e^{t^\top CX}\right) \nonumber
+\\[2ex]
 &amp;= e^{t^\top k} M_X(tC) \nonumber \\[2ex]
-&amp;= e^{t^\top k} e^{t^\top C \mu + \frac{1}{2}t^\top C \Sigma C^\top t} \nonumber \\[2ex]
-&amp;= e^{ t^\top k + t^\top C \mu  + \frac{1}{2}t^\top C \Sigma C^\top t} \nonumber \\[2ex]
-&amp;= e^{t^\top (C \mu + k) + \frac{1}{2}t^\top C \Sigma C^\top t} \label{mgf}
+&amp;= e^{t^\top k} e^{t^\top C \mu + \frac{1}{2}t^\top C \Sigma C^\top
+t} \nonumber \\[2ex]
+&amp;= e^{ t^\top k + t^\top C \mu  + \frac{1}{2}t^\top C \Sigma C^\top
+t} \nonumber \\[2ex]
+&amp;= e^{t^\top (C \mu + k) + \frac{1}{2}t^\top C \Sigma C^\top t}
+\label{mgf}
 \end{align}\]</span></p>
-<p>And, equation \ref{mgf} is clearly the MGF of a <span class="math inline">\(\mathrm{MVN}(\boldsymbol{C\mu + k}, \boldsymbol{C\Sigma C^\top})\)</span> distribution, which by the MGF Uniqueness Theorem implies that <span class="math inline">\(Y\)</span> has this distribution, which concludes the proof.</p>
-<p><span style="float:right"><span class="math inline">\(\blacksquare\)</span></span></p>
+<p>And, equation \ref{mgf} is clearly the MGF of a <span
+class="math inline">\(\mathrm{MVN}(\boldsymbol{C\mu + k},
+\boldsymbol{C\Sigma C^\top})\)</span> distribution, which by the MGF
+Uniqueness Theorem implies that <span class="math inline">\(Y\)</span>
+has this distribution, which concludes the proof.</p>
+<p><span style="float:right"><span
+class="math inline">\(\blacksquare\)</span></span></p>
 </details>
 <p><br />
 </p>
 </div>
 </div>
-<div id="generating-from-the-mv-normal" class="section level1 tabset tabset-fade tabset-pills">
-<h1 class="tabset tabset-fade tabset-pills">Generating from the MV Normal</h1>
+<div id="generating-from-the-mv-normal"
+class="section level1 tabset tabset-fade tabset-pills" number="3">
+<h1 class="tabset tabset-fade tabset-pills"><span
+class="header-section-number">3</span> Generating from the MV
+Normal</h1>
 <hr />
-<p><strong>Note</strong>: <em>This exposition uses a bivariate normal, but readily extends to arbitrarily large dimensions.</em></p>
-<p>In short, the steps to generate from any multivariate normal distribution are:</p>
+<p><strong>Note</strong>: <em>This exposition uses a bivariate normal,
+but readily extends to arbitrarily large dimensions.</em></p>
+<p>In short, the steps to generate from any multivariate normal
+distribution are:</p>
 <ol style="list-style-type: decimal">
-<li><p>Decide on a desired covariance matrix, <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span></p></li>
-<li><p>Decide on a desired mean vector, <span class="math inline">\(\boldsymbol{\mu}_y = \boldsymbol{k}\)</span></p></li>
-<li><p>Generate <span class="math inline">\(\boldsymbol{X}\)</span> as independent standard normal <span class="math inline">\((0,1)\)</span> random variables</p></li>
-<li><p>Obtain the matrix square-root, <span class="math inline">\(\boldsymbol{C}\)</span>, of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> (so that <span class="math inline">\(\boldsymbol{CC}^\top = \boldsymbol{\Sigma}_y\)</span>)</p></li>
-<li><p>Multiply <span class="math inline">\(\boldsymbol{CX}\)</span> and add <span class="math inline">\(\boldsymbol{CX} + \boldsymbol{k}\)</span></p></li>
+<li><p>Decide on a desired covariance matrix, <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span></p></li>
+<li><p>Decide on a desired mean vector, <span
+class="math inline">\(\boldsymbol{\mu}_y =
+\boldsymbol{k}\)</span></p></li>
+<li><p>Generate <span class="math inline">\(\boldsymbol{X}\)</span> as
+independent standard normal <span class="math inline">\((0,1)\)</span>
+random variables</p></li>
+<li><p>Obtain the matrix square-root, <span
+class="math inline">\(\boldsymbol{C}\)</span>, of <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span> (so that <span
+class="math inline">\(\boldsymbol{CC}^\top =
+\boldsymbol{\Sigma}_y\)</span>)</p></li>
+<li><p>Multiply <span class="math inline">\(\boldsymbol{CX}\)</span> and
+add <span class="math inline">\(\boldsymbol{CX} +
+\boldsymbol{k}\)</span></p></li>
 </ol>
-<p>Assuming we’ve done <em>steps 1 and 2</em> already, in <em>step 3</em> we now need to generate independent univariate standard normal random variables. To see why, recall from above that we have</p>
+<p>Assuming we’ve done <em>steps 1 and 2</em> already, in <em>step
+3</em> we now need to generate independent univariate standard normal
+random variables. To see why, recall from above that we have</p>
 <p><span class="math display">\[\begin{align}
-\boldsymbol{X} &amp;\sim \mathrm{MVN}(\boldsymbol{\mu}_x, \boldsymbol{\Sigma}_x) \nonumber \\[1ex]
-\boldsymbol{Y} &amp;= \boldsymbol{CX} + \boldsymbol{k} \nonumber \\[1.5ex]
-\implies \boldsymbol{Y} &amp;\sim \mathrm{MVN}(\boldsymbol{C\mu_x} + \boldsymbol{k}, \boldsymbol{ C\Sigma_x C^\top})
+\boldsymbol{X} &amp;\sim \mathrm{MVN}(\boldsymbol{\mu}_x,
+\boldsymbol{\Sigma}_x) \nonumber \\[1ex]
+\boldsymbol{Y} &amp;= \boldsymbol{CX} + \boldsymbol{k} \nonumber
+\\[1.5ex]
+\implies \boldsymbol{Y} &amp;\sim \mathrm{MVN}(\boldsymbol{C\mu_x} +
+\boldsymbol{k}, \boldsymbol{ C\Sigma_x C^\top})
 \end{align}\]</span></p>
-<p>Interestingly, suppose we generate the observations on <span class="math inline">\(\boldsymbol{X}\)</span> as i.i.d. standard normal random variables: <span class="math display">\[\begin{align}
+<p>Interestingly, suppose we generate the observations on <span
+class="math inline">\(\boldsymbol{X}\)</span> as i.i.d. standard normal
+random variables: <span class="math display">\[\begin{align}
 \boldsymbol{\mu}_x &amp;= (0,0) \nonumber \\[2ex]
 \boldsymbol{\Sigma}_x &amp;= \begin{bmatrix}
 1 &amp; 0 \\
-0 &amp; 1 
-\end{bmatrix} \nonumber 
+0 &amp; 1
+\end{bmatrix} \nonumber
 \end{align}\]</span></p>
-<p>Then it is true that <span class="math inline">\(\boldsymbol{\Sigma}_x = \boldsymbol{I}\)</span>. This result lends nicely to <em>step 4</em> (find the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>), because to obtain <span class="math inline">\(\boldsymbol{Y} \sim \mathrm{MVN}(\boldsymbol{\mu}_y, \boldsymbol{\Sigma}_y)\)</span>, we simply have to find a suitable matrix <span class="math inline">\(\boldsymbol{C}\)</span> such that multiplying <span class="math inline">\(\boldsymbol{CX}\)</span> yields<span class="math display">\[\mathrm{Cov}(\boldsymbol{Y}) = \mathrm{Cov}(\boldsymbol{CX}) = \boldsymbol{C\Sigma}_x \boldsymbol{C}^\top = \boldsymbol{CIC}^\top = \boldsymbol{CC}^\top\]</span> as already proven. In order to arrive at this matrix of constants, note that the square-root of a matrix, <span class="math inline">\(\boldsymbol{A}\)</span>, is any matrix, <span class="math inline">\(\boldsymbol{B}\)</span>, such that <span class="math inline">\(\boldsymbol{BB}^\top = \boldsymbol{A}\)</span>.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This implies that the matrix of constants, <span class="math inline">\(\boldsymbol{C}\)</span>, in <span class="math inline">\(\boldsymbol{CX}\)</span> is in fact the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, directly analogous to the univariate case in which we multiplied <span class="math inline">\(X\sigma_y\)</span>. Thus, by generating i.i.d. standard normal variables in step 3, we then deduce that <span class="math inline">\(\boldsymbol{C}\)</span> must be the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> in order to get the desired structure for <span class="math inline">\(\boldsymbol{Y}\)</span>. In <em>step 5</em>, we can finally add on a vector of constants, <span class="math inline">\(\boldsymbol{k} = \boldsymbol{\mu}_y\)</span>, to get the desired mean vector for <span class="math inline">\(\boldsymbol{Y}\)</span>, because <span class="math inline">\(\boldsymbol{\mu}_x = \boldsymbol{0}\)</span>.</p>
-<p>To find the matrix square-root of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, two factorizations of <span class="math inline">\(\boldsymbol{\Sigma}_y = \boldsymbol{CC^\top}\)</span> immediately come to mind, although several others can also work:</p>
+<p>Then it is true that <span
+class="math inline">\(\boldsymbol{\Sigma}_x = \boldsymbol{I}\)</span>.
+This result lends nicely to <em>step 4</em> (find the matrix square-root
+of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>), because
+to obtain <span class="math inline">\(\boldsymbol{Y} \sim
+\mathrm{MVN}(\boldsymbol{\mu}_y, \boldsymbol{\Sigma}_y)\)</span>, we
+simply have to find a suitable matrix <span
+class="math inline">\(\boldsymbol{C}\)</span> such that multiplying
+<span class="math inline">\(\boldsymbol{CX}\)</span> yields<span
+class="math display">\[\mathrm{Cov}(\boldsymbol{Y}) =
+\mathrm{Cov}(\boldsymbol{CX}) = \boldsymbol{C\Sigma}_x
+\boldsymbol{C}^\top = \boldsymbol{CIC}^\top =
+\boldsymbol{CC}^\top\]</span> as already proven. In order to arrive at
+this matrix of constants, note that the square-root of a matrix, <span
+class="math inline">\(\boldsymbol{A}\)</span>, is any matrix, <span
+class="math inline">\(\boldsymbol{B}\)</span>, such that <span
+class="math inline">\(\boldsymbol{BB}^\top = \boldsymbol{A}\)</span>.<a
+href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This
+implies that the matrix of constants, <span
+class="math inline">\(\boldsymbol{C}\)</span>, in <span
+class="math inline">\(\boldsymbol{CX}\)</span> is in fact the matrix
+square-root of <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, directly analogous
+to the univariate case in which we multiplied <span
+class="math inline">\(X\sigma_y\)</span>. Thus, by generating i.i.d.
+standard normal variables in step 3, we then deduce that <span
+class="math inline">\(\boldsymbol{C}\)</span> must be the matrix
+square-root of <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span> in order to get the
+desired structure for <span
+class="math inline">\(\boldsymbol{Y}\)</span>. In <em>step 5</em>, we
+can finally add on a vector of constants, <span
+class="math inline">\(\boldsymbol{k} = \boldsymbol{\mu}_y\)</span>, to
+get the desired mean vector for <span
+class="math inline">\(\boldsymbol{Y}\)</span>, because <span
+class="math inline">\(\boldsymbol{\mu}_x = \boldsymbol{0}\)</span>.</p>
+<p>To find the matrix square-root of <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span>, two factorizations
+of <span class="math inline">\(\boldsymbol{\Sigma}_y =
+\boldsymbol{CC^\top}\)</span> immediately come to mind, although several
+others can also work:</p>
 <ol style="list-style-type: decimal">
-<li><p><strong>Cholesky decomposition</strong> – <span class="math inline">\(\boldsymbol{LL}^\top\)</span> where <span class="math inline">\(\boldsymbol{L}\)</span> is lower-triangular. This is unique for positive definite matrices, which all valid covariance matrices are.</p></li>
-<li><p><strong>Singular values decomposition</strong> (SVD) – <span class="math inline">\(\boldsymbol{UDV}^\top\)</span>, where <span class="math inline">\(\boldsymbol{U}\)</span> and <span class="math inline">\(\boldsymbol{V}\)</span> are orthogonal matrices whose columns are the left and right singular vectors, respectively, and <span class="math inline">\(\boldsymbol{D}\)</span> is a diagonal matrix containing the singular values. Because of the orthogonal and diagonal matrices, this is geometrically a rotation, elongation, and rotation. <strong>Note</strong> that for real, symmetric, positive-definite matrices, this is identical to the spectral decomposition.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></p></li>
+<li><p><strong>Cholesky decomposition</strong> – <span
+class="math inline">\(\boldsymbol{LL}^\top\)</span> where <span
+class="math inline">\(\boldsymbol{L}\)</span> is lower-triangular. This
+is unique for positive definite matrices, which all valid covariance
+matrices are.</p></li>
+<li><p><strong>Singular values decomposition</strong> (SVD) – <span
+class="math inline">\(\boldsymbol{UDV}^\top\)</span>, where <span
+class="math inline">\(\boldsymbol{U}\)</span> and <span
+class="math inline">\(\boldsymbol{V}\)</span> are orthogonal matrices
+whose columns are the left and right singular vectors, respectively, and
+<span class="math inline">\(\boldsymbol{D}\)</span> is a diagonal matrix
+containing the singular values. Because of the orthogonal and diagonal
+matrices, this is geometrically a rotation, elongation, and rotation.
+<strong>Note</strong> that for real, symmetric, positive-definite
+matrices, this is identical to the spectral decomposition.<a href="#fn2"
+class="footnote-ref" id="fnref2"><sup>2</sup></a></p></li>
 </ol>
 <p><br />
 </p>
 <hr />
-<div id="via-cholesky" class="section level2">
-<h2>Via Cholesky</h2>
+<div id="via-cholesky" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Via Cholesky</h2>
 <hr />
-<p>To obtain the matrix square-root, <span class="math inline">\(\boldsymbol{C}\)</span>, via the Cholesky decomposition decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{LL}^\top\]</span> and multiply <span class="math display">\[\boldsymbol{Y} = \boldsymbol{LX}\]</span> which yields <span class="math display">\[\boldsymbol{Y} \sim (\boldsymbol{0}, \boldsymbol{LL^\top})\]</span> which has exactly the covariance structure that we wanted, as <span class="math inline">\(\boldsymbol{L}\)</span> is equivalent to the matrix <span class="math inline">\(\boldsymbol{C}\)</span> that we were looking for.</p>
+<p>To obtain the matrix square-root, <span
+class="math inline">\(\boldsymbol{C}\)</span>, via the Cholesky
+decomposition decompose <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span
+class="math display">\[\boldsymbol{\Sigma}_y =
+\boldsymbol{LL}^\top\]</span> and multiply <span
+class="math display">\[\boldsymbol{Y} = \boldsymbol{LX}\]</span> which
+yields <span class="math display">\[\boldsymbol{Y} \sim (\boldsymbol{0},
+\boldsymbol{LL^\top})\]</span> which has exactly the covariance
+structure that we wanted, as <span
+class="math inline">\(\boldsymbol{L}\)</span> is equivalent to the
+matrix <span class="math inline">\(\boldsymbol{C}\)</span> that we were
+looking for.</p>
 <p><br />
 </p>
 </div>
-<div id="via-svd" class="section level2">
-<h2>Via SVD</h2>
+<div id="via-svd" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Via SVD</h2>
 <hr />
-For the SVD, decompose <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{UDV}^\top = \boldsymbol{UDU}^\top\]</span> The last equality follows in this case because <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> is a symmetric, positive definite matrix.
+For the SVD, decompose <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span> as <span
+class="math display">\[\boldsymbol{\Sigma}_y = \boldsymbol{UDV}^\top =
+\boldsymbol{UDU}^\top\]</span> The last equality follows in this case
+because <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> is a
+symmetric, positive definite matrix.
 <details>
 <summary>
 <span style="color: #0888a8;">Proof</span>
 </summary>
 <p><br />
 </p>
-<p>Suppose we take the SVD of a symmetric matrix <span class="math inline">\(A\)</span>. Then the left singluar vectors, <span class="math inline">\(U\)</span>, are the eigenvectors of <span class="math inline">\(AA^\top\)</span>, while the right singular vectors, <span class="math inline">\(V\)</span>, are the eigenvectors of <span class="math inline">\(A^\top A\)</span> (see <a href="https://math.mit.edu/classes/18.095/2016IAP/lec2/SVD_Notes.pdf">this</a> link for proof). However, since <span class="math inline">\(A\)</span> is symmetric, <span class="math display">\[A = A^\top \implies AA^\top = A^\top A \implies U = V\]</span></p>
-<p><span style="float:right"><span class="math inline">\(\blacksquare\)</span></span></p>
+<p>Suppose we take the SVD of a symmetric matrix <span
+class="math inline">\(A\)</span>. Then the left singluar vectors, <span
+class="math inline">\(U\)</span>, are the eigenvectors of <span
+class="math inline">\(AA^\top\)</span>, while the right singular
+vectors, <span class="math inline">\(V\)</span>, are the eigenvectors of
+<span class="math inline">\(A^\top A\)</span> (see <a
+href="https://math.mit.edu/classes/18.095/2016IAP/lec2/SVD_Notes.pdf">this</a>
+link for proof). However, since <span class="math inline">\(A\)</span>
+is symmetric, <span class="math display">\[A = A^\top \implies AA^\top =
+A^\top A \implies U = V\]</span></p>
+<p><span style="float:right"><span
+class="math inline">\(\blacksquare\)</span></span></p>
 </details>
 <p><br />
 </p>
-<p>Finally, pre-multiplying the univariate normals in <span class="math inline">\(X\)</span> by the matrix square-root, <span class="math inline">\(\boldsymbol{C}\)</span>, of <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> yields (dropping bolding)</p>
+<p>Finally, pre-multiplying the univariate normals in <span
+class="math inline">\(X\)</span> by the matrix square-root, <span
+class="math inline">\(\boldsymbol{C}\)</span>, of <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span> yields (dropping
+bolding)</p>
 <p><span class="math display">\[\begin{align}
 Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
-\implies Y &amp;\sim \left(\boldsymbol{0}, UD^{1/2}\Sigma_x (UD^{1/2})^\top \right) \nonumber \\[1ex]
-&amp; \sim \left(\boldsymbol{0}, UD^{1/2} I (UD^{1/2})^\top \right) \nonumber \\[1ex]
-&amp; \sim \left(\boldsymbol{0}, UD^{1/2}D^{1/2}U^\top\right) \nonumber \\[1ex]
+\implies Y &amp;\sim \left(\boldsymbol{0}, UD^{1/2}\Sigma_x
+(UD^{1/2})^\top \right) \nonumber \\[1ex]
+&amp; \sim \left(\boldsymbol{0}, UD^{1/2} I (UD^{1/2})^\top \right)
+\nonumber \\[1ex]
+&amp; \sim \left(\boldsymbol{0}, UD^{1/2}D^{1/2}U^\top\right) \nonumber
+\\[1ex]
 &amp; \sim \left(\boldsymbol{0} , UDU^\top\right) \nonumber \\[1ex]
 &amp; \sim \left(\boldsymbol{0} , \Sigma_y\right) \nonumber \\[1ex]
 \end{align}\]</span></p>
-<p>So to obtain the desired covariance <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span> from <span class="math inline">\(X\)</span> we simply set <span class="math inline">\(\boldsymbol{C} = \boldsymbol{UD}^{1/2}\)</span> and premultiply <span class="math inline">\(\boldsymbol{CX}\)</span>.<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></p>
+<p>So to obtain the desired covariance <span
+class="math inline">\(\boldsymbol{\Sigma}_y\)</span> from <span
+class="math inline">\(X\)</span> we simply set <span
+class="math inline">\(\boldsymbol{C} = \boldsymbol{UD}^{1/2}\)</span>
+and premultiply <span class="math inline">\(\boldsymbol{CX}\)</span>.<a
+href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></p>
 <p><br />
 </p>
 </div>
 </div>
-<div id="programming-in-r" class="section level1 tabset tabset-fade tabset-pills">
-<h1 class="tabset tabset-fade tabset-pills">Programming in R</h1>
+<div id="programming-in-r"
+class="section level1 tabset tabset-fade tabset-pills" number="4">
+<h1 class="tabset tabset-fade tabset-pills"><span
+class="header-section-number">4</span> Programming in R</h1>
 <hr />
-<div id="the-function" class="section level2">
-<h2>The function</h2>
+<div id="the-function" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> The function</h2>
 <hr />
-<p>To do this in R, we follow the steps outlined previously. Thus, we first decide on the desired mean vector, <span class="math inline">\(\boldsymbol{\mu}_y\)</span>, and covariance matrix, <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>. Recall also that a valid, full-rank covariance matrix is positive-definite.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>mu.y <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">246</span>, <span class="sc">-</span><span class="fl">1.3</span>, <span class="fl">1.645</span>)</span>
+<p>To do this in R, we follow the steps outlined previously. Thus, we
+first decide on the desired mean vector, <span
+class="math inline">\(\boldsymbol{\mu}_y\)</span>, and covariance
+matrix, <span class="math inline">\(\boldsymbol{\Sigma}_y\)</span>.
+Recall also that a valid, full-rank covariance matrix is
+positive-definite.<a href="#fn4" class="footnote-ref"
+id="fnref4"><sup>4</sup></a></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>mu.y <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">246</span>, <span class="sc">-</span><span class="fl">1.3</span>, <span class="fl">1.645</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sigma.y <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">2</span>,    .<span class="dv">66</span>, <span class="sc">-</span><span class="fl">1.2</span>,</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                   .<span class="dv">66</span>,  .<span class="dv">75</span>, <span class="sc">-</span>.<span class="dv">75</span>,</span>
@@ -709,18 +944,26 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 ## [1,]  2.00  0.66 -1.20
 ## [2,]  0.66  0.75 -0.75
 ## [3,] -1.20 -0.75  2.50</code></pre>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#check pos def</span></span>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#check pos def</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">eigen</span>(sigma.y)<span class="sc">$</span>values <span class="sc">&gt;</span> <span class="dv">0</span>)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p> </p>
-<p>Second, we’ll simulate some i.i.d. multivariate standard normal data in 3 dimensions.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#simulate trivariate iid standard normal </span></span>
+<p>Second, we’ll simulate some i.i.d. multivariate standard normal data
+in 3 dimensions.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#simulate trivariate iid standard normal </span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="dv">10000</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="dv">3</span>), <span class="at">nrow=</span><span class="dv">3</span>)</span></code></pre></div>
 <p><br />
 </p>
-<p>And then finally we take the Cholesky and SVD of the desired covariance, multiply <span class="math inline">\(\boldsymbol{X}\)</span> by the appropriate matrix <span class="math inline">\(\boldsymbol{C}\)</span>, and then add on the constant to get the desired mean.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Via cholesky</span></span>
+<p>And then finally we take the Cholesky and SVD of the desired
+covariance, multiply <span class="math inline">\(\boldsymbol{X}\)</span>
+by the appropriate matrix <span
+class="math inline">\(\boldsymbol{C}\)</span>, and then add on the
+constant to get the desired mean.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Via cholesky</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>chol.sig.y <span class="ot">=</span> <span class="fu">chol.default</span>(sigma.y)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>y.chol <span class="ot">=</span> <span class="fu">t</span>(chol.sig.y) <span class="sc">%*%</span> x <span class="co"># R returns the upper-triangular, L^t by default</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -775,8 +1018,14 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 ## [1] -0.246 -1.300  1.645</code></pre>
 <p><br />
 </p>
-<p>From the above output, it is clear that the desired covariance structure is approximated fairly well. So we can finally write our own little function that generates multivariate normal samples! In fact, the function below is virtually indistinguishable from the <a href="https://rdrr.io/cran/MASS/src/R/mvrnorm.R">source-code</a> for the <code>MASS</code> package’s <code>mvrnorm</code> function.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>my.mvrnorm <span class="ot">=</span> <span class="cf">function</span>(sigma.y, <span class="at">mu.y =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">ncol</span>(sigma.y)), n, <span class="at">method=</span><span class="st">&quot;svd&quot;</span>){</span>
+<p>From the above output, it is clear that the desired covariance
+structure is approximated fairly well. So we can finally write our own
+little function that generates multivariate normal samples! In fact, the
+function below is virtually indistinguishable from the <a
+href="https://rdrr.io/cran/MASS/src/R/mvrnorm.R">source-code</a> for the
+<code>MASS</code> package’s <code>mvrnorm</code> function.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>my.mvrnorm <span class="ot">=</span> <span class="cf">function</span>(sigma.y, <span class="at">mu.y =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">ncol</span>(sigma.y)), n, <span class="at">method=</span><span class="st">&quot;svd&quot;</span>){</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  method <span class="ot">=</span> <span class="fu">match.arg</span>(method, <span class="at">choices =</span> <span class="fu">c</span>(<span class="st">&quot;svd&quot;</span>, <span class="st">&quot;cholesky&quot;</span>))</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -800,12 +1049,25 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 <p><br />
 </p>
 </div>
-<div id="which-method-is-better" class="section level2">
-<h2>Which method is better?</h2>
+<div id="which-method-is-better" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> Which method is
+better?</h2>
 <hr />
-<p>We’ve learned that two factorizations work, but which one is “better,” numerically? This may depend on how we define “better,” but lets try and find out. First, for simplicity we will only look at the accuracy of the covariance. Second, lets say that a factorization is better if it minimizes <span class="math inline">\(max_{ij} |Cov(x_{i}, x_{j}) - D_{ij}|\)</span> where <span class="math inline">\(D_{ij}\)</span> is each element of the desired covariance matrix. That is, which method minimizes the maximum absolute deviation from the desired covariance structure.</p>
-<p>Taking this objective in mind, we can explore this by the monte carlo method. We’ll first define a function that returns the value of the objective, as well as the sample size, and decomposition used, and then compare the loss after several iterations for each sample size.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mv.loss <span class="ot">=</span> <span class="cf">function</span>(n, sigma.y){</span>
+<p>We’ve learned that two factorizations work, but which one is
+“better,” numerically? This may depend on how we define “better,” but
+lets try and find out. First, for simplicity we will only look at the
+accuracy of the covariance. Second, lets say that a factorization is
+better if it minimizes <span class="math inline">\(max_{ij} |Cov(x_{i},
+x_{j}) - D_{ij}|\)</span> where <span
+class="math inline">\(D_{ij}\)</span> is each element of the desired
+covariance matrix. That is, which method minimizes the maximum absolute
+deviation from the desired covariance structure.</p>
+<p>Taking this objective in mind, we can explore this by the monte carlo
+method. We’ll first define a function that returns the value of the
+objective, as well as the sample size, and decomposition used, and then
+compare the loss after several iterations for each sample size.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mv.loss <span class="ot">=</span> <span class="cf">function</span>(n, sigma.y){</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">=</span> n</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="dv">3</span>), <span class="at">nrow=</span><span class="dv">3</span>)</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -830,14 +1092,19 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 <span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p><br />
 </p>
-<p>And lets make sure its working as expected, using the desired covariance previously defined:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mv.loss</span>(<span class="at">n =</span> <span class="dv">100</span>, <span class="at">sigma.y =</span> sigma.y)</span></code></pre></div>
+<p>And lets make sure its working as expected, using the desired
+covariance previously defined:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mv.loss</span>(<span class="at">n =</span> <span class="dv">100</span>, <span class="at">sigma.y =</span> sigma.y)</span></code></pre></div>
 <pre class="bg-success"><code>##        chol         svd           n 
 ##   0.5096003   0.3819846 100.0000000</code></pre>
 <p><br />
 </p>
-<p>And finally, now that we know the function works, we can do several iterations at each sample size to see which method converges fastest.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<p>And finally, now that we know the function works, we can do several
+iterations at each sample size to see which method converges
+fastest.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># get things ready for parallel run, plotting</span></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;parallel&quot;</span>, <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;reshape2&quot;</span>)</span>
@@ -889,29 +1156,53 @@ Y= CX &amp;= UD^{1/2} X \nonumber \\[1ex]
 <p><img src="mvnorm_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p><br />
 </p>
-<p>From these results, it appears as though the two perform roughly the same in terms of max absolute deviations from the desired covariance structure, on average. However, it looks like they may be slightly different in small samples, so lets take a look to be sure.</p>
+<p>From these results, it appears as though the two perform roughly the
+same in terms of max absolute deviations from the desired covariance
+structure, on average. However, it looks like they may be slightly
+different in small samples, so lets take a look to be sure.</p>
 <p><br />
 </p>
 <p><img src="mvnorm_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
-<p>Lastly, then, the two approaches are equal on average, even in small samples.</p>
+<p>Lastly, then, the two approaches are equal on average, even in small
+samples.</p>
 </div>
 </div>
-<div id="references-and-footnotes" class="section level1">
-<h1>References and Footnotes</h1>
+<div id="references-and-footnotes" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> References and
+Footnotes</h1>
 <hr />
 <div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-statlect" class="csl-entry">
-Taboga, Marco. 2012. <span>“Lectures on Probability and Statistics.”</span> StatLect.
+Taboga, Marco. 2012. <span>“Lectures on Probability and
+Statistics.”</span> StatLect.
 </div>
 </div>
 </div>
-<div class="footnotes">
+<div class="footnotes footnotes-end-of-document">
 <hr />
 <ol>
-<li id="fn1"><p>This is an alternative definition of the matrix square-root. More often, it is defined as <span class="math inline">\(A=BB\)</span> instead of <span class="math inline">\(A=BB^\top\)</span><a href="#fnref1" class="footnote-back">↩︎</a></p></li>
-<li id="fn2"><p>One of the advantages of the SVD then is that it nests the well-known spectral decomposition, while always existing. In other words, there are no restrictions on the existence of the SVD, unlike the spectral decomposition. Moreover, the SVD tends to be more <a href="https://cims.nyu.edu/~donev/Teaching/NMI-Fall2010/Lecture5.handout.pdf">numerically stable</a>, at the cost of relative inefficiency.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
-<li id="fn3"><p>We could also use <span class="math inline">\(\boldsymbol{UD^{1/2}U^\top}\)</span> as the matrix square-root, although this requires more computations.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
-<li id="fn4"><p>An interesting way to understand why (other than mathematical necessity) is that the correlation between some of the variables would be <span class="math inline">\(\geq 1\)</span> or <span class="math inline">\(\leq -1\)</span> if this did not hold, suggesting either an invalid correlation, or perfectly colinear variables.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>This is an alternative definition of the matrix
+square-root. More often, it is defined as <span
+class="math inline">\(A=BB\)</span> instead of <span
+class="math inline">\(A=BB^\top\)</span><a href="#fnref1"
+class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>One of the advantages of the SVD then is that it nests
+the well-known spectral decomposition, while always existing. In other
+words, there are no restrictions on the existence of the SVD, unlike the
+spectral decomposition. Moreover, the SVD tends to be more <a
+href="https://cims.nyu.edu/~donev/Teaching/NMI-Fall2010/Lecture5.handout.pdf">numerically
+stable</a>, at the cost of relative inefficiency.<a href="#fnref2"
+class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>We could also use <span
+class="math inline">\(\boldsymbol{UD^{1/2}U^\top}\)</span> as the matrix
+square-root, although this requires more computations.<a href="#fnref3"
+class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>An interesting way to understand why (other than
+mathematical necessity) is that the correlation between some of the
+variables would be <span class="math inline">\(\geq 1\)</span> or <span
+class="math inline">\(\leq -1\)</span> if this did not hold, suggesting
+either an invalid correlation, or perfectly colinear variables.<a
+href="#fnref4" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
 
