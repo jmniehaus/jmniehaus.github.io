@@ -550,13 +550,8 @@ browser extensions (ublock, privacy badger, etc) are not blocking access
 to mathjax.js, as this site requires mathjax to display
 correctly.</em><br />
 </p>
-<div id="motivation"
-class="section level1 tabset tabset-fade tabset-pills" number="1">
-<h1 class="tabset tabset-fade tabset-pills"><span
-class="header-section-number">1</span> Motivation</h1>
-<hr />
-<div id="what-is-it" class="section level2" number="1.1">
-<h2><span class="header-section-number">1.1</span> What is it?</h2>
+<div id="what-is-it" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> What is it?</h1>
 <hr />
 <p>When reading about GLMs, authors often state that the MLEs of the
 parameters are found by iteratively reweighted least squares (IRLS).
@@ -587,39 +582,29 @@ Newton-Raphson algorithm, IRLS computes the closed-form solution to a
 weighted least squares problem. Interestingly, then, it takes an
 optimization problem without a closed-form solution, and turns it into
 one that does have a solution at each iteration.</p>
-</div>
-<div id="why-study-it" class="section level2" number="1.2">
-<h2><span class="header-section-number">1.2</span> Why study it?</h2>
-<hr />
-<p>In studying the source-code of the <code>glm()</code> function, I
-found that it was not using quasi-Newton methods (as is mostly the case
-with <code>optim</code>, <code>nlm</code>, and other optimization
-packages), but rather <code>glm</code> uses IRLS, leading me to study
-the algorithm. In fact, when users specify a GLM such as
+<p>In studying the source-code of R’s <code>glm()</code> function, it
+can be seen that <code>glm()</code> is not using quasi-Newton methods
+(as is mostly the case with <code>optim</code>, <code>nlm</code>, and
+other optimization packages), but rather <code>glm</code> uses IRLS. In
+fact, when users specify a GLM such as
 <code>glm(y~x, family=binomial)</code> in R, the underlying
 <code>glm.fit</code> routine makes a call to C, which then makes a call
 to FORTRAN, with FORTRAN finally running the IRLS algorithm (<a
 href="https://madrury.github.io/jekyll/update/statistics/2016/07/20/lm-in-R.html">This
 link</a> has a deep exposition on the process, for those interested).
 Thus, despite the fact that MLEs can often be found by Newton’s method,
-Newton’s method can cleverly be re-written as a familiar weighted
-least-squares problem, which I did not previously know.</p>
-<p><br />
+the solutions at each iteration of Newton’s method can cleverly be
+re-written as a familiar weighted least-squares problem.<br />
 </p>
 </div>
-</div>
-<div id="general-derivation" class="section level1" number="2">
-<h1><span class="header-section-number">2</span> General Derivation</h1>
+<div id="understanding-newtons-method" class="section level1"
+number="2">
+<h1><span class="header-section-number">2</span> Understanding Newton’s
+Method</h1>
 <hr />
-<div id="understanding-newtons-method" class="section level3"
-number="2.0.1">
-<h3><span class="header-section-number">2.0.1</span> Understanding
-Newton’s Method</h3>
 <div style="margin-top:25px;">
-<p>As has already been discussed, the underlying machinery of IRLS is
-the Newton-Raphson algorithm. Due to this fact, I first review Newton’s
-method for finding the zeros of a function, the results of which are
-easily ported over to a general derivation of the IRLS algorithm.</p>
+<p>Given that IRLS is just implementing Newton’s method, I first review
+that method.</p>
 </div>
 <p>Suppose we have the following function:</p>
 <p><img src="irls_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
@@ -632,14 +617,12 @@ so.</p>
 <p>In addition to the above function, <span
 class="math inline">\(f(x)\)</span>, suppose that we have a single point
 <span class="math inline">\((x_0,f(x_0))\)</span> available to us. The
-point <span class="math inline">\(x_0\)</span> is often just a guess
-about the root, with the corresponding function evaluation <span
-class="math inline">\(y_0=f(x_0)\)</span>. Because we are given the
-function in this scenario, we then know from calculus that the slope of
-the function at this point is <span
-class="math inline">\(m=f&#39;(x_0)\)</span>. So we have a point on the
-function, <span class="math inline">\(y_0 = f(x_0)\)</span>, and the
-slope at that point <span class="math inline">\(m =
+value <span class="math inline">\(x_0\)</span> is often just a guess
+about the root. Because we are given the function in this scenario, we
+then know from calculus that the slope of the function at this point is
+<span class="math inline">\(m=f&#39;(x_0)\)</span>. So we have a point
+on the function, <span class="math inline">\(y_0 = f(x_0)\)</span>, and
+the slope at that point <span class="math inline">\(m =
 f&#39;(x_0)\)</span>. We can then linearly approximate the function
 using the point-slope form of the tangent at <span
 class="math inline">\((x_0,f(x_0))\)</span>:</p>
@@ -649,14 +632,13 @@ y-f(x_0) &amp;= f&#39;(x_0)(x-x_0) \nonumber \\
 \implies y &amp;= f(x_0) + f&#39;(x_0)(x-x_0) \label{newton} \\
 \end{align}\]</span></p>
 <p>As an alternative to the point-slope view, we could look at this as a
-Taylor series expansion of <span class="math inline">\(f(x)\)</span>
-about the point <span class="math inline">\(x_0\)</span>, where we
-simply drop the higher order polynomials altogether. The Taylor Series
-view will become important when applying the above to ML estimation.</p>
-<p>Looking at this process graphically, suppose we select an arbitrary
-point <span class="math inline">\(x_0\)</span>, and draw its
-corresponding linear approximation to <span
-class="math inline">\(f(x)\)</span>:</p>
+1-term Taylor Series expansion of <span
+class="math inline">\(f(x)\)</span> about the point <span
+class="math inline">\(x_0\)</span>. The Taylor Series view will become
+important when applying the above to ML estimation.</p>
+<p>Lets visualize this. Suppose we select an arbitrary point <span
+class="math inline">\(x_0\)</span>, and draw its corresponding linear
+approximation to <span class="math inline">\(f(x)\)</span>:</p>
 <p><img src="irls_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Glancing at the plot, it looks like the point at which the red
 tangent intersects the x-axis is somewhat closer to the original
@@ -667,8 +649,12 @@ to <span class="math inline">\(x_1\)</span>, where <span
 class="math inline">\(x_1\)</span> is the point where the original red
 tangent intersects the x-axis? Lets find out.</p>
 <p>First, we have the equation for the red line; thus, we can obtain the
-x-intercept by solving for <span class="math inline">\(x=x_1\)</span> in
-equation \ref{newton}:</p>
+x-intercept by solving for <span class="math inline">\(x\)</span> in
+equation \ref{newton}. For clarity, after setting the left-hand side to
+zero below, I’ll call recode <span class="math inline">\(x\)</span> to
+be <span class="math inline">\(x_1\)</span>, implying that this is the
+value of <span class="math inline">\(x\)</span> at the next iteration of
+guessing:</p>
 <p><span class="math display">\[\begin{align}
 y &amp;= f(x_0) + f&#39;(x_0)(x-x_0) \nonumber \\
 \nonumber \\
@@ -676,10 +662,14 @@ y &amp;= f(x_0) + f&#39;(x_0)(x-x_0) \nonumber \\
 \nonumber \\
 x_1 &amp;= x_0 - \dfrac{f(x_0)}{f&#39;(x_0)}
 \end{align}\]</span></p>
-<p>Now that we have <span class="math inline">\(x_1\)</span>, we can
-obtain the corresponding tangent/linear approximation to <span
-class="math inline">\(f(x)\)</span>, but this time at <span
-class="math inline">\(f(x_1)\)</span>. Graphically, then:</p>
+<p>We can then evaluate the function <span
+class="math inline">\(f(x)\)</span> at <span
+class="math inline">\(x_0\)</span>, and see if we’ve achieved a value of
+zero. If not, we then continue iterating by taking linear approximations
+at the current iterate’s value, i.e., at <span
+class="math inline">\([x_1, f(x_1)]\)</span> now. Graphically finding
+this next linear approximation at <span class="math inline">\([x_1,
+f(x_1)]\)</span>, we have:</p>
 <p><img src="irls_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>Now a pattern is emerging. The <span
 class="math inline">\(x\)</span>-intercepts of the tangent lines seem to
@@ -693,11 +683,12 @@ the <span class="math inline">\(x\)</span>-intercepts stop changing by
 some tolerance limit, we will converge to the zero of the function.
 Graphically, carrying this process (nearly)<a href="#fn3"
 class="footnote-ref" id="fnref3"><sup>3</sup></a> to its limit yields
-the following set of points:</p>
+the following set of points, and corresponding linear
+approximations:</p>
 <p><img src="irls_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<p>To verify that the algorithm converges, the function here is <span
-class="math inline">\(f(x) = -e^x + 4\)</span>. Solving for the zero
-analytically yields <span class="math inline">\(\ln(4) =
+<p>Finally, to verify that the above algorithm converges, the function
+here is <span class="math inline">\(f(x) = -e^x + 4\)</span>. Solving
+for the zero analytically yields <span class="math inline">\(\ln(4) =
 1.3862944\)</span>. The below R-code shows that the Newton Method
 correctly arrives at this solution:</p>
 <div class="sourceCode" id="cb1"><pre
@@ -746,23 +737,23 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a hr
 <p><br />
 </p>
 </div>
-<div id="putting-the-iterative-in-irls" class="section level3"
-number="2.0.2">
-<h3><span class="header-section-number">2.0.2</span> Putting the
-“Iterative” in IRLS</h3>
+<div id="putting-the-iterative-in-irls" class="section level1"
+number="3">
+<h1><span class="header-section-number">3</span> Putting the “Iterative”
+in IRLS</h1>
 <hr />
 <p>Now that we’ve reviewed Newton’s method (a.k.a., Newton-Raphson), we
 might wonder why this is useful for maximum likelihood estimation. In
 MLE we want to find the parameter vector that maximizes the
 log-likelihood function (i.e., <span class="math inline">\(\mathop{\arg
-\max}_\theta\ln\mathcal{L}(\theta|X)\)</span>). From basic calculus we
-know that to do so we simply take the first derivative of the likelihood
-function, set this equal to zero, and solve this first order condition
-for <span class="math inline">\(\theta\)</span>. However, in most
-instances of estimating generalized linear models, a closed form
-solution does not exist due to the presence of transcendental functions.
-Thus, a non-analytic solution is required, and Newton’s method provides
-one means of arriving at such a solution.</p>
+\max}_\theta\ln\mathcal{L}(\theta|X)\)</span>). From calculus we know
+that to do so we take the first derivative of the likelihood function,
+set this equal to zero, and solve this first order condition for <span
+class="math inline">\(\theta\)</span>. However, in most instances of
+estimating generalized linear models, a closed form solution does not
+exist due to the presence of transcendental functions. Thus, a
+non-analytic solution is required, and Newton’s method provides one
+means of arriving at such a solution.</p>
 <p>Proceeding with the general derivation, suppose we have a likelihood
 function for a generalized linear model, and we take its natural
 logarithm:</p>
@@ -801,19 +792,21 @@ observations, <span class="math inline">\(i\)</span>.</p></li>
 \end{align}\]</span></p>
 <p>Just as we wanted to find the zeros of a function in the preceding
 review of Newton’s Method, we want to do so as well in equation
-\ref{foc}, but now we are finding the zeros of the first derivative
-instead of the original function. That is, we want to find the values of
-<span class="math inline">\(\beta=\hat\beta\)</span> where the gradient
-is zero. This location will be a local extremum of the likelihood, and
-can be arrived at by Newton’s method.</p>
+\ref{foc}, but now we are finding the zeros of the <em>gradient</em> of
+the likelihood, not the likelihood function itself. That is, we want to
+find the values of <span class="math inline">\(\beta\)</span> where the
+gradient is zero. We will call this solution <span
+class="math inline">\(\hat\beta\)</span>. This location will be a local
+extremum of the likelihood, and can be arrived at by Newton’s
+method.</p>
 <p>Specifically, we take the gradient of the log-likelihood with respect
 to <span class="math inline">\(\beta\)</span>. Since we want to find the
 zeros of this gradient as in the preceding Newton review, we take its
 Taylor series expansion, again ignoring higher order polynomials in
 order to linearize the gradient:</p>
 <p><span class="math display">\[\begin{align*}
-\nabla l(\boldsymbol{\beta}) \approx \nabla l(\boldsymbol{b}_0) +
-\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)(\boldsymbol{\beta }-
+\nabla_\beta^l \approx \nabla_\beta^l(\boldsymbol{b}_0) +
+\boldsymbol{\mathcal{H}}^l(\boldsymbol{b}_0)(\boldsymbol{\beta }-
 \boldsymbol{b}_0)
 \end{align*}\]</span></p>
 <p>where:</p>
@@ -821,63 +814,52 @@ order to linearize the gradient:</p>
 <li><p><span class="math inline">\(\boldsymbol{b}_0\)</span> is an
 initial <span class="math inline">\(k \times 1\)</span> guess about the
 parameter vector</p></li>
-<li><p><span class="math inline">\(\nabla l (\boldsymbol{b}_0)\)</span>
-is the <span class="math inline">\(k \times 1\)</span> gradient vector
-of the log-likelihood evaluated at <span
+<li><p><span class="math inline">\(\nabla_\beta^l
+(\boldsymbol{b}_0)\)</span> is the <span class="math inline">\(k \times
+1\)</span> gradient vector of the log-likelihood w.r.t. <span
+class="math inline">\(\beta\)</span> evaluated at <span
 class="math inline">\(b_0\)</span></p></li>
 <li><p>And <span
-class="math inline">\(\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)\)</span>
+class="math inline">\(\boldsymbol{\mathcal{H}}^l(\boldsymbol{b}_0)\)</span>
 is the <span class="math inline">\(k \times k\)</span> Hessian of the
 log-likelihood, similarly evaluated at <span
 class="math inline">\(b_0\)</span>.</p></li>
 </ul>
-<p>We can then re-arrange this as in the preceding Newton review in
-order to get an updated guess about the optimal solution. That is,
-setting the LHS to zero and solving for <span
-class="math inline">\(\beta\)</span> below (equivalent of finding the
-<span class="math inline">\(x\)</span>-intercept of the tangent in the
-Newton example):</p>
+<p>We can then solve for where this linear approximation equals zero to
+find an updated guess for the root, just as we did in the
+single-variable case previously. We first set the equation for the
+hyperplane to zero, and solve for <span
+class="math inline">\(\boldsymbol{\beta}\)</span> to get an updated
+solution for the root, a solution which we will call <span
+class="math inline">\(\boldsymbol{b}_1\)</span>.</p>
 <p><span class="math display">\[\begin{align}
-\nabla l(\boldsymbol{\beta}) &amp;= \nabla l(\boldsymbol{b}_0) +
-\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)(\boldsymbol{\beta }-
+\boldsymbol{0} &amp;= \nabla_\beta^l(\boldsymbol{b}_0) +
+\boldsymbol{\mathcal{H}}^l(\boldsymbol{b}_0)(\boldsymbol{\beta }-
 \boldsymbol{b}_0) \nonumber \\
 \nonumber \\
-\implies \boldsymbol{\beta }&amp;= \boldsymbol{b}_0 -
-[\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)]^{-1} \cdot \nabla
-l(\boldsymbol{b}_0)\label{newton:glm}
+\implies \boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 -
+[\boldsymbol{\mathcal{H}}^l(\boldsymbol{b}_0)]^{-1} \cdot
+\nabla_\beta^l(\boldsymbol{b}_0)\label{newton:glm}
 \end{align}\]</span></p>
-<p>Recalling from the previous example of Newton’s method, <span
-class="math inline">\(\boldsymbol{\beta}\)</span> in \ref{newton:glm} is
-the equivalent of the <span class="math inline">\(x\)</span>-intercepts
-of the tangent lines. That is, <span
-class="math inline">\(\beta\)</span> reflects our new guess for the
-solution to equation \ref{foc}, and therefore the new point about which
-we will expand the gradient of the log-likelihood. Thus, re-writing
-<span class="math inline">\(\boldsymbol{\beta}\)</span> on the LHS of
-\ref{newton:glm} as <span
-class="math inline">\(\boldsymbol{b}_1\)</span> for clarity:</p>
-<p><span class="math display">\[\begin{align}
-\boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 -
-[\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)]^{-1} \cdot \nabla
-l(\boldsymbol{b}_0)
-\end{align}\]</span></p>
-<p>And lastly, as with the previous example of Newton’s method, we
-simply iterate until the old and new guesses differ by less than some
-constant. Because the guesses are often vectors, this difference takes
-the form of the Euclidean distance between the two vectors. That is, if
+<p>And lastly, as with the single-variable review of Newton’s method, we
+simply iterate until the old and new solutions differ by less than some
+constant. Because the solutions are vectors, this difference takes the
+form of the Euclidean distance between the two vectors. That is, if
 <span class="math inline">\(\left\lVert \boldsymbol{b}_{p} -
 \boldsymbol{b}_{p-1} \right\rVert\)</span>, is less than some tolerance
 limit, the algorithm has converged, where <span
 class="math inline">\(p\)</span> indexes the iteration number of
 Newton’s procedure, and <span class="math inline">\(||\)</span> denotes
-the <span class="math inline">\(l_2\)</span> norm of a vector.</p>
+the <span class="math inline">\(l_2\)</span> norm of a vector. (In
+practice, the convergence criteria for Newton’s Method tends to be a bit
+more complicated than this for most software, to ensure stability.)</p>
 <p><br />
 </p>
 </div>
-<div id="putting-the-least-squares-in-irls" class="section level3"
-number="2.0.3">
-<h3><span class="header-section-number">2.0.3</span> Putting the “Least
-Squares” in IRLS</h3>
+<div id="putting-the-least-squares-in-irls" class="section level1"
+number="4">
+<h1><span class="header-section-number">4</span> Putting the “Least
+Squares” in IRLS</h1>
 <hr />
 <p>So far we have seen the “iterative” part of IRLS from Newton’s
 method; what about the “weighted least squares” part? In order to get
@@ -887,11 +869,11 @@ as <span class="math display">\[\frac{\mathrm{d}}{\mathrm{d}x}[f(g(x)] =
 \frac{\mathrm{d}f}{\mathrm{d}g}\frac{\mathrm{d}g}{\mathrm{d}x}\]</span>
 Then, suppose we have a log-likelihood as defined in equation
 \ref{like}, denoted as <span class="math inline">\(l\)</span>, and let
-<span class="math inline">\(\boldsymbol{x}_{i}\boldsymbol{\beta }\equiv
-\mu_i\)</span>.<a href="#fn4" class="footnote-ref"
-id="fnref4"><sup>4</sup></a> Then it follows from the chain rule and
-this likelihood that the first and second derivatives with respect to a
-single parameter, <span class="math inline">\(\beta_j\)</span>, are:</p>
+<span class="math inline">\(\boldsymbol{x}_{i}\boldsymbol{\beta }=
+\mu_i\)</span> be the linear predictor. Then it follows from the chain
+rule and this likelihood that the first and second derivatives with
+respect to a single parameter, <span
+class="math inline">\(\beta_j\)</span>, are:</p>
 <p><span class="math display">\[\begin{align}
 \dfrac{\partial l}{\partial \beta_j} &amp;= \sum_{i=1}^n\dfrac{\partial
 l}{\partial \mu_i}\dfrac{\partial \mu_i}{\partial \beta_j} \nonumber \\
@@ -940,12 +922,11 @@ Hessian. That is, Newton’s method as applied to MLE in equation
 equations \ref{grad} and \ref{hess}. Each of these is evaluated at an
 initial guess <span class="math inline">\(\boldsymbol{b}_0\)</span>, and
 then iteration continues until convergence as previously defined. Thus,
-supposing we have this initial guess and the above equations
-equations:</p>
+supposing we have this initial guess and the above equations:</p>
 <p><span class="math display">\[\begin{align}
 \boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 -
-[\boldsymbol{\mathcal{H}}(\boldsymbol{b}_0)]^{-1} \cdot \nabla
-l(\boldsymbol{b}_0)
+[\boldsymbol{\mathcal{H}}^l(\boldsymbol{b}_0)]^{-1} \cdot
+\nabla_\beta^l(\boldsymbol{b}_0)
 \nonumber \\
 \nonumber \\
 \implies \boldsymbol{b}_1 &amp;= \boldsymbol{b}_0 + (\boldsymbol{X}^\top
@@ -967,17 +948,10 @@ l(\boldsymbol{b}_0)
 <p>And equation \ref{irls} is clearly a weighted least squares
 estimator, <span class="math inline">\(\boldsymbol{b}_1\)</span>. Thus,
 we’ve transformed the Newton-Raphson algorithm to one in which each
-iteration can be solved using weighted least squares. Accordingly, <span
-class="math inline">\(\boldsymbol{b}\)</span> is the equivalent of the
-<span class="math inline">\(x\)</span>-intercepts in the previous
-section on Newton’s method. Each estimated parameter vector, <span
-class="math inline">\(\boldsymbol{b}_p\)</span>, with <span
-class="math inline">\(p \in \mathbb{Z}^{\geq 0}\)</span> being the
-iteration number, is arrived at using weighted least squares. The next
-iteration uses this vector in updating to a new guess. Thus, the “hats”
-over the matrix <span
-class="math inline">\(\hat{\boldsymbol{W}}\)</span>, and the vectors
-<span class="math inline">\(\hat{\boldsymbol{\gamma}}\)</span> and <span
+iteration can be solved using weighted least squares. The “hats” over
+the matrix <span class="math inline">\(\hat{\boldsymbol{W}}\)</span>,
+and the vectors <span
+class="math inline">\(\hat{\boldsymbol{\gamma}}\)</span> and <span
 class="math inline">\(\hat{\boldsymbol{z}}\)</span> denote that these
 quantities rely on estimates <span
 class="math inline">\(\boldsymbol{b}_{p-1}\)</span> from the previous
@@ -991,19 +965,17 @@ for specific probability distributions, we need two quantities:</p>
 <li><p><span class="math inline">\(\dfrac{\partial ^2l}{\partial
 \mu_i^2}\)</span></p></li>
 </ol>
-<p>As such, for each of the methods considered below, both of these
+<p>As such, for each of the examples considered below, both of these
 quantities are derived.</p>
 <p><br />
 </p>
 </div>
-</div>
-<div id="logistic-regression"
-class="section level1 tabset tabset-fade tabset-pills" number="3">
-<h1 class="tabset tabset-fade tabset-pills"><span
-class="header-section-number">3</span> Logistic Regression</h1>
+<div id="example-logistic-regression" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> <em>Example:</em>
+Logistic Regression</h1>
 <hr />
-<div id="derivation" class="section level2" number="3.1">
-<h2><span class="header-section-number">3.1</span> Derivation</h2>
+<div id="derivation" class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> Derivation</h2>
 <hr />
 <p>Logistic regression is used for binary response variables, and
 assumes that each observation is distributed independently from a
@@ -1035,7 +1007,8 @@ previously</p></li>
 <li><p>And <span class="math inline">\(\pi(\cdot)\)</span> is the
 cumulative density function for the logistic distribution.</p></li>
 </ul>
-<p>Expanding on this last point,</p>
+<p>Expanding on this last point, we can re-write <span
+class="math inline">\(\pi\)</span> as:</p>
 <p><span class="math display">\[\begin{align}
 \pi(\mu_i) &amp;= \dfrac{e^{\mu_i}}{1+e^{\mu_i}} \\
 \nonumber \\
@@ -1051,36 +1024,46 @@ will need to find <span class="math inline">\(\partial \pi / \partial
 class="math inline">\(\partial \pi / \partial \mu_i\)</span> first, then
 just substitute this in when finding the partials of the likelihood. For
 <span class="math inline">\(\pi(\mu_i)\)</span>, it is a straightforward
-application of the chain and product rules:</p>
+application of the chain and product rules to arrive at:</p>
 <p><span class="math display">\[\begin{align}
-\frac{\mathrm{d}}{\mathrm{d}\mu_i} (\pi(\mu_i)) &amp;=
-\frac{\mathrm{d}}{\mathrm{d}\mu_i} \frac{e^{\mu_i}}{1+e^{\mu_i}}
-\nonumber \\
-\nonumber \\
-&amp;= \frac{\mathrm{d}}{\mathrm{d}\mu_i} e^{\mu_i}(1+e^{\mu_i})^{-1}
-\nonumber \\
-\nonumber \\
-&amp;= e^{\mu_i} (1+e^{\mu_i})^{-1} + (-1)(1+e^{\mu_i})^{-2}
-(e^{\mu_i})(e^{\mu_i}) \nonumber \\
-\nonumber \\
-&amp;= \frac{e^{\mu_i}}{1+e^{\mu_i}} -
-\frac{(e^{\mu_i})^2}{(1+e^{\mu_i})^2} \nonumber \\
-\nonumber \\
-&amp;= \frac{e^{\mu_i}(1+e^{\mu_i})}{(1+e^{\mu_i})^2} -
-\frac{(e^{\mu_i})^2}{(1+e^{\mu_i})^2} \nonumber \\
-\nonumber \\
-&amp;= \frac{e^{\mu_i}}{(1+e^{\mu_i})^2} \nonumber \\
-\nonumber \\
-&amp;= \frac{e^{\mu_i}}{1+e^{\mu_i}}\frac{1}{1+e^{\mu_i}} \nonumber  \\
-\nonumber  \\
-&amp;= \pi(\mu_i)(1-\pi(\mu_i)) \qquad \overset{\text{let}}{\equiv}
-\pi&#39;(\mu_i) \label{logistprime}
+\frac{\partial_l}{\partial\mu_i} (\pi(\mu_i)) &amp;=
+\pi(\mu_i)(1-\pi(\mu_i)) \\
+&amp; \overset{\text{let}}{\equiv} \pi&#39;(\mu_i) \label{logistprime}
 \end{align}\]</span></p>
+<div style="margin-top:-20px;">
+<details>
+<summary>
+<span style="color: #0888a8;">Derivation</span>
+</summary>
+<p><span class="math display">\[\begin{align*}
+\frac{\partial_l}{\partial\mu_i} (\pi(\mu_i)) &amp; =
+\frac{\partial_l}{\partial\mu_i} \frac{1}{1+e^{-\mu_i}} \\[2ex]
+&amp; = \frac{\partial_l}{\partial\mu_i} (1+e^{-\mu})^{-1} \\[2ex]  
+&amp; = -(1+e^{-\mu})^{-2}e^{-\mu}(-1) \\[2ex]  
+&amp; = \frac{e^{-\mu}}{(1+ e^{-\mu})^2} \\[2ex]  
+&amp; =
+\underbrace{\frac{e^{-\mu}}{1+e^{-\mu}}}_{1-\pi}\underbrace{\frac{1}{1+e^{-\mu}}}_{\pi}
+\end{align*}\]</span></p>
+</details>
+</div>
+<p> </p>
 <p>Now that we have the derivative of <span
 class="math inline">\(\pi(\mu_i)\)</span>, we can get the derivative of
 the likelihood (equation \ref{logistlike}) with respect to <span
 class="math inline">\(\mu_i\)</span> a bit easier:</p>
 <p><span class="math display">\[\begin{align}
+\dfrac{\partial}{\partial \mu_i} (\ln \mathcal{L}) &amp;=
+\dfrac{\partial}{\partial \mu_i}  \sum_i y_i \ln \pi(\mu_i) +
+(1-y_i)\ln(1-\pi(\mu_i)) \nonumber \\
+\nonumber \\
+&amp;=y_i - \pi(\mu_i) \label{logistlikeprime}
+\end{align}\]</span></p>
+<div style="margin-top:-20px;">
+<details>
+<summary>
+<span style="color: #0888a8;">Derivation</span>
+</summary>
+<span class="math display">\[\begin{align*}
 \dfrac{\partial}{\partial \mu_i} (\ln \mathcal{L}) &amp;=
 \dfrac{\partial}{\partial \mu_i}  \sum_i y_i \ln \pi(\mu_i) +
 (1-y_i)\ln(1-\pi(\mu_i)) \nonumber \\
@@ -1093,8 +1076,11 @@ class="math inline">\(\mu_i\)</span> a bit easier:</p>
 &amp; \small{\text{ (Sub. eq. \ref{logistprime} for $\pi&#39;(\mu_i)$)}}
 \nonumber \\
 \nonumber \\
-&amp;=y_i - \pi(\mu_i) \label{logistlikeprime}
-\end{align}\]</span></p>
+&amp;=y_i - \pi(\mu_i)
+\end{align*}\]</span>
+</details>
+</div>
+<p> </p>
 <p>Obtaining the second partial is again straightforward:</p>
 <p><span class="math display">\[\begin{align}
 \dfrac{\partial ^2}{\partial \mu_i^2}(\ln \mathcal{L}) &amp;=
@@ -1109,9 +1095,8 @@ class="math inline">\(f_{\mu_i}\)</span> and <span
 class="math inline">\(f_{\mu_i\mu_i}\)</span> as defined in equations
 \ref{grad} and \ref{hess}. Recalling the application of the chain-rule
 as discussed in the general derivation section, we then know that <span
-class="math inline">\(\nabla \boldsymbol{\beta}\)</span> and <span
-class="math inline">\(\mathcal{H}(\boldsymbol{\beta})\)</span> are
-defined as:</p>
+class="math inline">\(\nabla^l_\beta\)</span> and <span
+class="math inline">\(\mathcal{H}^l\)</span> are defined as:</p>
 <p><span class="math display">\[\begin{align}
 \dfrac{\partial l}{\partial \boldsymbol{\beta}} &amp;=
 \sum_{i=1}^n\boldsymbol{x}_i^\top \left[y_i - \pi(\mu_i)\right]
@@ -1141,8 +1126,8 @@ with programming the algorithm in R.</p>
 <p><br />
 </p>
 </div>
-<div id="programming-in-r" class="section level2" number="3.2">
-<h2><span class="header-section-number">3.2</span> Programming in R</h2>
+<div id="programming-in-r" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Programming in R</h2>
 <hr />
 <p>To get started with programming the IRLS algorithm for logistic
 regressin, I first define functions for the derivatives <span
@@ -1331,13 +1316,12 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a hr
 </p>
 </div>
 </div>
-<div id="poisson-regression"
-class="section level1 tabset tabset-fade tabset-pills" number="4">
-<h1 class="tabset tabset-fade tabset-pills"><span
-class="header-section-number">4</span> Poisson Regression</h1>
+<div id="example-poisson-regression" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> <em>Example:</em>
+Poisson Regression</h1>
 <hr />
-<div id="derivation-1" class="section level2" number="4.1">
-<h2><span class="header-section-number">4.1</span> Derivation</h2>
+<div id="derivation-1" class="section level2" number="6.1">
+<h2><span class="header-section-number">6.1</span> Derivation</h2>
 <hr />
 <p>Poisson regression is typically used to model event counts, such as
 number of mutations, number of conflicts, number of calls, and
@@ -1394,8 +1378,8 @@ w_{ii} = e^{\mu_i} = -f_{\mu_i\mu_i}
 <p><br />
 </p>
 </div>
-<div id="programming-in-r-1" class="section level2" number="4.2">
-<h2><span class="header-section-number">4.2</span> Programming in R</h2>
+<div id="programming-in-r-1" class="section level2" number="6.2">
+<h2><span class="header-section-number">6.2</span> Programming in R</h2>
 <hr />
 <p>Now that we have the general <code>irls</code> function defined (see
 section on logistic regression programming in R), all we have to do in
@@ -1470,8 +1454,8 @@ rounding error.</p>
 </p>
 </div>
 </div>
-<div id="references-and-footnotes" class="section level1" number="5">
-<h1><span class="header-section-number">5</span> References and
+<div id="references-and-footnotes" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> References and
 Footnotes</h1>
 <hr />
 <div id="refs" class="references csl-bib-body hanging-indent">
@@ -1529,9 +1513,6 @@ for clarity, as the graph gets cluttered very quickly. However, the code
 for these plots is available on github if anyone would like to see the
 actual numerical results.<a href="#fnref3"
 class="footnote-back">↩︎</a></p></li>
-<li id="fn4"><p>This is typically referred to as the linear predictor in
-a GLM, often denoted <span class="math inline">\(\eta\)</span>,
-elsewhere.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
 

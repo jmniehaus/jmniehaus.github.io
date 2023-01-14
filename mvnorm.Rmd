@@ -89,10 +89,10 @@ MathJax.Hub.Config({
 ***
 
 <div style="margin-bottom:40px;">
-To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can approximate any desired parameterization of the multivariate normal distribution. Some of what is presented here came as a result of taking [Darren Homrighausen's](https://darrenho.github.io/) class on multivariate statistics. However, two additional references were consulted, and are available [here](https://www.math.kent.edu/~reichel/courses/monte.carlo/alt4.7c.pdf) and [here](http://users.stat.umn.edu/~gary/classes/5401/handouts/09.mvn.handout.pdf).
+To take draws from the multivariate normal distribution, we leverage the fact that linear transformations of normal random variables are also normal. By taking a suitable decomposition of the desired covariance matrix, multiplying this decomposition by independent normal random vectors, and adding a constant, we can sample from any desired parameterization of the multivariate normal distribution. Some of what is presented here came as a result of taking [Darren Homrighausen's](https://darrenho.github.io/) class on multivariate statistics. However, two additional references were consulted, and are available [here](https://www.math.kent.edu/~reichel/courses/monte.carlo/alt4.7c.pdf) and [here](http://users.stat.umn.edu/~gary/classes/5401/handouts/09.mvn.handout.pdf).
 </div>
 
-# Transformations of Normal RVs {.tabset .tabset-fade .tabset-pills}
+# Transformations of Normal RVs 
 ***
 
 
@@ -212,7 +212,7 @@ And, equation \\ref{mgf} is clearly the MGF of a $\mrm{MVN}(\bm{C\mu + k}, \bm{C
 
 
 
-# Generating from the MV Normal {.tabset .tabset-fade .tabset-pills}
+# Generating from the MV Normal 
 ***
 
 
@@ -297,7 +297,7 @@ So to obtain the desired covariance $\bm\Sigma_y$ from $X$ we simply set $\bm C 
 
 \
 
-# Programming in R  {.tabset .tabset-fade .tabset-pills}
+# Programming in R  
 ***
 
 
@@ -362,7 +362,7 @@ list(chol = list(mean=apply(y.chol, 2, mean),
 
 \
 
-From the above output, it is clear that the desired covariance structure is approximated fairly well. So we can finally write our own little function that generates multivariate normal samples! In fact, the function below is virtually indistinguishable from the [source-code](https://rdrr.io/cran/MASS/src/R/mvrnorm.R) for the `MASS` package's `mvrnorm` function.
+From the above output, it is clear that the desired covariance structure is achieved. So we can finally write our own little function that generates multivariate normal samples! In fact, the function below is virtually indistinguishable from the [source-code](https://rdrr.io/cran/MASS/src/R/mvrnorm.R) for the `MASS` package's `mvrnorm` function.
 
 ```{r, echo=T}
 my.mvrnorm = function(sigma.y, mu.y = rep(0, ncol(sigma.y)), n, method="svd"){

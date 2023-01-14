@@ -557,7 +557,7 @@ correctly.</em></p>
 the fact that linear transformations of normal random variables are also
 normal. By taking a suitable decomposition of the desired covariance
 matrix, multiplying this decomposition by independent normal random
-vectors, and adding a constant, we can approximate any desired
+vectors, and adding a constant, we can sample from any desired
 parameterization of the multivariate normal distribution. Some of what
 is presented here came as a result of taking <a
 href="https://darrenho.github.io/">Darren Homrighausen’s</a> class on
@@ -568,11 +568,10 @@ and <a
 href="http://users.stat.umn.edu/~gary/classes/5401/handouts/09.mvn.handout.pdf">here</a>.</p>
 </div>
 </div>
-<div id="transformations-of-normal-rvs"
-class="section level1 tabset tabset-fade tabset-pills" number="2">
-<h1 class="tabset tabset-fade tabset-pills"><span
-class="header-section-number">2</span> Transformations of Normal
-RVs</h1>
+<div id="transformations-of-normal-rvs" class="section level1"
+number="2">
+<h1><span class="header-section-number">2</span> Transformations of
+Normal RVs</h1>
 <hr />
 <div id="the-univariate-case" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> The Univariate
@@ -731,10 +730,9 @@ class="math inline">\(\blacksquare\)</span></span></p>
 </p>
 </div>
 </div>
-<div id="generating-from-the-mv-normal"
-class="section level1 tabset tabset-fade tabset-pills" number="3">
-<h1 class="tabset tabset-fade tabset-pills"><span
-class="header-section-number">3</span> Generating from the MV
+<div id="generating-from-the-mv-normal" class="section level1"
+number="3">
+<h1><span class="header-section-number">3</span> Generating from the MV
 Normal</h1>
 <hr />
 <p><strong>Note</strong>: <em>This exposition uses a bivariate normal,
@@ -916,10 +914,8 @@ href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></p>
 </p>
 </div>
 </div>
-<div id="programming-in-r"
-class="section level1 tabset tabset-fade tabset-pills" number="4">
-<h1 class="tabset tabset-fade tabset-pills"><span
-class="header-section-number">4</span> Programming in R</h1>
+<div id="programming-in-r" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Programming in R</h1>
 <hr />
 <div id="the-function" class="section level2" number="4.1">
 <h2><span class="header-section-number">4.1</span> The function</h2>
@@ -1019,9 +1015,9 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a hr
 <p><br />
 </p>
 <p>From the above output, it is clear that the desired covariance
-structure is approximated fairly well. So we can finally write our own
-little function that generates multivariate normal samples! In fact, the
-function below is virtually indistinguishable from the <a
+structure is achieved. So we can finally write our own little function
+that generates multivariate normal samples! In fact, the function below
+is virtually indistinguishable from the <a
 href="https://rdrr.io/cran/MASS/src/R/mvrnorm.R">source-code</a> for the
 <code>MASS</code> package’s <code>mvrnorm</code> function.</p>
 <div class="sourceCode" id="cb8"><pre

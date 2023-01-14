@@ -84,11 +84,7 @@ RhpcBLASctl::blas_set_num_threads(1)
 **Note also:** *If you are unable to view the math properly, e.g. you see a bunch of raw latex code, ensure that any browser extensions (ublock, privacy badger, etc) are not blocking access to mathjax.js, as this site requires mathjax to display correctly.*
 \
 
-# Motivation {.tabset .tabset-fade .tabset-pills}
-
-***
-
-## What is it?
+# What is it?
 *** 
 
 When reading about GLMs, authors often state that the MLEs of the parameters are found by iteratively reweighted least squares (IRLS). However, texts vary in their mathematical treatment of the process, with some stating that Newton's method is used, while others give a bit more derivation than others [for some examples, see: @ESL, 121; @hilbe2011negative, Ch. 4; @jorgensen2006iteratively; @long1997; @nelder1972generalized, 372-74; @stirling1984iteratively]. Thus, the purpose of this page is to consolidate several sources on IRLS into a general derivation, followed by specific derivations for logistic and Poisson regression, both with example programming in R. 
@@ -96,20 +92,15 @@ When reading about GLMs, authors often state that the MLEs of the parameters are
 
 For a bit of background, IRLS is an iterative method that can (among other things) be used to find the coefficients of a generalized linear model.[^1] At each iteration, it utilizes weighted least squares until convergence to the vector of maximum likelihood estimates (MLEs). The method relies on the Newton-Raphson algorithm, but is equivalent to Fisher scoring when using the canonical link (e.g., logit for logistic regression, and log for Poisson).[^2] However, at each iteration of the Newton-Raphson algorithm, IRLS computes the closed-form solution to a weighted least squares problem. Interestingly, then, it takes an optimization problem without a closed-form solution, and turns it into one that does have a solution at each iteration. 
 
-
-## Why study it?
-***
-
-In studying the source-code of the `glm()` function, I found that it was not using quasi-Newton methods (as is mostly the case with `optim`, `nlm`, and other optimization packages), but rather `glm` uses IRLS, leading me to study the algorithm. In fact, when users specify a GLM such as `glm(y~x, family=binomial)` in R, the underlying `glm.fit` routine makes a call to C, which then makes a call to FORTRAN, with FORTRAN finally running the IRLS algorithm ([This link](https://madrury.github.io/jekyll/update/statistics/2016/07/20/lm-in-R.html) has a deep exposition on the process, for those interested). Thus, despite the fact that MLEs can often be found by Newton's method, Newton's method can cleverly be re-written as a familiar weighted least-squares problem, which I did not previously know. 
-
+In studying the source-code of R's `glm()` function, it can be seen that `glm()` is not using quasi-Newton methods (as is mostly the case with `optim`, `nlm`, and other optimization packages), but rather `glm` uses IRLS. In fact, when users specify a GLM such as `glm(y~x, family=binomial)` in R, the underlying `glm.fit` routine makes a call to C, which then makes a call to FORTRAN, with FORTRAN finally running the IRLS algorithm ([This link](https://madrury.github.io/jekyll/update/statistics/2016/07/20/lm-in-R.html) has a deep exposition on the process, for those interested). Thus, despite the fact that MLEs can often be found by Newton's method, the solutions at each iteration of Newton's method can cleverly be re-written as a familiar weighted least-squares problem.
 \
 
-# General Derivation
+
+# Understanding Newton's Method
 ***
-### Understanding Newton's Method
 
 <div style="margin-top:25px;">
-As has already been discussed, the underlying machinery of IRLS is the Newton-Raphson algorithm. Due to this fact, I first review Newton's method for finding the zeros of a function, the results of which are easily ported over to a general derivation of the IRLS algorithm.  
+Given that IRLS is just implementing Newton's method, I first review that method.
 </div>
 
 Suppose we have the following function: 
@@ -122,7 +113,7 @@ abline(h=0,v=0, lwd=.5)
 
 and we want to approximate the location at which it crosses the x-axis. That is, we want to find the zero, or root of the function, preferably without having to use the quadratic equation or some other analytic method (indeed, we often *cannot* find a closed-form solution in the case of GLMs). We can turn to Newton's method to do so. 
 
-In addition to the above function, $f(x)$, suppose that we have a single point $(x_0,f(x_0))$ available to us. The point $x_0$ is often just a guess about the root, with the corresponding function evaluation $y_0=f(x_0)$. Because we are given the function in this scenario, we then know from calculus that the slope of the function at this point is $m=f'(x_0)$. So we have a point on the function, $y_0 = f(x_0)$, and the slope at that point $m = f'(x_0)$. We can then linearly approximate the function using the point-slope form of the tangent at $(x_0,f(x_0))$:
+In addition to the above function, $f(x)$, suppose that we have a single point $(x_0,f(x_0))$ available to us. The value $x_0$ is often just a guess about the root. Because we are given the function in this scenario, we then know from calculus that the slope of the function at this point is $m=f'(x_0)$. So we have a point on the function, $y_0 = f(x_0)$, and the slope at that point $m = f'(x_0)$. We can then linearly approximate the function using the point-slope form of the tangent at $(x_0,f(x_0))$:
 
 \begin{align}
 y-f(x_0) &= f'(x_0)(x-x_0) \nonumber \\
@@ -130,9 +121,9 @@ y-f(x_0) &= f'(x_0)(x-x_0) \nonumber \\
 \implies y &= f(x_0) + f'(x_0)(x-x_0) \label{newton} \\
 \end{align}
 
-As an alternative to the point-slope view, we could look at this as a Taylor series expansion of $f(x)$ about the point $x_0$, where we simply drop the higher order polynomials altogether. The Taylor Series view will become important when applying the above to ML estimation. 
+As an alternative to the point-slope view, we could look at this as a 1-term Taylor Series expansion of $f(x)$ about the point $x_0$. The Taylor Series view will become important when applying the above to ML estimation. 
 
-Looking at this process graphically, suppose we select an arbitrary point $x_0$, and draw its corresponding linear approximation to $f(x)$:
+Lets visualize this. Suppose we select an arbitrary point $x_0$, and draw its corresponding linear approximation to $f(x)$:
 
 ```{r, echo=F, eval=T, results="show", message=F}
 ###first plot 
@@ -237,7 +228,7 @@ newt.plot(x0, fn, fprime, from=-.25, to=2.25, nlines=1, itmax=10)
 
 Glancing at the plot, it looks like the point at which the red tangent intersects the x-axis is somewhat closer to the original function's zero than is the initial guess, $x_0$. So, what if we updated our guess about where the zero is, from $x_0$ to $x_1$, where $x_1$ is the point where the original red tangent intersects the x-axis? Lets find out. 
 
-First, we have the equation for the red line; thus, we can obtain the x-intercept by solving for $x=x_1$ in equation \\ref{newton}:
+First, we have the equation for the red line; thus, we can obtain the x-intercept by solving for $x$ in equation \\ref{newton}. For clarity, after setting the left-hand side to zero below, I'll call recode $x$ to be $x_1$, implying that this is the value of $x$ at the next iteration of guessing:
 
 \begin{align}
 y &= f(x_0) + f'(x_0)(x-x_0) \nonumber \\
@@ -247,7 +238,7 @@ y &= f(x_0) + f'(x_0)(x-x_0) \nonumber \\
 x_1 &= x_0 - \dfrac{f(x_0)}{f'(x_0)} 
 \end{align}
 
-Now that we have $x_1$, we can obtain the corresponding tangent/linear approximation to $f(x)$, but this time at $f(x_1)$. Graphically, then: 
+We can then evaluate the function $f(x)$ at $x_0$, and see if we've achieved a value of zero. If not, we then continue iterating by taking linear approximations at the current iterate's value, i.e., at $[x_1, f(x_1)]$ now. Graphically finding this next linear approximation at $[x_1, f(x_1)]$, we have: 
 
 
 
@@ -258,7 +249,7 @@ par(mai=c(.5,.5,.25,.25))
 newt.plot(x0, fn, fprime, nlines=2, from=-.25, to=2.25)
 ```
 
-Now a pattern is emerging. The $x$-intercepts of the tangent lines seem to be moving closer to the $x$-intercept of $f(x)$, which is what we ultimately want to find. Perhaps if we continue this process---finding tangents, finding their $x$-intercepts, and using these $x$-intercepts to find new tangents---until the $x$-intercepts stop changing by some tolerance limit, we will converge to the zero of the function. Graphically, carrying this process (nearly)[^3] to its limit yields the following set of points:
+Now a pattern is emerging. The $x$-intercepts of the tangent lines seem to be moving closer to the $x$-intercept of $f(x)$, which is what we ultimately want to find. Perhaps if we continue this process---finding tangents, finding their $x$-intercepts, and using these $x$-intercepts to find new tangents---until the $x$-intercepts stop changing by some tolerance limit, we will converge to the zero of the function. Graphically, carrying this process (nearly)[^3] to its limit yields the following set of points, and corresponding linear approximations:
 
 ```{r, echo=F, eval=T, results="show", message=F}
 #margins
@@ -267,7 +258,7 @@ par(mai=c(.5,.5,.25,.25))
 newt.plot(x0, fn, fprime, nlines=4, from=-.25, to=2.25)
 ```
 
-To verify that the algorithm converges, the function here is $f(x) = -e^x + 4$. Solving for the zero analytically yields $\ln(4) = `r log(4)`$. The below R-code shows that the Newton Method correctly arrives at this solution: 
+Finally, to verify that the above algorithm converges, the function here is $f(x) = -e^x + 4$. Solving for the zero analytically yields $\ln(4) = `r log(4)`$. The below R-code shows that the Newton Method correctly arrives at this solution: 
 
 ```{r, echo=T, eval=T}
 #fns
@@ -308,10 +299,10 @@ newt(x0, fn=fn, fprime=fprime)
 
 \
 
-### Putting the "Iterative" in IRLS
+# Putting the "Iterative" in IRLS
 ***
 
-Now that we've reviewed Newton's method (a.k.a., Newton-Raphson), we might wonder why this is useful for maximum likelihood estimation. In MLE we want to find the parameter vector that maximizes the log-likelihood function (i.e., $\mathop{\arg \max}_\theta\ln\mathcal{L}(\theta|X)$). From basic calculus we know that to do so we simply take the first derivative of the likelihood function, set this equal to zero, and solve this first order condition for $\theta$. However, in most instances of estimating generalized linear models, a closed form solution does not exist due to the presence of transcendental functions. Thus, a non-analytic solution is required, and Newton's method provides one means of arriving at such a solution.
+Now that we've reviewed Newton's method (a.k.a., Newton-Raphson), we might wonder why this is useful for maximum likelihood estimation. In MLE we want to find the parameter vector that maximizes the log-likelihood function (i.e., $\mathop{\arg \max}_\theta\ln\mathcal{L}(\theta|X)$). From calculus we know that to do so we take the first derivative of the likelihood function, set this equal to zero, and solve this first order condition for $\theta$. However, in most instances of estimating generalized linear models, a closed form solution does not exist due to the presence of transcendental functions. Thus, a non-analytic solution is required, and Newton's method provides one means of arriving at such a solution.
 
 Proceeding with the general derivation, suppose we have a likelihood function for a generalized linear model, and we take its natural logarithm:
 
@@ -345,45 +336,39 @@ by solving
 \pder{\beta_j}(\ln\L) = 0 \quad \forall \quad \beta_j, \quad j \in(1,2,...,k) \label{foc}
 \end{align}
 
-Just as we wanted to find the zeros of a function in the preceding review of Newton's Method, we want to do so as well in equation \\ref{foc}, but now we are finding the zeros of the first derivative instead of the original function. That is, we want to find the values of $\beta=\hat\beta$ where the gradient is zero. This location will be a local extremum of the likelihood, and can be arrived at by Newton's method. 
+Just as we wanted to find the zeros of a function in the preceding review of Newton's Method, we want to do so as well in equation \\ref{foc}, but now we are finding the zeros of the *gradient* of the likelihood, not the likelihood function itself. That is, we want to find the values of $\beta$ where the gradient is zero. We will call this solution $\hat\beta$. This location will be a local extremum of the likelihood, and can be arrived at by Newton's method. 
 
 Specifically, we take the gradient of the log-likelihood with respect to $\beta$. Since we want to find the zeros of this gradient as in the preceding Newton review, we take its Taylor series expansion, again ignoring higher order polynomials in order to linearize the gradient:
 
 \begin{align*}
-\nabla l(\bm{\beta}) \approx \nabla l(\bm b_0) + \bm{\mathcal{H}}(\bm b_0)(\bm \beta - \bm b_0)
+\nabla_\beta^l \approx \nabla_\beta^l(\bm b_0) + \bm{\mathcal{H}}^l(\bm b_0)(\bm \beta - \bm b_0)
 \end{align*}
 
 where:
 
 * $\bm b_0$ is an initial $k \times 1$ guess about the parameter vector
 
-* $\nabla l (\bm b_0)$ is the $k \times 1$ gradient vector of the log-likelihood evaluated at $b_0$
+* $\nabla_\beta^l (\bm b_0)$ is the $k \times 1$ gradient vector of the log-likelihood w.r.t. $\beta$ evaluated  at $b_0$
 
-* And $\bm{\mathcal{H}}(\bm b_0)$ is the $k \times k$ Hessian of the log-likelihood, similarly evaluated at $b_0$. 
+* And $\bm{\mathcal{H}}^l(\bm b_0)$ is the $k \times k$ Hessian of the log-likelihood, similarly evaluated at $b_0$. 
 
-We can then re-arrange this as in the preceding Newton review in order to get an updated guess about the optimal solution. That is, setting the LHS to zero and solving for $\beta$ below (equivalent of finding the $x$-intercept of the tangent in the Newton example): 
+We can then solve for where this linear approximation equals zero to find an updated guess for the root, just as we did in the single-variable case previously. We first set the equation for the hyperplane to zero, and solve for $\bm \beta$ to get an updated solution for the root, a solution which we will call $\bm b_1$. 
 
 \begin{align}
-\nabla l(\bm \beta) &= \nabla l(\bm b_0) + \bm{\mathcal{H}}(\bm b_0)(\bm \beta - \bm b_0) \nonumber \\
+\bm 0 &= \nabla_\beta^l(\bm b_0) + \bm{\mathcal{H}}^l(\bm b_0)(\bm \beta - \bm b_0) \nonumber \\
 \nonumber \\
-\implies \bm\beta &= \bm b_0 - [\bm{\mathcal{H}}(\bm b_0)]^{-1} \cdot \nabla l(\bm b_0)\label{newton:glm}
+\implies \bm b_1 &= \bm b_0 - [\bm{\mathcal{H}}^l(\bm b_0)]^{-1} \cdot \nabla_\beta^l(\bm b_0)\label{newton:glm}
 \end{align}
 
-Recalling from the previous example of Newton's method, $\bm\beta$ in \\ref{newton:glm} is the equivalent of the $x$-intercepts of the tangent lines. That is, $\beta$ reflects our new guess for the solution to equation \\ref{foc}, and therefore the new point about which we will expand the gradient of the log-likelihood. Thus, re-writing $\bm \beta$ on the LHS of \\ref{newton:glm} as $\bm b_1$ for clarity:
-
-\begin{align}
-\bm b_1 &= \bm b_0 - [\bm{\mathcal{H}}(\bm b_0)]^{-1} \cdot \nabla l(\bm b_0)
-\end{align}
-
-And lastly, as with the previous example of Newton's method, we simply iterate until the old and new guesses differ by less than some constant. Because the guesses are often vectors, this difference takes the form of the Euclidean distance between the two vectors. That is, if $\left\lVert \bm b_{p} - \bm b_{p-1} \right\rVert$, is less than some tolerance limit, the algorithm has converged, where $p$ indexes the iteration number of Newton's procedure, and $||$ denotes the $l_2$ norm of a vector.
+And lastly, as with the single-variable review of Newton's method, we simply iterate until the old and new solutions differ by less than some constant. Because the solutions are vectors, this difference takes the form of the Euclidean distance between the two vectors. That is, if $\left\lVert \bm b_{p} - \bm b_{p-1} \right\rVert$, is less than some tolerance limit, the algorithm has converged, where $p$ indexes the iteration number of Newton's procedure, and $||$ denotes the $l_2$ norm of a vector. (In practice, the convergence criteria for Newton's Method tends to be a bit more complicated than this for most software, to ensure stability.)
 
 \
 
-### Putting the "Least Squares" in IRLS
+# Putting the "Least Squares" in IRLS
 ***
 
 
-So far we have seen the "iterative" part of IRLS from Newton's method; what about the "weighted least squares" part? In order to get from Newton's method to least squares, a bit more information is required. First, recall from calculus that the chain rule can be shown as $$\frac{\d}{\d x}[f(g(x)] = \frac{\d f}{\d g}\frac{\d g}{\d x}$$ Then, suppose we have a log-likelihood as defined in equation \\ref{like}, denoted as $l$, and let $\bm x_{i}\bm\beta \equiv \mu_i$.[^4] Then it follows from the chain rule and this likelihood that the first and second derivatives with respect to a single parameter, $\beta_j$, are:
+So far we have seen the "iterative" part of IRLS from Newton's method; what about the "weighted least squares" part? In order to get from Newton's method to least squares, a bit more information is required. First, recall from calculus that the chain rule can be shown as $$\frac{\d}{\d x}[f(g(x)] = \frac{\d f}{\d g}\frac{\d g}{\d x}$$ Then, suppose we have a log-likelihood as defined in equation \\ref{like}, denoted as $l$, and let $\bm x_{i}\bm\beta = \mu_i$ be the linear predictor. Then it follows from the chain rule and this likelihood that the first and second derivatives with respect to a single parameter, $\beta_j$, are:
 
 
 \begin{align}
@@ -412,10 +397,10 @@ where:
 
 Thus, a necessary condition for equation \\ref{hess} to be non-singular is $f_{\mu_i\mu_i}  \neq 0$, meaning that the underlying likelihood cannot be linear at any point. 
 
-Now we can combine Newton's method with the preceding gradient and Hessian. That is, Newton's method as applied to MLE in equation \\ref{newton:glm} relies on the gradient and Hessian with respect to $\bm \beta$ as defined in equations \\ref{grad} and \\ref{hess}. Each of these is evaluated at an initial guess $\bm b_0$, and then iteration continues until convergence as previously defined. Thus, supposing we have this initial guess and the above equations equations:
+Now we can combine Newton's method with the preceding gradient and Hessian. That is, Newton's method as applied to MLE in equation \\ref{newton:glm} relies on the gradient and Hessian with respect to $\bm \beta$ as defined in equations \\ref{grad} and \\ref{hess}. Each of these is evaluated at an initial guess $\bm b_0$, and then iteration continues until convergence as previously defined. Thus, supposing we have this initial guess and the above equations:
 
 \begin{align}
-\bm b_1 &= \bm b_0 - [\bm{\mathcal{H}}(\bm b_0)]^{-1} \cdot \nabla l(\bm b_0)
+\bm b_1 &= \bm b_0 - [\bm{\mathcal{H}}^l(\bm b_0)]^{-1} \cdot \nabla_\beta^l(\bm b_0)
 \nonumber \\
 \nonumber \\
 \implies \bm b_1 &= \bm b_0 + (\bm{X}^\top \hat{ \bm W} \bm X)^{-1} \bm{X}^\top \hat{\bm \gamma} \nonumber \\
@@ -428,7 +413,7 @@ Now we can combine Newton's method with the preceding gradient and Hessian. That
 \implies \bm b_1 &= (\bm{X}^\top \hat{ \bm W} \bm X)^{-1} \bm{X}^\top \hat{\bm W} \hat{\bm z} \label{irls}
 \end{align}
 
-And equation \\ref{irls} is clearly a weighted least squares estimator, $\bm b_1$. Thus, we've transformed the Newton-Raphson algorithm to one in which each iteration can be solved using weighted least squares. Accordingly, $\bm b$ is the equivalent of the $x$-intercepts in the previous section on Newton's method. Each estimated parameter vector, $\bm b_p$, with $p \in \mathbb{Z}^{\geq 0}$ being the iteration number, is arrived at using weighted least squares. The next iteration uses this vector in updating to a new guess. Thus, the "hats" over the matrix $\hat{\bm W}$, and the vectors $\hat{\bm \gamma}$ and $\hat{\bm  z}$ denote that these quantities rely on estimates $\bm b_{p-1}$ from the previous iteration, and are therefore estimates themselves.  
+And equation \\ref{irls} is clearly a weighted least squares estimator, $\bm b_1$. Thus, we've transformed the Newton-Raphson algorithm to one in which each iteration can be solved using weighted least squares. The "hats" over the matrix $\hat{\bm W}$, and the vectors $\hat{\bm \gamma}$ and $\hat{\bm  z}$ denote that these quantities rely on estimates $\bm b_{p-1}$ from the previous iteration, and are therefore estimates themselves.  
 
 Summing up, in order to go from this general IRLS derivation to IRLS for specific probability distributions, we need two quantities:
 
@@ -436,11 +421,11 @@ Summing up, in order to go from this general IRLS derivation to IRLS for specifi
 
 2. $\pdertwo{^2l}{\mu_i^2}$ 
 
-As such, for each of the methods considered below, both of these quantities are derived.
+As such, for each of the examples considered below, both of these quantities are derived.
 
 \
 
-# Logistic Regression {.tabset .tabset-fade .tabset-pills}
+# *Example:* Logistic Regression
 ***
 
 ## Derivation
@@ -467,7 +452,7 @@ where:
 
 * And  $\pi(\cdot)$ is the cumulative density function for the logistic distribution. 
 
-Expanding on this last point, 
+Expanding on this last point, we  can re-write $\pi$ as:
 
 \begin{align}
 \pi(\mu_i) &= \dfrac{e^{\mu_i}}{1+e^{\mu_i}} \\
@@ -477,37 +462,59 @@ Expanding on this last point,
 &= \frac{1}{1+e^{-\mu_i}}
 \end{align}
 
-With this log-likelihood in hand, it becomes clear that in order to find $\partial l/\partial \mu_i$, we will need to find $\partial \pi / \partial \mu_i$. The math will be a bit neater if we find $\partial \pi / \partial \mu_i$ first, then just substitute this in when finding the partials of the likelihood. For $\pi(\mu_i)$, it is a straightforward application of the chain and product rules:
+With this log-likelihood in hand, it becomes clear that in order to find $\partial l/\partial \mu_i$, we will need to find $\partial \pi / \partial \mu_i$. The math will be a bit neater if we find $\partial \pi / \partial \mu_i$ first, then just substitute this in when finding the partials of the likelihood. For $\pi(\mu_i)$, it is a straightforward application of the chain and product rules to arrive at: 
 
-\begin{align}
-\frac{\mathrm{d}}{\mathrm{d}\mu_i} (\pi(\mu_i)) &= \frac{\mathrm{d}}{\mathrm{d}\mu_i} \frac{e^{\mu_i}}{1+e^{\mu_i}} \nonumber \\
-\nonumber \\
-&= \frac{\mathrm{d}}{\mathrm{d}\mu_i} e^{\mu_i}(1+e^{\mu_i})^{-1} \nonumber \\
-\nonumber \\
-&= e^{\mu_i} (1+e^{\mu_i})^{-1} + (-1)(1+e^{\mu_i})^{-2} (e^{\mu_i})(e^{\mu_i}) \nonumber \\
-\nonumber \\
-&= \frac{e^{\mu_i}}{1+e^{\mu_i}} - \frac{(e^{\mu_i})^2}{(1+e^{\mu_i})^2} \nonumber \\
-\nonumber \\
-&= \frac{e^{\mu_i}(1+e^{\mu_i})}{(1+e^{\mu_i})^2} - \frac{(e^{\mu_i})^2}{(1+e^{\mu_i})^2} \nonumber \\
-\nonumber \\
-&= \frac{e^{\mu_i}}{(1+e^{\mu_i})^2} \nonumber \\
-\nonumber \\
-&= \frac{e^{\mu_i}}{1+e^{\mu_i}}\frac{1}{1+e^{\mu_i}} \nonumber  \\
-\nonumber  \\
-&= \pi(\mu_i)(1-\pi(\mu_i)) \qquad \overset{\text{let}}{\equiv} \pi'(\mu_i) \label{logistprime}
+\begin{align} 
+\frac{\partial_l}{\partial\mu_i} (\pi(\mu_i)) &= \pi(\mu_i)(1-\pi(\mu_i)) \\
+& \overset{\text{let}}{\equiv} \pi'(\mu_i) \label{logistprime}
 \end{align}
+
+
+<div style="margin-top:-20px;">
+<details>
+  <summary><span style="color: #0888a8;">Derivation</span></summary>
+
+
+\begin{align*}
+\frac{\partial_l}{\partial\mu_i} (\pi(\mu_i)) & = \frac{\partial_l}{\partial\mu_i} \frac{1}{1+e^{-\mu_i}} \\[2ex] 
+& = \frac{\partial_l}{\partial\mu_i} (1+e^{-\mu})^{-1} \\[2ex]  
+& = -(1+e^{-\mu})^{-2}e^{-\mu}(-1) \\[2ex]  
+& = \frac{e^{-\mu}}{(1+ e^{-\mu})^2} \\[2ex]  
+& = \underbrace{\frac{e^{-\mu}}{1+e^{-\mu}}}_{1-\pi}\underbrace{\frac{1}{1+e^{-\mu}}}_{\pi}
+\end{align*}
+
+</details>
+
+</div>
+
+&nbsp;
 
 Now that we have the derivative of $\pi(\mu_i)$, we can get the derivative of the likelihood (equation \\ref{logistlike}) with respect to $\mu_i$ a bit easier:
 
+
 \begin{align}
+\pder{\mu_i} (\ln \mathcal{L}) &= \pder{\mu_i}  \sum_i y_i \ln \pi(\mu_i) + (1-y_i)\ln(1-\pi(\mu_i)) \nonumber \\
+\nonumber \\
+&=y_i - \pi(\mu_i) \label{logistlikeprime}
+\end{align}
+
+<div style="margin-top:-20px;">
+<details>
+  <summary><span style="color: #0888a8;">Derivation</span></summary>
+\begin{align*}
 \pder{\mu_i} (\ln \mathcal{L}) &= \pder{\mu_i}  \sum_i y_i \ln \pi(\mu_i) + (1-y_i)\ln(1-\pi(\mu_i)) \nonumber \\
 \nonumber \\
 &=y_i\frac{\pi'(\mu_i)}{\pi(\mu_i)}-(1-y_i)\frac{\pi'(\mu_i)}{1-\pi(\mu_i)} \nonumber \\
 \nonumber \\
 &=y_i \frac{\pi(\mu_i)(1-\pi(\mu_i))}{\pi(\mu_i)}-(1-y_i)\frac{\pi(\mu_i)(1-\pi(\mu_i))}{1-\pi(\mu_i)} & \small{\text{ (Sub. eq. \ref{logistprime} for $\pi'(\mu_i)$)}} \nonumber \\
 \nonumber \\
-&=y_i - \pi(\mu_i) \label{logistlikeprime}
-\end{align}
+&=y_i - \pi(\mu_i)
+\end{align*}
+</details>
+
+</div>
+
+&nbsp;
 
 Obtaining the second partial is again straightforward:
 
@@ -519,7 +526,7 @@ Obtaining the second partial is again straightforward:
 \end{align}
 
 
-Thus, for logistic regression, we have now derived $f_{\mu_i}$ and $f_{\mu_i\mu_i}$ as defined in equations \\ref{grad} and \\ref{hess}. Recalling the application of the chain-rule as discussed in the general derivation section, we then know that $\nabla \bm \beta$ and $\mathcal{H}(\bm\beta)$ are defined as:
+Thus, for logistic regression, we have now derived $f_{\mu_i}$ and $f_{\mu_i\mu_i}$ as defined in equations \\ref{grad} and \\ref{hess}. Recalling the application of the chain-rule as discussed in the general derivation section, we then know that $\nabla^l_\beta$ and $\mathcal{H}^l$ are defined as:
 
 \begin{align}
 \pdertwo{l}{\bm \beta} &= \sumin \bm x_i^\top \left[y_i - \pi(\mu_i)\right] \nonumber \\
@@ -677,7 +684,7 @@ list(irls(fu_logistic, fuu_logistic, X, y, itmax=50, method="logistic"),
 
 \
 
-# Poisson Regression {.tabset .tabset-fade .tabset-pills}
+# *Example:* Poisson Regression
 ***
 
 ## Derivation
