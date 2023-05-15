@@ -13,7 +13,7 @@
 
 <title>MV Norm Draws</title>
 
-<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.21/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
@@ -34,8 +34,8 @@
 <script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <script src="site_libs/navigation-1.1/codefolding.js"></script>
-<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
-<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.0/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.0/css/v4-shims.min.css" rel="stylesheet" />
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -138,13 +138,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -262,11 +269,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -295,8 +306,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -304,16 +315,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -446,23 +450,36 @@ div.tocify {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="./files/niehaus_cv_2022_online.pdf">Resume</a>
+  <a href="./files/niehaus_resume_online.pdf">Resume</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Programming &amp; Derivations
+    Portfolio
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="irls.html">Iteratively Reweighted Least Squares for GLMs</a>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Technical/Theoretical</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="irls.html">Iteratively Reweighted Least Squares for GLMs</a>
+        </li>
+        <li>
+          <a href="mvnorm.html">Sampling from the Multivariate Normal in R</a>
+        </li>
+        <li>
+          <a href="montes.html">Monte Carlo Analysis with Examples in R</a>
+        </li>
+      </ul>
     </li>
-    <li>
-      <a href="mvnorm.html">Multivariate Normal Draws</a>
-    </li>
-    <li>
-      <a href="montes.html">Monte Carlo Analysis using R, with Examples</a>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Applied</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="cervical.html">Cervical Cancer Classification in Python</a>
+        </li>
+      </ul>
     </li>
   </ul>
 </li>
@@ -692,8 +709,8 @@ equal to <span class="math inline">\(n\)</span></strong></li>
 <span style="color: #0888a8;">Proof</span>
 </summary>
 <p>This proof calls directly on <span class="citation">Taboga (<a
-href="#ref-statlect" role="doc-biblioref">2012, 447</a>)</span>, which
-is also a great book for all things math-stat.</p>
+href="#ref-statlect">2012, 447</a>)</span>, which is also a great book
+for all things math-stat.</p>
 <p>For proof, recall that the MGF of the MV normal distribution is <span
 class="math display">\[M_X(t): \mathbb{R}^p \rightarrow \mathbb{R}=
 \mathbb{E}(e^{t^\top X}) = e^{t^\top \boldsymbol{\mu }+
@@ -932,29 +949,29 @@ Recall also that a valid, full-rank covariance matrix is
 positive-definite.<a href="#fn4" class="footnote-ref"
 id="fnref4"><sup>4</sup></a></p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>mu.y <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">246</span>, <span class="sc">-</span><span class="fl">1.3</span>, <span class="fl">1.645</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sigma.y <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">2</span>,    .<span class="dv">66</span>, <span class="sc">-</span><span class="fl">1.2</span>,</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                   .<span class="dv">66</span>,  .<span class="dv">75</span>, <span class="sc">-</span>.<span class="dv">75</span>,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                  <span class="sc">-</span><span class="fl">1.2</span>, <span class="sc">-</span>.<span class="dv">75</span>,  <span class="fl">2.5</span>),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                 <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow=</span>T)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#desired cov</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>sigma.y</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>mu.y <span class="ot">=</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">246</span>, <span class="sc">-</span><span class="fl">1.3</span>, <span class="fl">1.645</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>sigma.y <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">2</span>,    .<span class="dv">66</span>, <span class="sc">-</span><span class="fl">1.2</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>                   .<span class="dv">66</span>,  .<span class="dv">75</span>, <span class="sc">-</span>.<span class="dv">75</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>                  <span class="sc">-</span><span class="fl">1.2</span>, <span class="sc">-</span>.<span class="dv">75</span>,  <span class="fl">2.5</span>),</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>                 <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow=</span>T)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#desired cov</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>sigma.y</span></code></pre></div>
 <pre class="bg-success"><code>##       [,1]  [,2]  [,3]
 ## [1,]  2.00  0.66 -1.20
 ## [2,]  0.66  0.75 -0.75
 ## [3,] -1.20 -0.75  2.50</code></pre>
 <div class="sourceCode" id="cb3"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#check pos def</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">eigen</span>(sigma.y)<span class="sc">$</span>values <span class="sc">&gt;</span> <span class="dv">0</span>)</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co">#check pos def</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">eigen</span>(sigma.y)<span class="sc">$</span>values <span class="sc">&gt;</span> <span class="dv">0</span>)</span></code></pre></div>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p> </p>
 <p>Second, we’ll simulate some i.i.d. multivariate standard normal data
 in 3 dimensions.</p>
 <div class="sourceCode" id="cb5"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#simulate trivariate iid standard normal </span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="dv">10000</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="dv">3</span>), <span class="at">nrow=</span><span class="dv">3</span>)</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">#simulate trivariate iid standard normal </span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>n <span class="ot">=</span> <span class="dv">10000</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="dv">3</span>), <span class="at">nrow=</span><span class="dv">3</span>)</span></code></pre></div>
 <p><br />
 </p>
 <p>And then finally we take the Cholesky and SVD of the desired
@@ -963,29 +980,29 @@ by the appropriate matrix <span
 class="math inline">\(\boldsymbol{C}\)</span>, and then add on the
 constant to get the desired mean.</p>
 <div class="sourceCode" id="cb6"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Via cholesky</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>chol.sig.y <span class="ot">=</span> <span class="fu">chol.default</span>(sigma.y)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>y.chol <span class="ot">=</span> <span class="fu">t</span>(chol.sig.y) <span class="sc">%*%</span> x <span class="co"># R returns the upper-triangular, L^t by default</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#Via svd</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>svd.sig.y <span class="ot">=</span> <span class="fu">svd</span>(sigma.y)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>u <span class="ot">=</span> svd.sig.y<span class="sc">$</span>u</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>d <span class="ot">=</span> svd.sig.y<span class="sc">$</span>d</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>sqrt.sig <span class="ot">=</span> u<span class="sc">%*%</span><span class="fu">diag</span>(d)<span class="sc">^</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>)</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>y.svd <span class="ot">=</span>  sqrt.sig <span class="sc">%*%</span> x </span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># add on mean </span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#(transpose for taking the covariance of a matrix in R on next lines)</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>y.svd <span class="ot">=</span> <span class="fu">t</span>(y.svd <span class="sc">+</span> mu.y)</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>y.chol <span class="ot">=</span> <span class="fu">t</span>(y.chol <span class="sc">+</span> mu.y)</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co"># results </span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(<span class="at">chol =</span> <span class="fu">list</span>(<span class="at">mean=</span><span class="fu">apply</span>(y.chol, <span class="dv">2</span>, mean),</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                 <span class="at">cov=</span><span class="fu">cov</span>(y.chol)),</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>     <span class="at">svd  =</span> <span class="fu">list</span>(<span class="at">mean=</span><span class="fu">apply</span>(y.svd, <span class="dv">2</span>, mean),</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>                 <span class="at">cov=</span><span class="fu">cov</span>(y.svd)),</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>     <span class="at">desired_cov =</span> sigma.y,</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>     <span class="at">desired_mean =</span> mu.y)</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co">#Via cholesky</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>chol.sig.y <span class="ot">=</span> <span class="fu">chol.default</span>(sigma.y)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>y.chol <span class="ot">=</span> <span class="fu">t</span>(chol.sig.y) <span class="sc">%*%</span> x <span class="co"># R returns the upper-triangular, L^t by default</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#Via svd</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>svd.sig.y <span class="ot">=</span> <span class="fu">svd</span>(sigma.y)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>u <span class="ot">=</span> svd.sig.y<span class="sc">$</span>u</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>d <span class="ot">=</span> svd.sig.y<span class="sc">$</span>d</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>sqrt.sig <span class="ot">=</span> u<span class="sc">%*%</span><span class="fu">diag</span>(d)<span class="sc">^</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>y.svd <span class="ot">=</span>  sqrt.sig <span class="sc">%*%</span> x </span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co"># add on mean </span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#(transpose for taking the covariance of a matrix in R on next lines)</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>y.svd <span class="ot">=</span> <span class="fu">t</span>(y.svd <span class="sc">+</span> mu.y)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>y.chol <span class="ot">=</span> <span class="fu">t</span>(y.chol <span class="sc">+</span> mu.y)</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co"># results </span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="fu">list</span>(<span class="at">chol =</span> <span class="fu">list</span>(<span class="at">mean=</span><span class="fu">apply</span>(y.chol, <span class="dv">2</span>, mean),</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>                 <span class="at">cov=</span><span class="fu">cov</span>(y.chol)),</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>     <span class="at">svd  =</span> <span class="fu">list</span>(<span class="at">mean=</span><span class="fu">apply</span>(y.svd, <span class="dv">2</span>, mean),</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>                 <span class="at">cov=</span><span class="fu">cov</span>(y.svd)),</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>     <span class="at">desired_cov =</span> sigma.y,</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>     <span class="at">desired_mean =</span> mu.y)</span></code></pre></div>
 <pre class="bg-success"><code>## $chol
 ## $chol$mean
 ## [1] -0.2486621 -1.3062175  1.6456811
@@ -1025,27 +1042,27 @@ function below is virtually indistinguishable from the <a
 href="https://rdrr.io/cran/MASS/src/R/mvrnorm.R">source-code</a> for the
 <code>MASS</code> package’s <code>mvrnorm</code> function.</p>
 <div class="sourceCode" id="cb8"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>my.mvrnorm <span class="ot">=</span> <span class="cf">function</span>(sigma.y, <span class="at">mu.y =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">ncol</span>(sigma.y)), n, <span class="at">method=</span><span class="st">&quot;svd&quot;</span>){</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  method <span class="ot">=</span> <span class="fu">match.arg</span>(method, <span class="at">choices =</span> <span class="fu">c</span>(<span class="st">&quot;svd&quot;</span>, <span class="st">&quot;cholesky&quot;</span>))</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  pdef <span class="ot">=</span> <span class="fu">all</span>(<span class="fu">eigen</span>(sigma.y)<span class="sc">$</span>values <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span>pdef) <span class="fu">stop</span>(<span class="st">&quot;Desired covariance not positive definite.&quot;</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">isSymmetric</span>(sigma.y)) <span class="fu">stop</span>(<span class="st">&quot;Covariance is not symmetric.&quot;</span>)</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">ncol</span>(sigma.y) <span class="sc">!=</span> <span class="fu">length</span>(mu.y)) <span class="fu">stop</span>(<span class="st">&quot;Dimensions of mean and covariance inconsistent.&quot;</span>)</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="fu">length</span>(mu.y)), <span class="at">nrow =</span> <span class="fu">length</span>(mu.y))</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(method <span class="sc">==</span> <span class="st">&quot;svd&quot;</span>){</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    svd.sig <span class="ot">=</span> <span class="fu">svd</span>(sigma.y)</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    y <span class="ot">=</span> svd.sig<span class="sc">$</span>u <span class="sc">%*%</span> <span class="fu">diag</span>(svd.sig<span class="sc">$</span>d<span class="sc">^</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>)) <span class="sc">%*%</span> x <span class="sc">+</span> mu.y</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">t</span>(y))</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    chol.sig <span class="ot">=</span> <span class="fu">t</span>(<span class="fu">chol.default</span>(sigma.y))</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    y <span class="ot">=</span> chol.sig <span class="sc">%*%</span> x <span class="sc">+</span> mu.y</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">t</span>(y))</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>my.mvrnorm <span class="ot">=</span> <span class="cf">function</span>(sigma.y, <span class="at">mu.y =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">ncol</span>(sigma.y)), n, <span class="at">method=</span><span class="st">&quot;svd&quot;</span>){</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  </span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  method <span class="ot">=</span> <span class="fu">match.arg</span>(method, <span class="at">choices =</span> <span class="fu">c</span>(<span class="st">&quot;svd&quot;</span>, <span class="st">&quot;cholesky&quot;</span>))</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  </span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  pdef <span class="ot">=</span> <span class="fu">all</span>(<span class="fu">eigen</span>(sigma.y)<span class="sc">$</span>values <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span>pdef) <span class="fu">stop</span>(<span class="st">&quot;Desired covariance not positive definite.&quot;</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="cf">if</span>(<span class="sc">!</span><span class="fu">isSymmetric</span>(sigma.y)) <span class="fu">stop</span>(<span class="st">&quot;Covariance is not symmetric.&quot;</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">ncol</span>(sigma.y) <span class="sc">!=</span> <span class="fu">length</span>(mu.y)) <span class="fu">stop</span>(<span class="st">&quot;Dimensions of mean and covariance inconsistent.&quot;</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  </span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="fu">length</span>(mu.y)), <span class="at">nrow =</span> <span class="fu">length</span>(mu.y))</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  </span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  <span class="cf">if</span>(method <span class="sc">==</span> <span class="st">&quot;svd&quot;</span>){</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>    svd.sig <span class="ot">=</span> <span class="fu">svd</span>(sigma.y)</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>    y <span class="ot">=</span> svd.sig<span class="sc">$</span>u <span class="sc">%*%</span> <span class="fu">diag</span>(svd.sig<span class="sc">$</span>d<span class="sc">^</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>)) <span class="sc">%*%</span> x <span class="sc">+</span> mu.y</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">t</span>(y))</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>    chol.sig <span class="ot">=</span> <span class="fu">t</span>(<span class="fu">chol.default</span>(sigma.y))</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>    y <span class="ot">=</span> chol.sig <span class="sc">%*%</span> x <span class="sc">+</span> mu.y</span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">t</span>(y))</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>  }</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>}</span></code></pre></div>
 <p><br />
 </p>
 </div>
@@ -1067,35 +1084,35 @@ method. We’ll first define a function that returns the value of the
 objective, as well as the sample size, and decomposition used, and then
 compare the loss after several iterations for each sample size.</p>
 <div class="sourceCode" id="cb9"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mv.loss <span class="ot">=</span> <span class="cf">function</span>(n, sigma.y){</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">=</span> n</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="dv">3</span>), <span class="at">nrow=</span><span class="dv">3</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># chol</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  chol.sig.y <span class="ot">=</span> <span class="fu">chol.default</span>(sigma.y)</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  y.chol <span class="ot">=</span> <span class="fu">t</span>(chol.sig.y) <span class="sc">%*%</span> x </span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  loss.chol <span class="ot">=</span> <span class="fu">max</span>( <span class="fu">abs</span>( <span class="fu">cov</span>(<span class="fu">t</span>(y.chol)) <span class="sc">-</span> sigma.y) )</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Via svd</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  svd.sig.y <span class="ot">=</span> <span class="fu">svd</span>(sigma.y)</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  u <span class="ot">=</span> svd.sig.y<span class="sc">$</span>u</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">=</span> svd.sig.y<span class="sc">$</span>d</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  sig.sqrt <span class="ot">=</span> u<span class="sc">%*%</span><span class="fu">diag</span>(d)<span class="sc">^</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>)</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  y.svd <span class="ot">=</span>  sig.sqrt <span class="sc">%*%</span> x </span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  loss.svd <span class="ot">=</span> <span class="fu">max</span>( <span class="fu">abs</span>( <span class="fu">cov</span>(<span class="fu">t</span>(y.svd)) <span class="sc">-</span> sigma.y) )</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="fu">return</span>(<span class="fu">c</span>(<span class="at">chol =</span> loss.chol, <span class="at">svd =</span> loss.svd, <span class="at">n=</span>n))</span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>mv.loss <span class="ot">=</span> <span class="cf">function</span>(n, sigma.y){</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  n <span class="ot">=</span> n</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  x <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n<span class="sc">*</span><span class="dv">3</span>), <span class="at">nrow=</span><span class="dv">3</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="co"># chol</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  chol.sig.y <span class="ot">=</span> <span class="fu">chol.default</span>(sigma.y)</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  y.chol <span class="ot">=</span> <span class="fu">t</span>(chol.sig.y) <span class="sc">%*%</span> x </span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  loss.chol <span class="ot">=</span> <span class="fu">max</span>( <span class="fu">abs</span>( <span class="fu">cov</span>(<span class="fu">t</span>(y.chol)) <span class="sc">-</span> sigma.y) )</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>  <span class="co"># Via svd</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>  svd.sig.y <span class="ot">=</span> <span class="fu">svd</span>(sigma.y)</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>  u <span class="ot">=</span> svd.sig.y<span class="sc">$</span>u</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>  d <span class="ot">=</span> svd.sig.y<span class="sc">$</span>d</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  sig.sqrt <span class="ot">=</span> u<span class="sc">%*%</span><span class="fu">diag</span>(d)<span class="sc">^</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  y.svd <span class="ot">=</span>  sig.sqrt <span class="sc">%*%</span> x </span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>  loss.svd <span class="ot">=</span> <span class="fu">max</span>( <span class="fu">abs</span>( <span class="fu">cov</span>(<span class="fu">t</span>(y.svd)) <span class="sc">-</span> sigma.y) )</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="fu">return</span>(<span class="fu">c</span>(<span class="at">chol =</span> loss.chol, <span class="at">svd =</span> loss.svd, <span class="at">n=</span>n))</span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>}</span></code></pre></div>
 <p><br />
 </p>
 <p>And lets make sure its working as expected, using the desired
 covariance previously defined:</p>
 <div class="sourceCode" id="cb10"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mv.loss</span>(<span class="at">n =</span> <span class="dv">100</span>, <span class="at">sigma.y =</span> sigma.y)</span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">mv.loss</span>(<span class="at">n =</span> <span class="dv">100</span>, <span class="at">sigma.y =</span> sigma.y)</span></code></pre></div>
 <pre class="bg-success"><code>##        chol         svd           n 
 ##   0.5096003   0.3819846 100.0000000</code></pre>
 <p><br />
@@ -1104,55 +1121,55 @@ class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb10-1"><a h
 iterations at each sample size to see which method converges
 fastest.</p>
 <div class="sourceCode" id="cb12"><pre
-class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># get things ready for parallel run, plotting</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;parallel&quot;</span>, <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;reshape2&quot;</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="fu">RNGkind</span>(<span class="st">&quot;L&#39;Ecuyer-CMRG&quot;</span>) <span class="co"># for parallel reproducibility</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">167492</span>)</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co">#Grid of sample sizes</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>niter <span class="ot">=</span> <span class="dv">10000</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">125</span>, <span class="dv">250</span>, <span class="dv">500</span>, <span class="dv">750</span>, <span class="dv">1000</span>, <span class="dv">2500</span>, <span class="dv">5000</span>, <span class="dv">7500</span>, <span class="dv">10000</span>)</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>n.grid <span class="ot">=</span> <span class="fu">rep</span>(n, <span class="at">each =</span> niter)</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="co"># run sims, summarize, plot</span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>res <span class="ot">=</span> <span class="fu">mclapply</span>(n.grid, mv.loss, <span class="at">sigma.y=</span>sigma.y, </span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>               <span class="at">mc.preschedule=</span>T,</span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>               <span class="at">mc.cores =</span> (parallel<span class="sc">::</span><span class="fu">detectCores</span>()<span class="sc">-</span><span class="dv">1</span>))</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">=</span> <span class="fu">as.data.frame</span>(<span class="fu">do.call</span>(rbind, res))</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>summaries <span class="ot">=</span> dat <span class="sc">%&gt;%</span> </span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(n) <span class="sc">%&gt;%</span> </span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean.chol =</span> <span class="fu">mean</span>(chol),</span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>            <span class="at">mean.svd  =</span> <span class="fu">mean</span>(svd))</span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>summaries <span class="ot">=</span> <span class="fu">melt</span>(summaries, </span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>                 <span class="at">id.vars=</span><span class="st">&quot;n&quot;</span>, </span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>                 <span class="at">measure.vars =</span> <span class="fu">c</span>(<span class="st">&quot;mean.chol&quot;</span>,</span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>                                  <span class="st">&quot;mean.svd&quot;</span>))</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>summaries<span class="sc">$</span>n <span class="ot">=</span> <span class="fu">as.factor</span>(summaries<span class="sc">$</span>n)</span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>summaries, <span class="fu">aes</span>(<span class="at">x=</span>n)) <span class="sc">+</span></span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> value, <span class="at">color=</span>variable, <span class="at">shape=</span>variable),</span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>             <span class="at">position=</span><span class="fu">position_dodge</span>(<span class="at">width=</span>.<span class="dv">5</span>),</span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>             <span class="at">size=</span><span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">&quot;Set1&quot;</span>, </span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Cholesky&quot;</span>, <span class="st">&quot;SVD&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_shape_discrete</span>(<span class="at">labels=</span><span class="fu">c</span>(<span class="st">&quot;Cholesky&quot;</span>, <span class="st">&quot;SVD&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">&quot;Average of Max Absolute Deviation for Covariance of MVN&quot;</span>,</span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&quot;Cholesky vs. SVD&quot;</span>,</span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>       <span class="at">x=</span> <span class="st">&quot;N&quot;</span>,</span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>       <span class="at">y=</span> <span class="st">&quot;Avg. Max Absolute Deviation&quot;</span>,</span>
-<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">&quot;Method&quot;</span>,</span>
-<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>       <span class="at">shape =</span> <span class="st">&quot;Method&quot;</span>) <span class="sc">+</span></span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">panel.grid.major =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="fu">c</span>(.<span class="dv">85</span>,.<span class="dv">85</span>)) </span></code></pre></div>
+class="sourceCode r fold-show"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">omp_set_num_threads</span>(<span class="dv">1</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># get things ready for parallel run, plotting</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>pks <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;parallel&quot;</span>, <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;reshape2&quot;</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">sapply</span>(pks, library, <span class="at">character.only=</span>T))</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="fu">RNGkind</span>(<span class="st">&quot;L&#39;Ecuyer-CMRG&quot;</span>) <span class="co"># for parallel reproducibility</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">167492</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="co">#Grid of sample sizes</span></span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>niter <span class="ot">=</span> <span class="dv">10000</span></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>n <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">125</span>, <span class="dv">250</span>, <span class="dv">500</span>, <span class="dv">750</span>, <span class="dv">1000</span>, <span class="dv">2500</span>, <span class="dv">5000</span>, <span class="dv">7500</span>, <span class="dv">10000</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>n.grid <span class="ot">=</span> <span class="fu">rep</span>(n, <span class="at">each =</span> niter)</span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="co"># run sims, summarize, plot</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>res <span class="ot">=</span> <span class="fu">mclapply</span>(n.grid, mv.loss, <span class="at">sigma.y=</span>sigma.y, </span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>               <span class="at">mc.preschedule=</span>T,</span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a>               <span class="at">mc.cores =</span> (parallel<span class="sc">::</span><span class="fu">detectCores</span>()<span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a></span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a>dat <span class="ot">=</span> <span class="fu">as.data.frame</span>(<span class="fu">do.call</span>(rbind, res))</span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a></span>
+<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a>summaries <span class="ot">=</span> dat <span class="sc">%&gt;%</span> </span>
+<span id="cb12-23"><a href="#cb12-23" tabindex="-1"></a>  <span class="fu">group_by</span>(n) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-24"><a href="#cb12-24" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean.chol =</span> <span class="fu">mean</span>(chol),</span>
+<span id="cb12-25"><a href="#cb12-25" tabindex="-1"></a>            <span class="at">mean.svd  =</span> <span class="fu">mean</span>(svd))</span>
+<span id="cb12-26"><a href="#cb12-26" tabindex="-1"></a></span>
+<span id="cb12-27"><a href="#cb12-27" tabindex="-1"></a>summaries <span class="ot">=</span> <span class="fu">melt</span>(summaries, </span>
+<span id="cb12-28"><a href="#cb12-28" tabindex="-1"></a>                 <span class="at">id.vars=</span><span class="st">&quot;n&quot;</span>, </span>
+<span id="cb12-29"><a href="#cb12-29" tabindex="-1"></a>                 <span class="at">measure.vars =</span> <span class="fu">c</span>(<span class="st">&quot;mean.chol&quot;</span>,</span>
+<span id="cb12-30"><a href="#cb12-30" tabindex="-1"></a>                                  <span class="st">&quot;mean.svd&quot;</span>))</span>
+<span id="cb12-31"><a href="#cb12-31" tabindex="-1"></a></span>
+<span id="cb12-32"><a href="#cb12-32" tabindex="-1"></a>summaries<span class="sc">$</span>n <span class="ot">=</span> <span class="fu">as.factor</span>(summaries<span class="sc">$</span>n)</span>
+<span id="cb12-33"><a href="#cb12-33" tabindex="-1"></a></span>
+<span id="cb12-34"><a href="#cb12-34" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>summaries, <span class="fu">aes</span>(<span class="at">x=</span>n)) <span class="sc">+</span></span>
+<span id="cb12-35"><a href="#cb12-35" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> value, <span class="at">color=</span>variable, <span class="at">shape=</span>variable),</span>
+<span id="cb12-36"><a href="#cb12-36" tabindex="-1"></a>             <span class="at">position=</span><span class="fu">position_dodge</span>(<span class="at">width=</span>.<span class="dv">5</span>),</span>
+<span id="cb12-37"><a href="#cb12-37" tabindex="-1"></a>             <span class="at">size=</span><span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb12-38"><a href="#cb12-38" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb12-39"><a href="#cb12-39" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">&quot;Set1&quot;</span>, </span>
+<span id="cb12-40"><a href="#cb12-40" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Cholesky&quot;</span>, <span class="st">&quot;SVD&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb12-41"><a href="#cb12-41" tabindex="-1"></a>  <span class="fu">scale_shape_discrete</span>(<span class="at">labels=</span><span class="fu">c</span>(<span class="st">&quot;Cholesky&quot;</span>, <span class="st">&quot;SVD&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb12-42"><a href="#cb12-42" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">&quot;Average of Max Absolute Deviation for Covariance of MVN&quot;</span>,</span>
+<span id="cb12-43"><a href="#cb12-43" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&quot;Cholesky vs. SVD&quot;</span>,</span>
+<span id="cb12-44"><a href="#cb12-44" tabindex="-1"></a>       <span class="at">x=</span> <span class="st">&quot;N&quot;</span>,</span>
+<span id="cb12-45"><a href="#cb12-45" tabindex="-1"></a>       <span class="at">y=</span> <span class="st">&quot;Avg. Max Absolute Deviation&quot;</span>,</span>
+<span id="cb12-46"><a href="#cb12-46" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">&quot;Method&quot;</span>,</span>
+<span id="cb12-47"><a href="#cb12-47" tabindex="-1"></a>       <span class="at">shape =</span> <span class="st">&quot;Method&quot;</span>) <span class="sc">+</span></span>
+<span id="cb12-48"><a href="#cb12-48" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">panel.grid.major =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb12-49"><a href="#cb12-49" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="fu">c</span>(.<span class="dv">85</span>,.<span class="dv">85</span>)) </span></code></pre></div>
 <p><img src="mvnorm_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p><br />
 </p>

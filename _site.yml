@@ -6,16 +6,22 @@ navbar:
     - text: "Home"
       href: index.html
     - text: "Resume"
-      href: "./files/niehaus_cv_2022_online.pdf"
+      href: "./files/niehaus_resume_online.pdf"
       class: "download"
-    - text: "Programming & Derivations"
+    - text: "Portfolio"
       menu:
-        - text: "Iteratively Reweighted Least Squares for GLMs"
-          href: irls.html
-        - text: "Multivariate Normal Draws"
-          href: mvnorm.html
-        - text: "Monte Carlo Analysis using R, with Examples"
-          href: montes.html
+      - text: 'Technical/Theoretical'
+        menu: 
+          - text: "Iteratively Reweighted Least Squares for GLMs"
+            href: irls.html
+          - text: "Sampling from the Multivariate Normal in R"
+            href: mvnorm.html
+          - text: "Monte Carlo Analysis with Examples in R"
+            href: montes.html
+      - text: 'Applied'
+        menu:
+          - text: 'Cervical Cancer Classification in Python'
+            href: cervical.html
   right:
     - icon: fab fa-github
       text: "GitHub"

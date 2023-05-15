@@ -13,7 +13,7 @@
 
 <title>John Niehaus</title>
 
-<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.21/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
@@ -34,8 +34,8 @@
 <link href="site_libs/primer-tooltips-1.4.0/build.css" rel="stylesheet" />
 <link href="site_libs/klippy-0.0.0.9500/css/klippy.min.css" rel="stylesheet" />
 <script src="site_libs/klippy-0.0.0.9500/js/klippy.min.js"></script>
-<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
-<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.0/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.0/css/v4-shims.min.css" rel="stylesheet" />
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -129,13 +129,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -231,11 +238,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -264,8 +275,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -273,16 +284,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -339,23 +343,36 @@ $(document).ready(function () {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="./files/niehaus_cv_2022_online.pdf">Resume</a>
+  <a href="./files/niehaus_resume_online.pdf">Resume</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Programming &amp; Derivations
+    Portfolio
      
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="irls.html">Iteratively Reweighted Least Squares for GLMs</a>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Technical/Theoretical</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="irls.html">Iteratively Reweighted Least Squares for GLMs</a>
+        </li>
+        <li>
+          <a href="mvnorm.html">Sampling from the Multivariate Normal in R</a>
+        </li>
+        <li>
+          <a href="montes.html">Monte Carlo Analysis with Examples in R</a>
+        </li>
+      </ul>
     </li>
-    <li>
-      <a href="mvnorm.html">Multivariate Normal Draws</a>
-    </li>
-    <li>
-      <a href="montes.html">Monte Carlo Analysis using R, with Examples</a>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Applied</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="cervical.html">Cervical Cancer Classification in Python</a>
+        </li>
+      </ul>
     </li>
   </ul>
 </li>
@@ -389,11 +406,9 @@ $(document).ready(function () {
 
 
 <p><img src="images/headshot_tamu.jpg" style="width:30%; border:10px solid; margin-right: 40px; margin-top: 20px" align="left"></p>
-<p>I am a data scientist in the mortgage industry, received my M.S. in
-statistics in 2021 from Texas A&amp;M University, and my M.A. in
-political science in 2020. On this site you will find a set of posts on
-various topics which I wanted to learn, as I find that I learn best when
-trying to explain things.</p>
+<p>On this site you will find a set of posts on various statistics and
+data science topics which I wanted to learn, as I find that I learn best
+when trying to explain things.</p>
 <p>I am also the author and maintainer of the <code>bizicount</code> R
 package, available from <a
 href="https://cran.r-project.org/web/packages/bizicount/index.html">CRAN</a>,
@@ -408,13 +423,13 @@ unfamiliar with R, please copy and paste the code into <a
 href="https://rdrr.io/snippets/">this</a> site and press run.</p>
 <script>
   addClassKlippyTo("pre.r, pre.markdown");
-  addKlippy('right', 'top', '#FFFFFF', '1', 'Click to copy', 'Done');
+  addKlippy('left', 'bottom', '#0000FF', '1', 'Copy to clipboard', 'Copied!');
 </script>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode r klippy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span>(<span class="fu">c</span>(<span class="fu">rev</span>(<span class="fu">c</span>(<span class="fu">paste</span>(<span class="fu">sort</span>(<span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">2</span>,<span class="dv">7</span>,<span class="dv">2</span>)),<span class="at">collapse=</span> <span class="st">&quot;&quot;</span>),</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>              <span class="fu">paste0</span>(<span class="fu">sort</span>(<span class="fu">c</span>(<span class="st">&quot;us&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;ha&quot;</span>)),<span class="at">collapse=</span><span class="st">&quot;&quot;</span>),</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>              <span class="st">&quot;jni&quot;</span>)),<span class="st">&quot;@gmail.com&quot;</span>,<span class="fu">sub</span>(<span class="st">&quot;@yahoo.com&quot;</span>,<span class="st">&quot;&quot;</span>, <span class="st">&quot;&quot;</span>),</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sub</span>(<span class="st">&quot;@outlook.com&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;&quot;</span>)),<span class="at">collapse=</span><span class="st">&quot;&quot;</span>)</span></code></pre></div>
+class="sourceCode r klippy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">paste</span>(<span class="fu">c</span>(<span class="fu">rev</span>(<span class="fu">c</span>(<span class="fu">paste</span>(<span class="fu">sort</span>(<span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">2</span>,<span class="dv">7</span>,<span class="dv">2</span>)),<span class="at">collapse=</span> <span class="st">&quot;&quot;</span>),</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>              <span class="fu">paste0</span>(<span class="fu">sort</span>(<span class="fu">c</span>(<span class="st">&quot;us&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;ha&quot;</span>)),<span class="at">collapse=</span><span class="st">&quot;&quot;</span>),</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>              <span class="st">&quot;jni&quot;</span>)),<span class="st">&quot;@gmail.com&quot;</span>,<span class="fu">sub</span>(<span class="st">&quot;@yahoo.com&quot;</span>,<span class="st">&quot;&quot;</span>, <span class="st">&quot;&quot;</span>),</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>        <span class="fu">sub</span>(<span class="st">&quot;@outlook.com&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="st">&quot;&quot;</span>)),<span class="at">collapse=</span><span class="st">&quot;&quot;</span>)</span></code></pre></div>
 
 
 

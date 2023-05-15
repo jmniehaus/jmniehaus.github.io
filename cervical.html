@@ -1,0 +1,2658 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Cervical Cancer Analysis</title>
+
+<script src="site_libs/header-attrs-2.21/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/font-awesome-6.4.0/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.4.0/css/v4-shims.min.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+.sourceCode .row {
+  width: 100%;
+}
+.sourceCode {
+  overflow-x: auto;
+}
+.code-folding-btn {
+  margin-right: -30px;
+}
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">John M. Niehaus</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="./files/niehaus_resume_online.pdf">Resume</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Portfolio
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Technical/Theoretical</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="irls.html">Iteratively Reweighted Least Squares for GLMs</a>
+        </li>
+        <li>
+          <a href="mvnorm.html">Sampling from the Multivariate Normal in R</a>
+        </li>
+        <li>
+          <a href="montes.html">Monte Carlo Analysis with Examples in R</a>
+        </li>
+      </ul>
+    </li>
+    <li class="dropdown-submenu">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Applied</a>
+      <ul class="dropdown-menu" role="menu">
+        <li>
+          <a href="cervical.html">Cervical Cancer Classification in Python</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="http://github.com/jmniehaus">
+    <span class="fab fa-github"></span>
+     
+    GitHub
+  </a>
+</li>
+<li>
+  <a href="https://www.linkedin.com/in/john-niehaus/">
+    <span class="fa fa-brands fa-linkedin"></span>
+     
+    LinkedIn
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Machine Learning Analysis of Cervical
+Cancer Risk</h1>
+<h4 class="date">Updated: 14 May 2023</h4>
+
+</div>
+
+
+<p>*Notebook for analysis available at <a
+href="https://github.com/jmniehaus/cervical_cancer">this repo</a>.</p>
+<p><br />
+</p>
+<div id="disclosure-on-the-data" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Disclosure on the
+data</h1>
+<p>The data used in this post are on high-risk gynecological patients at
+a Venezuelan hospital, and are from the UCI machine learning repository,
+available <a
+href="https://archive.ics.uci.edu/ml/datasets/Cervical+cancer+%28Risk+Factors%29">here</a>.
+No information is provided on how the data were gathered, or when. Thus,
+the data are not representative of women in general, or even high-risk
+gynecological patients. The data were selected based on their perceived
+risk for cervical complications; thus, models trained on the data are
+only valid on similarly selected test data going forward. Moreover, the
+data dictionary for these data is unfortunately quite lacking, with the
+published work using these data not helping much either. The authors of
+the data have two published articles where they give some additional
+information. These articles are available <a
+href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7924508/pdf/peerj-cs-04-154.pdf">here</a>
+and <a
+href="https://link.springer.com/chapter/10.1007/978-3-319-58838-4_27">here</a>.
+Other’s have also used the data, but either offer no additional details
+or make claims about the data that are not verifiable with materials
+provided by the original authors. A quick search on Google Scholar will
+show several papers citing the original paper, most of which use
+so-called “garbage can” models, with minimal or no interrogation of the
+source data. Several have data leakage, fail to address imbalance, and
+use high accuracy scores as evidence of a good classifier (despite
+imbalance). Thus, both because of the fact that I am not a doctor, and
+because the data used in this post are shakey at best, this post should
+be seen as an exercise in the data science process, and any publications
+using the data should be viewed with heavy skepticism. The results in
+this post should not be used for any medical decisions, and do not
+constitute medical advice; they are merely used to showcase data science
+techniques and thinking as it pertains to medical data.</p>
+<p>Due to the above lack of clarity, the following assumptions/decisions
+are made regarding the data:</p>
+<ol style="list-style-type: decimal">
+<li><p>The <code>hinselmann</code>, <code>schiller</code>,
+<code>citology</code> and <code>biopsy</code> columns indicate a
+positive result upon carrying out the indicated test for cervical
+abnormality. I am unable to verify if this column means that the test
+was merely performed, or whether it was a positive result. The decision
+to assume that these indicate a postive test result stems from the
+imbalance of these columns, and knowledge of gynecological care. In the
+United States at least, pap smears (citology) are reccomended as routine
+care every 3 years after age 21. It is unlikely that of the nearly 900
+patients, only about 6% of them are visiting for their every-three-year
+citological test. Moreover, the proportion of patients with citology is
+less than the proportion with biopsy. It seems strange for biopsy to
+occur in the absence of citology, although I am not a doctor so perhaps
+I’m wrong here. Thus, I assume that because these patients were deemed
+high risk all tests were performed, with the corresponding columns then
+indicating the results of these tests.</p></li>
+<li><p>The <code>biopsy</code> column is used as the outcome variable.
+This is consistent with the orignal authors’ work.</p></li>
+<li><p>The <code>dx_cancer</code>, <code>dx_cin</code>,
+<code>dx_hpv</code> and <code>dx</code> columns indicate any previous
+cervical abnormality diagnosis has occurred. This is an assumption made
+based on table 1 in <a
+href="(https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7924508/pdf/peerj-cs-04-154.pdf)">this
+article</a>.</p></li>
+<li><p>The various columns indicating a particular sexually transmitted
+disease (STD), e.g., <code>stds_cervical_condylomatosis</code> indicate
+whether the patient <em>currently</em> has the indicated
+disease.</p></li>
+<li><p>The <code>stds_n_diagnosis</code> column is different than the
+<code>stds_number</code> column. I am unable to find any information
+regarding the <code>stds_n_diagnosis</code> column, although it could
+mean the number of total STD diagnoses in the patients whole history.
+However, because I cannot verify anything about the
+<code>stds_n_diagnosis</code> column, I am forced to drop it.</p></li>
+</ol>
+<p><br />
+</p>
+</div>
+<div id="imports" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Imports</h1>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="im">import</span> gc </span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split, RepeatedStratifiedKFold, cross_val_score, GridSearchCV, RandomizedSearchCV, cross_validate, StratifiedKFold</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline, FeatureUnion</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> fbeta_score, make_scorer, average_precision_score</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> MissingIndicator, SimpleImputer</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="im">from</span> sklearn.inspection <span class="im">import</span> permutation_importance, PartialDependenceDisplay</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="im">import</span> matplotlib <span class="im">as</span> mpl</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="im">import</span> miceforest <span class="im">as</span> mf</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="im">from</span> miceforest <span class="im">import</span> mean_match_default</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="im">from</span> lightgbm <span class="im">import</span> LGBMClassifier</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="im">import</span> inspect </span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="im">import</span> warnings</span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="im">import</span> scipy.stats <span class="im">as</span> stats</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="im">from</span> tempfile <span class="im">import</span> mkdtemp</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="im">from</span> joblib <span class="im">import</span> Memory</span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="im">from</span> shutil <span class="im">import</span> rmtree</span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="im">from</span> mice_imputer <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="im">from</span> missing_transformer <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="im">import</span> pickle </span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a><span class="co"># Should model be re-run? If false, it is loaded from pkl on disk. Must clone </span></span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a><span class="co"># https://github.com/jmniehaus/cervical_cancer</span></span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="co"># for pickle file. </span></span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>run <span class="op">=</span> <span class="va">False</span></span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="data-housekeeping" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Data Housekeeping</h1>
+<p>We’ll first read in the data from UCI repo:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00383/risk_factors_cervical_cancer.csv&quot;</span>)</span></code></pre></div>
+<p><br />
+</p>
+<div id="encode-missings" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Encode missings</h2>
+<p>The first thing you’ll notice with this data (and all data from the
+UCI repo) is that missing values are string valued, appearing as
+question marks: <code>"?'</code>. So, we’ll want to go through and
+replace these with proper missing values.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>df <span class="op">=</span> df.replace({<span class="st">&quot;?&quot;</span>: pd.NA})</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="rename-columns-to-be-more-manageable" class="section level2"
+number="3.2">
+<h2><span class="header-section-number">3.2</span> Rename columns to be
+more manageable</h2>
+<p>As seen below, the column names aren’t very manageable.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>df.columns.values</span></code></pre></div>
+<pre><code>## array([&#39;Age&#39;, &#39;Number of sexual partners&#39;, &#39;First sexual intercourse&#39;,
+##        &#39;Num of pregnancies&#39;, &#39;Smokes&#39;, &#39;Smokes (years)&#39;,
+##        &#39;Smokes (packs/year)&#39;, &#39;Hormonal Contraceptives&#39;,
+##        &#39;Hormonal Contraceptives (years)&#39;, &#39;IUD&#39;, &#39;IUD (years)&#39;, &#39;STDs&#39;,
+##        &#39;STDs (number)&#39;, &#39;STDs:condylomatosis&#39;,
+##        &#39;STDs:cervical condylomatosis&#39;, &#39;STDs:vaginal condylomatosis&#39;,
+##        &#39;STDs:vulvo-perineal condylomatosis&#39;, &#39;STDs:syphilis&#39;,
+##        &#39;STDs:pelvic inflammatory disease&#39;, &#39;STDs:genital herpes&#39;,
+##        &#39;STDs:molluscum contagiosum&#39;, &#39;STDs:AIDS&#39;, &#39;STDs:HIV&#39;,
+##        &#39;STDs:Hepatitis B&#39;, &#39;STDs:HPV&#39;, &#39;STDs: Number of diagnosis&#39;,
+##        &#39;STDs: Time since first diagnosis&#39;,
+##        &#39;STDs: Time since last diagnosis&#39;, &#39;Dx:Cancer&#39;, &#39;Dx:CIN&#39;, &#39;Dx:HPV&#39;,
+##        &#39;Dx&#39;, &#39;Hinselmann&#39;, &#39;Schiller&#39;, &#39;Citology&#39;, &#39;Biopsy&#39;], dtype=object)</code></pre>
+<p>We’ll replace some of the keywords with abbreviations, and problem
+characters with underscores or white space. We’ll also convert these to
+lower-case:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>new_names <span class="op">=</span> df.columns </span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>to_rep <span class="op">=</span> {</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>    <span class="st">&quot;Number&quot;</span> : <span class="st">&quot;n&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>    <span class="st">&quot;Contraceptives&quot;</span> : <span class="st">&quot;bc&quot;</span>, </span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    <span class="st">&quot;Num&quot;</span> : <span class="st">&quot;n&quot;</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>    <span class="st">&quot;-&quot;</span> : <span class="st">&quot;_&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>    <span class="st">&quot;of&quot;</span> : <span class="st">&quot;&quot;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="st">&quot; &quot;</span> : <span class="st">&quot;_&quot;</span>, </span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>    <span class="st">&quot;\(&quot;</span> : <span class="st">&quot;&quot;</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>    <span class="st">&quot;\)&quot;</span> : <span class="st">&quot;&quot;</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>    <span class="st">&quot;/&quot;</span> : <span class="st">&quot;_&quot;</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>    <span class="st">&quot;:&quot;</span> : <span class="st">&quot;_&quot;</span>, </span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>    <span class="st">&quot;__&quot;</span> : <span class="st">&quot;_&quot;</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>}</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="cf">for</span> key, value <span class="kw">in</span> to_rep.items(): </span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>    new_names <span class="op">=</span> new_names.<span class="bu">str</span>.replace(key, value, regex <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>new_names <span class="op">=</span> new_names.<span class="bu">str</span>.lower()</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>df <span class="op">=</span> df.set_axis(new_names, axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>df.columns.values</span></code></pre></div>
+<pre><code>## array([&#39;age&#39;, &#39;n_sexual_partners&#39;, &#39;first_sexual_intercourse&#39;,
+##        &#39;n_pregnancies&#39;, &#39;smokes&#39;, &#39;smokes_years&#39;, &#39;smokes_packs_year&#39;,
+##        &#39;hormonal_bc&#39;, &#39;hormonal_bc_years&#39;, &#39;iud&#39;, &#39;iud_years&#39;, &#39;stds&#39;,
+##        &#39;stds_number&#39;, &#39;stds_condylomatosis&#39;,
+##        &#39;stds_cervical_condylomatosis&#39;, &#39;stds_vaginal_condylomatosis&#39;,
+##        &#39;stds_vulvo_perineal_condylomatosis&#39;, &#39;stds_syphilis&#39;,
+##        &#39;stds_pelvic_inflammatory_disease&#39;, &#39;stds_genital_herpes&#39;,
+##        &#39;stds_molluscum_contagiosum&#39;, &#39;stds_aids&#39;, &#39;stds_hiv&#39;,
+##        &#39;stds_hepatitis_b&#39;, &#39;stds_hpv&#39;, &#39;stds_n_diagnosis&#39;,
+##        &#39;stds_time_since_first_diagnosis&#39;,
+##        &#39;stds_time_since_last_diagnosis&#39;, &#39;dx_cancer&#39;, &#39;dx_cin&#39;, &#39;dx_hpv&#39;,
+##        &#39;dx&#39;, &#39;hinselmann&#39;, &#39;schiller&#39;, &#39;citology&#39;, &#39;biopsy&#39;], dtype=object)</code></pre>
+<p><br />
+</p>
+</div>
+<div id="dtype-conversion" class="section level2" number="3.3">
+<h2><span class="header-section-number">3.3</span> Dtype conversion</h2>
+<p>We’ll also want to get the data into proper dtypes:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># convert_dtypes not working without the apply() call. Probably due to the earlier replace statement, unsure.</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>df <span class="op">=</span> df.<span class="bu">apply</span>(pd.to_numeric, axis <span class="op">=</span> <span class="dv">1</span>).convert_dtypes() </span></code></pre></div>
+<p><br />
+</p>
+</div>
+</div>
+<div id="data-exploration" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Data Exploration</h1>
+<div id="check-missingness" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> Check
+missingness</h2>
+<p>First, we’ll check on the proportion of missing values. Remember, the
+mean of a binary variable is the sample proportion. Thus, below I’m just
+computing the mean over a boolean mask for missingness, i.e., the
+proportion of missing values.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>df.isna().mean().sort_values(ascending <span class="op">=</span> <span class="va">False</span>)</span></code></pre></div>
+<pre><code>## stds_time_since_last_diagnosis        0.917249
+## stds_time_since_first_diagnosis       0.917249
+## iud                                   0.136364
+## iud_years                             0.136364
+## hormonal_bc                           0.125874
+## hormonal_bc_years                     0.125874
+## stds_pelvic_inflammatory_disease      0.122378
+## stds_vulvo_perineal_condylomatosis    0.122378
+## stds_hpv                              0.122378
+## stds_hepatitis_b                      0.122378
+## stds_hiv                              0.122378
+## stds_aids                             0.122378
+## stds_molluscum_contagiosum            0.122378
+## stds_genital_herpes                   0.122378
+## stds_syphilis                         0.122378
+## stds_vaginal_condylomatosis           0.122378
+## stds_cervical_condylomatosis          0.122378
+## stds_condylomatosis                   0.122378
+## stds_number                           0.122378
+## stds                                  0.122378
+## n_pregnancies                         0.065268
+## n_sexual_partners                     0.030303
+## smokes_packs_year                     0.015152
+## smokes_years                          0.015152
+## smokes                                0.015152
+## first_sexual_intercourse              0.008159
+## dx                                    0.000000
+## citology                              0.000000
+## schiller                              0.000000
+## hinselmann                            0.000000
+## age                                   0.000000
+## dx_hpv                                0.000000
+## dx_cin                                0.000000
+## dx_cancer                             0.000000
+## stds_n_diagnosis                      0.000000
+## biopsy                                0.000000
+## dtype: float64</code></pre>
+<p>A few observations should be made here:</p>
+<ol style="list-style-type: decimal">
+<li><p>The two <code>time_since...</code> variables have too much
+missingness to handle, so they’ll need to be dropped.</p></li>
+<li><p>The various <code>stds_...</code> columns all have identical
+missingness rates. There is a very high chance that patients who don’t
+answer for one STD don’t answer for any. This is a good reason to have
+an indicator variable for whether or not the STD columns were missing:
+with a single variable, we’ll fit a constant term indicating whether
+they responded or not to the STD questions. Non-response could very well
+predict cancer, as these individuals may be at greater risk for STDs,
+which would then increase chances of cancer.</p></li>
+</ol>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Drop the time since diagnoses variables, as stated in (1) above</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>df.drop(df.columns.values[df.columns.<span class="bu">str</span>.startswith(<span class="st">&quot;stds_time&quot;</span>)], axis <span class="op">=</span> <span class="dv">1</span>, inplace <span class="op">=</span> <span class="va">True</span>)</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="basic-variable-description" class="section level2"
+number="4.2">
+<h2><span class="header-section-number">4.2</span> Basic variable
+description</h2>
+<p>Next, its a good idea to get basic descriptives on the data to
+identify any clear distributional problems. In addition to summary
+stats, I also append the sum of values in each column. This helps to get
+counts for binary variables, instead of just proportions.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>descrip <span class="op">=</span> pd.concat([df.describe().T, df.<span class="bu">sum</span>(axis <span class="op">=</span> <span class="dv">0</span>)], axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="bu">print</span>(descrip.to_markdown())</span></code></pre></div>
+<table style="width:100%;">
+<colgroup>
+<col width="31%" />
+<col width="7%" />
+<col width="11%" />
+<col width="9%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="9%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">count</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">min</th>
+<th align="right">25%</th>
+<th align="right">50%</th>
+<th align="right">75%</th>
+<th align="right">max</th>
+<th align="right">0</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">858</td>
+<td align="right">26.8205</td>
+<td align="right">8.49795</td>
+<td align="right">13</td>
+<td align="right">20</td>
+<td align="right">25</td>
+<td align="right">32</td>
+<td align="right">84</td>
+<td align="right">23012</td>
+</tr>
+<tr class="even">
+<td align="left">n_sexual_partners</td>
+<td align="right">832</td>
+<td align="right">2.52764</td>
+<td align="right">1.66776</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">28</td>
+<td align="right">2103</td>
+</tr>
+<tr class="odd">
+<td align="left">first_sexual_intercourse</td>
+<td align="right">851</td>
+<td align="right">16.9953</td>
+<td align="right">2.80336</td>
+<td align="right">10</td>
+<td align="right">15</td>
+<td align="right">17</td>
+<td align="right">18</td>
+<td align="right">32</td>
+<td align="right">14463</td>
+</tr>
+<tr class="even">
+<td align="left">n_pregnancies</td>
+<td align="right">802</td>
+<td align="right">2.27556</td>
+<td align="right">1.44741</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">11</td>
+<td align="right">1825</td>
+</tr>
+<tr class="odd">
+<td align="left">smokes</td>
+<td align="right">845</td>
+<td align="right">0.145562</td>
+<td align="right">0.352876</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">123</td>
+</tr>
+<tr class="even">
+<td align="left">smokes_years</td>
+<td align="right">845</td>
+<td align="right">1.21972</td>
+<td align="right">4.08902</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">37</td>
+<td align="right">1030.66</td>
+</tr>
+<tr class="odd">
+<td align="left">smokes_packs_year</td>
+<td align="right">845</td>
+<td align="right">0.453144</td>
+<td align="right">2.22661</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">37</td>
+<td align="right">382.907</td>
+</tr>
+<tr class="even">
+<td align="left">hormonal_bc</td>
+<td align="right">750</td>
+<td align="right">0.641333</td>
+<td align="right">0.479929</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">481</td>
+</tr>
+<tr class="odd">
+<td align="left">hormonal_bc_years</td>
+<td align="right">750</td>
+<td align="right">2.25642</td>
+<td align="right">3.76425</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0.5</td>
+<td align="right">3</td>
+<td align="right">30</td>
+<td align="right">1692.31</td>
+</tr>
+<tr class="even">
+<td align="left">iud</td>
+<td align="right">741</td>
+<td align="right">0.112011</td>
+<td align="right">0.315593</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">83</td>
+</tr>
+<tr class="odd">
+<td align="left">iud_years</td>
+<td align="right">741</td>
+<td align="right">0.514804</td>
+<td align="right">1.94309</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">19</td>
+<td align="right">381.47</td>
+</tr>
+<tr class="even">
+<td align="left">stds</td>
+<td align="right">753</td>
+<td align="right">0.104914</td>
+<td align="right">0.306646</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">79</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_number</td>
+<td align="right">753</td>
+<td align="right">0.176627</td>
+<td align="right">0.561993</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">4</td>
+<td align="right">133</td>
+</tr>
+<tr class="even">
+<td align="left">stds_condylomatosis</td>
+<td align="right">753</td>
+<td align="right">0.0584329</td>
+<td align="right">0.234716</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">44</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_cervical_condylomatosis</td>
+<td align="right">753</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">stds_vaginal_condylomatosis</td>
+<td align="right">753</td>
+<td align="right">0.00531208</td>
+<td align="right">0.0727385</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_vulvo_perineal_condylomatosis</td>
+<td align="right">753</td>
+<td align="right">0.0571049</td>
+<td align="right">0.232197</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">43</td>
+</tr>
+<tr class="even">
+<td align="left">stds_syphilis</td>
+<td align="right">753</td>
+<td align="right">0.0239044</td>
+<td align="right">0.152853</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">18</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_pelvic_inflammatory_disease</td>
+<td align="right">753</td>
+<td align="right">0.00132802</td>
+<td align="right">0.036442</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">stds_genital_herpes</td>
+<td align="right">753</td>
+<td align="right">0.00132802</td>
+<td align="right">0.036442</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_molluscum_contagiosum</td>
+<td align="right">753</td>
+<td align="right">0.00132802</td>
+<td align="right">0.036442</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">stds_aids</td>
+<td align="right">753</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_hiv</td>
+<td align="right">753</td>
+<td align="right">0.0239044</td>
+<td align="right">0.152853</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">18</td>
+</tr>
+<tr class="even">
+<td align="left">stds_hepatitis_b</td>
+<td align="right">753</td>
+<td align="right">0.00132802</td>
+<td align="right">0.036442</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_hpv</td>
+<td align="right">753</td>
+<td align="right">0.00265604</td>
+<td align="right">0.0515025</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="left">stds_n_diagnosis</td>
+<td align="right">858</td>
+<td align="right">0.0874126</td>
+<td align="right">0.302545</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">3</td>
+<td align="right">75</td>
+</tr>
+<tr class="odd">
+<td align="left">dx_cancer</td>
+<td align="right">858</td>
+<td align="right">0.020979</td>
+<td align="right">0.143398</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">18</td>
+</tr>
+<tr class="even">
+<td align="left">dx_cin</td>
+<td align="right">858</td>
+<td align="right">0.0104895</td>
+<td align="right">0.101939</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">9</td>
+</tr>
+<tr class="odd">
+<td align="left">dx_hpv</td>
+<td align="right">858</td>
+<td align="right">0.020979</td>
+<td align="right">0.143398</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">18</td>
+</tr>
+<tr class="even">
+<td align="left">dx</td>
+<td align="right">858</td>
+<td align="right">0.027972</td>
+<td align="right">0.164989</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">24</td>
+</tr>
+<tr class="odd">
+<td align="left">hinselmann</td>
+<td align="right">858</td>
+<td align="right">0.0407925</td>
+<td align="right">0.197925</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">35</td>
+</tr>
+<tr class="even">
+<td align="left">schiller</td>
+<td align="right">858</td>
+<td align="right">0.0862471</td>
+<td align="right">0.280892</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">74</td>
+</tr>
+<tr class="odd">
+<td align="left">citology</td>
+<td align="right">858</td>
+<td align="right">0.0512821</td>
+<td align="right">0.220701</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">44</td>
+</tr>
+<tr class="even">
+<td align="left">biopsy</td>
+<td align="right">858</td>
+<td align="right">0.0641026</td>
+<td align="right">0.245078</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">55</td>
+</tr>
+</tbody>
+</table>
+<p>Again, a few observations can be made:</p>
+<ol style="list-style-type: decimal">
+<li>The <code>stds_cervical_condylomatosis</code> and
+<code>stds_aids</code> variables are constant, and will therefore be
+dropped.</li>
+<li>The <code>dx_...</code> and several of the other
+<code>stds_...</code> variables are rare/imbalanced. This will pose
+problems for us given the small size of this dataset, because we’ll have
+to use nested cross validation to tune hyperparameters, and obtain risk
+estimates. Thus, ther is a high chance that after splitting data for
+cross validation, all of the positive values for these indicators will
+be in either the training or hold out fold. In other words, we will
+train a model on a constant in many cases of all postive values end up
+in the test fold.</li>
+<li>The three variables that index <code>..._years</code> are
+non-integers; i.e., they are decimal years. This can be seen by looking
+at the final column, which is the sum over all values of the indicated
+variable. The loss functions we choose for imputing these values will
+need to respect the fact that the support for these
+<code>..._years</code> variables is not strictly integers.</li>
+</ol>
+<p>This last point can also be verified by checking the modulus,
+although the sum being a non-integer is sufficient:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>df_mod <span class="op">=</span> df <span class="op">%</span> <span class="dv">1</span> <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>df_mod.<span class="bu">all</span>(axis <span class="op">=</span> <span class="dv">0</span>)</span></code></pre></div>
+<pre><code>## age                                    True
+## n_sexual_partners                      True
+## first_sexual_intercourse               True
+## n_pregnancies                          True
+## smokes                                 True
+## smokes_years                          False
+## smokes_packs_year                     False
+## hormonal_bc                            True
+## hormonal_bc_years                     False
+## iud                                    True
+## iud_years                             False
+## stds                                   True
+## stds_number                            True
+## stds_condylomatosis                    True
+## stds_cervical_condylomatosis           True
+## stds_vaginal_condylomatosis            True
+## stds_vulvo_perineal_condylomatosis     True
+## stds_syphilis                          True
+## stds_pelvic_inflammatory_disease       True
+## stds_genital_herpes                    True
+## stds_molluscum_contagiosum             True
+## stds_aids                              True
+## stds_hiv                               True
+## stds_hepatitis_b                       True
+## stds_hpv                               True
+## stds_n_diagnosis                       True
+## dx_cancer                              True
+## dx_cin                                 True
+## dx_hpv                                 True
+## dx                                     True
+## hinselmann                             True
+## schiller                               True
+## citology                               True
+## biopsy                                 True
+## dtype: bool</code></pre>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Dropping the constant columns, as stated in (1) above. </span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>const <span class="op">=</span> df.nunique() <span class="op">==</span> <span class="dv">1</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="cf">if</span> <span class="bu">any</span>(const):</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Deleting constant columns: </span><span class="sc">{}</span><span class="st">&quot;</span>.<span class="bu">format</span>(df.columns.values[const]))</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>    df.drop(df.columns.values[const], axis <span class="op">=</span> <span class="dv">1</span>, inplace <span class="op">=</span> <span class="va">True</span>)</span></code></pre></div>
+<pre><code>## Deleting constant columns: [&#39;stds_cervical_condylomatosis&#39; &#39;stds_aids&#39;]</code></pre>
+<p><br />
+</p>
+</div>
+<div id="iudsmokinghbc-years-are-always-0-if-you-have-iudsmokehbc."
+class="section level2" number="4.3">
+<h2><span class="header-section-number">4.3</span> Iud/smoking/HBC years
+are always &gt;0 if you have IUD/smoke/HBC.</h2>
+<p>Notice also that we have columns like <code>iud</code> and
+<code>iud_years</code> or <code>smokes</code> and
+<code>smokes_years</code>. In theory then, <code>iud_years</code> should
+always be zero if <code>iud == 0</code> as well as with the smoking
+variables, given that the years variables are in fact decimal years.
+I’ll check to make sure:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="kw">def</span> check_zerotrunc(df, bin_col, yr_col):</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>    <span class="cf">return</span> np.<span class="bu">any</span>((df[bin_col] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df[yr_col] <span class="op">&gt;</span> <span class="dv">0</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>bin_cols <span class="op">=</span> [<span class="st">&quot;iud&quot;</span>, <span class="st">&quot;smokes&quot;</span>, <span class="st">&quot;hormonal_bc&quot;</span>]</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>yr_cols <span class="op">=</span> [<span class="st">&quot;iud_years&quot;</span>, <span class="st">&quot;smokes_years&quot;</span>, <span class="st">&quot;hormonal_bc_years&quot;</span>]</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="cf">for</span> <span class="bu">bin</span>, yr <span class="kw">in</span> <span class="bu">zip</span>(bin_cols, yr_cols):</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span><span class="bu">bin</span><span class="sc">}</span><span class="ss"> == 0 when </span><span class="sc">{</span>yr<span class="sc">}</span><span class="ss"> &gt; 0?&quot;</span>, check_zerotrunc(df, <span class="bu">bin</span>, yr))</span></code></pre></div>
+<pre><code>## iud == 0 when iud_years &gt; 0? False
+## smokes == 0 when smokes_years &gt; 0? False
+## hormonal_bc == 0 when hormonal_bc_years &gt; 0? False</code></pre>
+<p>As suspected, IUD is always zero when years are zero, as is the case
+with the smoking and hormonal birth control variables. In other words,
+the indicator variables are redundant: if a person has greater than 0
+years for any of these variables, then we know for certain that they
+have the iud, they smoke, or have hormonal birth control. You can also
+verify the converse: when a patient has the positive indiator for IUD,
+smoking, or hormonal BC, they always have non-zero years for these
+variables.</p>
+<p>For some classification algorithms, this is no problem; for some, it
+is. In any case, the variables carry redundant information, so I drop
+the indicators and keep the year variables.</p>
+<p><br />
+</p>
+</div>
+<div
+id="verify-that-the-count-of-stds-is-linear-combination-of-all-std-columns."
+class="section level2" number="4.4">
+<h2><span class="header-section-number">4.4</span> Verify that the count
+of stds is linear combination of all std columns.</h2>
+<p>Notice also that we have several variables that are indicators for
+stds, as well as a variable for the number of stds. In theory, if the
+data are what we think they are, then the sum over all stds columns
+should be equal to the total number of stds for each patient. Checking
+this below shows that this is indeed the case, giving some confidence
+that we’re thinking about these columns in the right way.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="bu">all</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>    (df[df.columns[df.columns.<span class="bu">str</span>.startswith(<span class="st">&quot;stds_&quot;</span>)]].drop([</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>        <span class="st">&quot;stds_n_diagnosis&quot;</span>, <span class="st">&quot;stds_number&quot;</span>]</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>        , axis <span class="op">=</span> <span class="dv">1</span>).<span class="bu">sum</span>(axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>        <span class="op">==</span> df.stds_number).dropna()</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code>## True</code></pre>
+<p><br />
+</p>
+</div>
+<div
+id="verify-that-boolean-stds-column-is-always-1-if-count-stds_number-column-is-non-zero"
+class="section level2" number="4.5">
+<h2><span class="header-section-number">4.5</span> Verify that boolean
+<code>stds</code> column is always 1 if count <code>stds_number</code>
+column is non-zero</h2>
+<p>There is also a column simply titled <code>stds</code>, which is
+binary. To verify that <code>stds_number</code> is likely the current
+number of STDs, we can check if the <code>stds_number</code> variable is
+always greater than 0 when the <code>stds</code> column is non-zero, and
+the converse.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>    <span class="bu">any</span>((df.stds.dropna() <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df.stds_number.dropna() <span class="op">&gt;</span> <span class="dv">0</span>)),</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>    <span class="bu">any</span>((df.stds.dropna() <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (df.stds_number.dropna() <span class="op">==</span> <span class="dv">0</span>)),</span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>    sep <span class="op">=</span> <span class="st">&#39;</span><span class="ch">\n</span><span class="st">&#39;</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code>## False
+## False</code></pre>
+<p>Given that the <code>stds</code> variable just indicates the presence
+of any STD, we’ll for sure be dropping this variable as that information
+is redundant.</p>
+<p><br />
+</p>
+</div>
+<div
+id="combine-low-proportion-columns-to-avoid-issues-during-cross-validation"
+class="section level2" number="4.6">
+<h2><span class="header-section-number">4.6</span> Combine
+low-proportion columns to avoid issues during cross validation</h2>
+<p>In this analysis, we’ll eventually be doing k-fold cross validation.
+Because of the small sample size, dummy variables with low proportions
+(i.e., “balance”) will sometimes end up with all positive (or negative)
+instances being in the training or test fold, which causes issues. So, I
+combine some std and previous diagnoses columns to avoid this, as was
+discussed earlier. What we’ll do is create two indicator variables, one
+for condylomatosis-related STDs, and one for all other STDs. This
+results in greater balance to avoid issues with constant columns during
+cross validation, but also preserves some of the information about the
+type of STD, namely those related to condyloma, which is often
+associated with genital cancers.</p>
+<p>For similar reasons, the previous diagnoses variables are combined
+into a single variable indicating any previous cervical diagnosis,
+regardless of its type.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>df.columns[df.columns.<span class="bu">str</span>.contains(<span class="st">&quot;stds_&quot;</span>)]</span></code></pre></div>
+<pre><code>## Index([&#39;stds_number&#39;, &#39;stds_condylomatosis&#39;, &#39;stds_vaginal_condylomatosis&#39;,
+##        &#39;stds_vulvo_perineal_condylomatosis&#39;, &#39;stds_syphilis&#39;,
+##        &#39;stds_pelvic_inflammatory_disease&#39;, &#39;stds_genital_herpes&#39;,
+##        &#39;stds_molluscum_contagiosum&#39;, &#39;stds_hiv&#39;, &#39;stds_hepatitis_b&#39;,
+##        &#39;stds_hpv&#39;, &#39;stds_n_diagnosis&#39;],
+##       dtype=&#39;object&#39;)</code></pre>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># get two masks, one for condylomas, and one for all STDs</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>condy_mask <span class="op">=</span> df.columns.<span class="bu">str</span>.contains(<span class="st">&quot;condy&quot;</span>)</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a>std_mask <span class="op">=</span> (df.columns.<span class="bu">str</span>.startswith(<span class="st">&quot;stds_&quot;</span>)) <span class="op">&amp;</span> (<span class="op">~</span>df.columns.<span class="bu">str</span>.startswith(<span class="st">&quot;stds_n&quot;</span>))</span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a></span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="co"># Get the names of condyloma stds, and names for all other stds</span></span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a>condy <span class="op">=</span> df.columns[condy_mask]</span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a>stds <span class="op">=</span> df.columns[std_mask]</span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a>not_condy <span class="op">=</span> df.columns[(<span class="op">~</span>condy_mask) <span class="op">&amp;</span> (std_mask)]</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Compute max over the entire set of condyloma or other STDs in order to get an indicator for each category.</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a>stds_condy <span class="op">=</span> df[condy].<span class="bu">max</span>(axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a>stds_other <span class="op">=</span> df[not_condy].<span class="bu">max</span>(axis <span class="op">=</span> <span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># drop old STD vars, add new ones to DF</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>df <span class="op">=</span> df.drop(stds, axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>df <span class="op">=</span> df.drop(<span class="st">&quot;stds&quot;</span>, axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a>df[<span class="st">&quot;stds_condy&quot;</span>] <span class="op">=</span> stds_condy</span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a>df[<span class="st">&quot;stds_other&quot;</span>] <span class="op">=</span> stds_other</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># combine the previous dx columns into one, in the same way as we did for STDs: get a mask, subset columns, take max, replace.</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>dx_mask <span class="op">=</span> df.columns.<span class="bu">str</span>.startswith(<span class="st">&quot;dx&quot;</span>)</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>dx <span class="op">=</span> df.columns[dx_mask]</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a></span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>dx_any <span class="op">=</span> df[dx].<span class="bu">max</span>(axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a></span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a>df <span class="op">=</span> df.drop(dx, axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a></span>
+<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a>df[<span class="st">&quot;dx_any&quot;</span>] <span class="op">=</span> dx_any</span>
+<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a></span>
+<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a>df <span class="op">=</span> df.convert_dtypes()</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="drop-n_diagnosis-col" class="section level2" number="4.7">
+<h2><span class="header-section-number">4.7</span> Drop n_diagnosis
+col</h2>
+<p>As was already mentioned, the <code>stds_n_diagnosis</code> column is
+not well understood, and is therefore dropped.</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a>df.drop([<span class="st">&quot;stds_n_diagnosis&quot;</span>], axis <span class="op">=</span> <span class="dv">1</span>, inplace <span class="op">=</span> <span class="va">True</span>)</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="correlations" class="section level2" number="4.8">
+<h2><span class="header-section-number">4.8</span> Correlations</h2>
+<p>We’ll also quickly check for collinearity.</p>
+<ol style="list-style-type: decimal">
+<li><p>Looks like the two STD indicators we created are highly related
+to the count of the number of STDs, which of course makes sense as you
+can’t have non-zero STDs without one of these indicators being
+positive.</p></li>
+<li><p>Additionaly, each of the tests (e.g., citology, Schiller, etc)
+are related, which is to be expected. Each test has its own false
+positive rate, but in general they should agree more so than by
+chance.</p></li>
+<li><p>All of the smoking variables, IUD, and hormonal BC variables are
+related to eachother. This is again expected, as within each group, the
+variables are functions of eachother.</p></li>
+<li><p>No other strong collinearities are detected.</p></li>
+</ol>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>mpl.rcParams[<span class="st">&#39;figure.figsize&#39;</span>] <span class="op">=</span> [<span class="dv">6</span>, <span class="dv">6</span>]</span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>corr <span class="op">=</span> df.corr(numeric_only <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>cols <span class="op">=</span> corr.columns</span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>corrs <span class="op">=</span> sns.heatmap(</span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>    corr, </span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>    xticklabels <span class="op">=</span> cols,</span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a>    yticklabels <span class="op">=</span> cols</span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a>)</span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a>corrs</span></code></pre></div>
+<p><img src="cervical_files/figure-html/unnamed-chunk-23-1.png" width="576" /></p>
+<p><br />
+</p>
+</div>
+<div id="distributions" class="section level2" number="4.9">
+<h2><span class="header-section-number">4.9</span> Distributions</h2>
+<p>For non-categorical variables, we’ll want to get a look at the
+distributions. We already have an idea of how things will look from the
+previous summary stats, but visualizing these makes things much
+clearer.</p>
+<ol style="list-style-type: decimal">
+<li><p>Each of the variables has a few outliers, but nothing that should
+be overly concerning.</p></li>
+<li><p>The smoking and hormonal BC years variables have point-masses at
+zero, as expected based on the earlier analysis of these variables. The
+<code>..._years</code> columns will be zero when the individuals do not
+participate in these behaviors. Given that most people do not
+participate, we have a large point mass in each of the two distributions
+at zero. Notice that basically no one smokes in this sample (or no one
+reports smoking), so our ability to detect the effect of smoking will be
+muted.</p></li>
+</ol>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>to_hist <span class="op">=</span> [</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a>  <span class="st">&quot;age&quot;</span>, </span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a>  <span class="st">&quot;n_sexual_partners&quot;</span>, </span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>  <span class="st">&quot;first_sexual_intercourse&quot;</span>, </span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a>  <span class="st">&quot;n_pregnancies&quot;</span>, </span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a>  <span class="st">&quot;smokes_packs_year&quot;</span>, </span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a>  <span class="st">&quot;hormonal_bc_years&quot;</span></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a>]</span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a></span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a>plt.rcParams[<span class="st">&#39;figure.figsize&#39;</span>] <span class="op">=</span> [<span class="dv">15</span>, <span class="dv">7</span>]</span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a>fig, axs <span class="op">=</span> plt.subplots(nrows <span class="op">=</span> <span class="dv">2</span>, ncols <span class="op">=</span> <span class="dv">3</span>)</span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="cf">for</span> ax, var <span class="kw">in</span> <span class="bu">zip</span>(axs.ravel(), to_hist): </span>
+<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a>    df[var].plot.hist(bins <span class="op">=</span> <span class="dv">15</span>, ax <span class="op">=</span> ax, title <span class="op">=</span> var)</span></code></pre></div>
+<p><img src="cervical_files/figure-html/unnamed-chunk-24-3.png" width="1440" /></p>
+<p><br />
+</p>
+</div>
+<div id="final-descriptives" class="section level2" number="4.10">
+<h2><span class="header-section-number">4.10</span> Final
+descriptives</h2>
+<p>After all the data manipulation, we’ll do one last spot check to make
+sure things are looking as expected. All binary variables are in
+fact…binary, missingness rates appear small, and binary variables are
+not too rare. With maybe the exception of the age variable, there aren’t
+extreme outliers.</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="bu">print</span>(df.describe().T.to_markdown())</span></code></pre></div>
+<table>
+<colgroup>
+<col width="28%" />
+<col width="9%" />
+<col width="13%" />
+<col width="10%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+<col width="7%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">count</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+<th align="right">min</th>
+<th align="right">25%</th>
+<th align="right">50%</th>
+<th align="right">75%</th>
+<th align="right">max</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">858</td>
+<td align="right">26.8205</td>
+<td align="right">8.49795</td>
+<td align="right">13</td>
+<td align="right">20</td>
+<td align="right">25</td>
+<td align="right">32</td>
+<td align="right">84</td>
+</tr>
+<tr class="even">
+<td align="left">n_sexual_partners</td>
+<td align="right">832</td>
+<td align="right">2.52764</td>
+<td align="right">1.66776</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">28</td>
+</tr>
+<tr class="odd">
+<td align="left">first_sexual_intercourse</td>
+<td align="right">851</td>
+<td align="right">16.9953</td>
+<td align="right">2.80336</td>
+<td align="right">10</td>
+<td align="right">15</td>
+<td align="right">17</td>
+<td align="right">18</td>
+<td align="right">32</td>
+</tr>
+<tr class="even">
+<td align="left">n_pregnancies</td>
+<td align="right">802</td>
+<td align="right">2.27556</td>
+<td align="right">1.44741</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">11</td>
+</tr>
+<tr class="odd">
+<td align="left">smokes</td>
+<td align="right">845</td>
+<td align="right">0.145562</td>
+<td align="right">0.352876</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">smokes_years</td>
+<td align="right">845</td>
+<td align="right">1.21972</td>
+<td align="right">4.08902</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">37</td>
+</tr>
+<tr class="odd">
+<td align="left">smokes_packs_year</td>
+<td align="right">845</td>
+<td align="right">0.453144</td>
+<td align="right">2.22661</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">37</td>
+</tr>
+<tr class="even">
+<td align="left">hormonal_bc</td>
+<td align="right">750</td>
+<td align="right">0.641333</td>
+<td align="right">0.479929</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">hormonal_bc_years</td>
+<td align="right">750</td>
+<td align="right">2.25642</td>
+<td align="right">3.76425</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0.5</td>
+<td align="right">3</td>
+<td align="right">30</td>
+</tr>
+<tr class="even">
+<td align="left">iud</td>
+<td align="right">741</td>
+<td align="right">0.112011</td>
+<td align="right">0.315593</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">iud_years</td>
+<td align="right">741</td>
+<td align="right">0.514804</td>
+<td align="right">1.94309</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">19</td>
+</tr>
+<tr class="even">
+<td align="left">stds_number</td>
+<td align="right">753</td>
+<td align="right">0.176627</td>
+<td align="right">0.561993</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="left">hinselmann</td>
+<td align="right">858</td>
+<td align="right">0.0407925</td>
+<td align="right">0.197925</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">schiller</td>
+<td align="right">858</td>
+<td align="right">0.0862471</td>
+<td align="right">0.280892</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">citology</td>
+<td align="right">858</td>
+<td align="right">0.0512821</td>
+<td align="right">0.220701</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">biopsy</td>
+<td align="right">858</td>
+<td align="right">0.0641026</td>
+<td align="right">0.245078</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">stds_condy</td>
+<td align="right">753</td>
+<td align="right">0.0584329</td>
+<td align="right">0.234716</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="left">stds_other</td>
+<td align="right">753</td>
+<td align="right">0.0531208</td>
+<td align="right">0.224424</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+<tr class="odd">
+<td align="left">dx_any</td>
+<td align="right">858</td>
+<td align="right">0.0337995</td>
+<td align="right">0.180818</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+</p>
+</div>
+</div>
+<div id="modeling" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Modeling</h1>
+<p>Before we jump into the modeling, please be aware that I drop all
+tests other than the citology (pap) test. This is one so as to mimick a
+more routine care scenario, where at the 3 year mark a woman would most
+likely have the test done regardless of risk level. In other words, I
+drop the <code>hinselmann</code> and <code>schiller</code> test results
+for the analysis. This reduces the average precision of the model by
+about 50%, from 0.64 to 0.31. Again, the purpose of this analysis is
+more to show some steps in the process for data science, as of course
+neither of these average precision levels is very desireable.</p>
+<p>For model baselines, I compare to the results of table 3 in <a
+href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7924508/pdf/peerj-cs-04-154.pdf">this</a>
+paper, namely the citology-only results.</p>
+<p><br />
+</p>
+<div id="separate-covariates-from-outcome-drop-unnecessary-columns"
+class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> Separate covariates
+from outcome, drop unnecessary columns</h2>
+<p>Here we can drop the redundant indicator variables mentioned earlier,
+as well as the Hinselmann and Schiller variables as just discussed.</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a>x <span class="op">=</span> df.drop([<span class="st">&quot;smokes&quot;</span>, <span class="st">&quot;hormonal_bc&quot;</span>, <span class="st">&quot;iud&quot;</span>,<span class="st">&quot;biopsy&quot;</span>, <span class="st">&quot;hinselmann&quot;</span>, <span class="st">&#39;schiller&#39;</span>], axis <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a>x[<span class="st">&quot;n_stds&quot;</span>] <span class="op">=</span> x[<span class="st">&quot;stds_number&quot;</span>]</span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a>x.drop(<span class="st">&quot;stds_number&quot;</span>, axis <span class="op">=</span> <span class="dv">1</span>, inplace <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a>y <span class="op">=</span> df[[<span class="st">&quot;biopsy&quot;</span>]].astype(<span class="st">&quot;int64&quot;</span>)</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="have-to-have-catfloatint-dtypes-for-lgbm"
+class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Have to have
+cat/float/int dtypes for lgbm</h2>
+<p>Because we’ll be using LightGBM for the model, the dtypes need to be
+either categorical, float, or integer. However, we can’t cast vectors
+with missing values to ints in python, so for now I cast everything over
+to float.</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a>x[x.select_dtypes(include<span class="op">=</span>[<span class="st">&#39;Int64&#39;</span>, <span class="st">&#39;Float64&#39;</span>]).columns.values] <span class="op">=</span> x.select_dtypes(include<span class="op">=</span>[<span class="st">&#39;Int64&#39;</span>, <span class="st">&#39;Float64&#39;</span>]).astype(<span class="st">&#39;float&#39;</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a>x.dtypes</span></code></pre></div>
+<pre><code>## age                         float64
+## n_sexual_partners           float64
+## first_sexual_intercourse    float64
+## n_pregnancies               float64
+## smokes_years                float64
+## smokes_packs_year           float64
+## hormonal_bc_years           float64
+## iud_years                   float64
+## citology                    float64
+## stds_condy                  float64
+## stds_other                  float64
+## dx_any                      float64
+## n_stds                      float64
+## dtype: object</code></pre>
+<p><br />
+</p>
+</div>
+<div id="instantiate-base-classifier" class="section level2"
+number="5.3">
+<h2><span class="header-section-number">5.3</span> Instantiate base
+classifier</h2>
+<p>Here we’ll just instantiate the base LGBM classifier. The parameters
+are somewhat unimportant as we’ll run a search over most of them anyway.
+However, the <code>is_unbalance</code> parameter should be set here, as
+this is LGBM’s way of balancing class weights, which we definitely want
+to do. In my experience, class weighting performs as well if not better
+than the more fancy up-sampling or down-sampling techniques, and its
+very easy to implement, so we’ll stick with that for now.</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>clf <span class="op">=</span> LGBMClassifier(objective <span class="op">=</span> <span class="st">&quot;binary&quot;</span>, is_unbalance <span class="op">=</span> <span class="va">True</span>)</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="imputation-parameters-setup" class="section level2"
+number="5.4">
+<h2><span class="header-section-number">5.4</span> Imputation parameters
+setup</h2>
+<p>We have missing values that we’ll need to impute. In the reference
+paper mentioned at the beginning of this section, the authors use
+constant imputation. In contrast, I will do a random search over two
+imputation methods, a constant imputer and a MICE imputer. The MICE
+imputer is carried out using lightGBM through the <a
+href="https://github.com/AnotherSamWilson/miceforest">miceforest</a>
+package. As lightGBM requires you to specify the objective function used
+for the outcome, I therefore specify the objective function to be used
+for each variable that will be imputed, and for binary variables, I
+specify that they are unbalanced.</p>
+<p>Also note that <code>miceforest</code> does not explicitly support
+the <code>sklearn</code> API when thrown into a grid/random search
+(despite the claims on it’s github). Thus, I provide the
+<code>mice_imputer.py</code> module, which subclasses the
+<code>miceforest</code> imputer to be compatible with the
+<code>sklearn</code> API. The details of this module are available on my
+GitHub page.</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>template <span class="op">=</span> {</span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a>    <span class="st">&quot;objective&quot;</span> : <span class="st">&quot;regression&quot;</span></span>
+<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a>}</span>
+<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a></span>
+<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a>varparms <span class="op">=</span> {}</span>
+<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a></span>
+<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a>keys <span class="op">=</span> x.columns.values[x.isna().<span class="bu">any</span>()] </span>
+<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a></span>
+<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> keys: </span>
+<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a></span>
+<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a>    varparms[i] <span class="op">=</span> template.copy()</span>
+<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a></span>
+<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a>    <span class="cf">if</span> <span class="st">&quot;stds_&quot;</span> <span class="kw">in</span> i: </span>
+<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a>        varparms[i][<span class="st">&quot;objective&quot;</span>] <span class="op">=</span> <span class="st">&quot;binary&quot;</span></span>
+<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a>        varparms[i][<span class="st">&quot;is_unbalance&quot;</span>] <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb38-16"><a href="#cb38-16" tabindex="-1"></a></span>
+<span id="cb38-17"><a href="#cb38-17" tabindex="-1"></a>    <span class="cf">if</span> (x[i].nunique() <span class="op">&gt;</span> <span class="dv">2</span>) <span class="op">&amp;</span> (np.<span class="bu">all</span>(x[i].dropna() <span class="op">%</span> <span class="dv">1</span> <span class="op">==</span> <span class="dv">0</span>)):</span>
+<span id="cb38-18"><a href="#cb38-18" tabindex="-1"></a>        varparms[i][<span class="st">&quot;objective&quot;</span>] <span class="op">=</span> <span class="st">&quot;poisson&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a>varparms</span></code></pre></div>
+<pre><code>## {&#39;n_sexual_partners&#39;: {&#39;objective&#39;: &#39;poisson&#39;}, &#39;first_sexual_intercourse&#39;: {&#39;objective&#39;: &#39;poisson&#39;}, &#39;n_pregnancies&#39;: {&#39;objective&#39;: &#39;poisson&#39;}, &#39;smokes_years&#39;: {&#39;objective&#39;: &#39;regression&#39;}, &#39;smokes_packs_year&#39;: {&#39;objective&#39;: &#39;regression&#39;}, &#39;hormonal_bc_years&#39;: {&#39;objective&#39;: &#39;regression&#39;}, &#39;iud_years&#39;: {&#39;objective&#39;: &#39;regression&#39;}, &#39;stds_condy&#39;: {&#39;objective&#39;: &#39;binary&#39;, &#39;is_unbalance&#39;: True}, &#39;stds_other&#39;: {&#39;objective&#39;: &#39;binary&#39;, &#39;is_unbalance&#39;: True}, &#39;n_stds&#39;: {&#39;objective&#39;: &#39;poisson&#39;}}</code></pre>
+<p><br />
+</p>
+</div>
+<div id="set-predictive-mean-matching-scheme-for-imputer"
+class="section level2" number="5.5">
+<h2><span class="header-section-number">5.5</span> Set predictive mean
+matching scheme for imputer</h2>
+<p>When imputing categorical variables, its best to use predictive mean
+matching in order to preserve the distribution of the variables. I set
+the mean matching scheme to use the 5 nearest neighbors. For more
+details, view the readme on <a
+href="https://github.com/AnotherSamWilson/miceforest">this repo</a>.</p>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a>mean_match <span class="op">=</span> mean_match_default.copy()</span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a>mean_match.set_mean_match_candidates(<span class="dv">5</span>)</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="setup-pipeline-components-instantiate-pipe"
+class="section level2" number="5.6">
+<h2><span class="header-section-number">5.6</span> Setup pipeline
+components, instantiate pipe</h2>
+<p>Next, I set up each of the pipeline components that will be used
+during a random search for optimal parameters, and risk estimation.
+These steps consist of:</p>
+<ol style="list-style-type: decimal">
+<li>Impute missing values, tuning either constant imputation
+(<code>simple_union</code>) or mice imputation
+(<code>mice_union</code>)</li>
+<li>Add a single missingness variable for the sexual history related
+variables, as this constitutes the bulk of the missingness.</li>
+<li>Train/tune LGBM classifier</li>
+</ol>
+<p>To do step (2), I provide the <code>missing_transformer.py</code>
+module, which just permits us to add a <em>single</em> missing value
+indicator for a subset of columns in an <code>sklearn</code> pipeline.
+This is distinct from <code>sklearn.impute.MissingIndicator</code>,
+which creates separate indicators for every variable. Instead, I take a
+subset of variables, and if any of them is missing, then a single
+indicator is coded as 1, otherwise 0. This avoids perfect collinearity
+in the missingness indicators for the STD columns.</p>
+<p>Previously, I instantiated the pipeline with a memory cache in order
+to not have to impute the data except when the folds change. However,
+the disk-read overhead ends up being too high, so this is now commented
+out. This is an area for improvement for someone more skilled than I, as
+right now sklearn caches on disk, as opposed to in RAM, which would be
+superior in terms of speed.</p>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a>simple_union <span class="op">=</span> FeatureUnion(</span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a>    transformer_list<span class="op">=</span>[</span>
+<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a>         (<span class="st">&#39;features&#39;</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">&#39;median&#39;</span>)),</span>
+<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a>         (<span class="st">&#39;indicator&#39;</span>, missing_transformer())</span>
+<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a>         ]</span>
+<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a>)</span>
+<span id="cb42-7"><a href="#cb42-7" tabindex="-1"></a></span>
+<span id="cb42-8"><a href="#cb42-8" tabindex="-1"></a>mice_union <span class="op">=</span> FeatureUnion(</span>
+<span id="cb42-9"><a href="#cb42-9" tabindex="-1"></a>    transformer_list<span class="op">=</span>[</span>
+<span id="cb42-10"><a href="#cb42-10" tabindex="-1"></a>         (<span class="st">&#39;features&#39;</span>, mice_imputer(</span>
+<span id="cb42-11"><a href="#cb42-11" tabindex="-1"></a>                        mean_match_scheme <span class="op">=</span> mean_match, </span>
+<span id="cb42-12"><a href="#cb42-12" tabindex="-1"></a>                        mice_iterations <span class="op">=</span> <span class="dv">15</span>, </span>
+<span id="cb42-13"><a href="#cb42-13" tabindex="-1"></a>                        variable_parameters <span class="op">=</span> varparms)</span>
+<span id="cb42-14"><a href="#cb42-14" tabindex="-1"></a>          ),</span>
+<span id="cb42-15"><a href="#cb42-15" tabindex="-1"></a>         (<span class="st">&#39;indicator&#39;</span>, missing_transformer())]</span>
+<span id="cb42-16"><a href="#cb42-16" tabindex="-1"></a>)</span>
+<span id="cb42-17"><a href="#cb42-17" tabindex="-1"></a></span>
+<span id="cb42-18"><a href="#cb42-18" tabindex="-1"></a><span class="co">#cachedir = mkdtemp()</span></span>
+<span id="cb42-19"><a href="#cb42-19" tabindex="-1"></a><span class="co">#memory = Memory(location=cachedir, verbose=0)</span></span>
+<span id="cb42-20"><a href="#cb42-20" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline(</span>
+<span id="cb42-21"><a href="#cb42-21" tabindex="-1"></a>    <span class="co">#memory = memory,</span></span>
+<span id="cb42-22"><a href="#cb42-22" tabindex="-1"></a>    steps <span class="op">=</span> [</span>
+<span id="cb42-23"><a href="#cb42-23" tabindex="-1"></a>        (<span class="st">&quot;imputer&quot;</span>, simple_union),</span>
+<span id="cb42-24"><a href="#cb42-24" tabindex="-1"></a>        (<span class="st">&quot;classifier&quot;</span>, clf)</span>
+<span id="cb42-25"><a href="#cb42-25" tabindex="-1"></a>    ]</span>
+<span id="cb42-26"><a href="#cb42-26" tabindex="-1"></a>)</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="some-marginal-distributions-for-random-search"
+class="section level2" number="5.7">
+<h2><span class="header-section-number">5.7</span> (Some) Marginal
+distributions for random search</h2>
+<p>LightGBM is a tree-based boosting algorithm, so we’ll need to tune a
+host of parameters. To do so, I employ a random search, with two of the
+less intuitive distributions used in this search being visualized below.
+Namely, we have:</p>
+<ol style="list-style-type: decimal">
+<li><p>For the number of boosting rounds, I use a negative binomial
+distribution and add 1 to all values to avoid zero boosting rounds as a
+possibility. The parameters used in the distribution and it associated
+probability mass function as well as some summary statistics can be
+found below.</p></li>
+<li><p>For the learning rate, I use an exponential distribution, with
+parameters chosen such that smaller learning rates are given greater
+probability than larger ones. Again, details on the distribution are
+found below.</p></li>
+<li><p>For other parameters, I use discrete uniform distributions with
+limits chosen appropriately for each. These are found in the code cells
+below.</p></li>
+</ol>
+<p><img src="cervical_files/figure-html/unnamed-chunk-34-5.png" width="480" /></p>
+<p>Percentiles, mean, and standard deviation of theoretical
+distribution:</p>
+<table style="width:100%;">
+<colgroup>
+<col width="9%" />
+<col width="10%" />
+<col width="9%" />
+<col width="10%" />
+<col width="9%" />
+<col width="10%" />
+<col width="9%" />
+<col width="10%" />
+<col width="10%" />
+<col width="11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">0.01</th>
+<th align="right">0.1</th>
+<th align="right">0.25</th>
+<th align="right">0.5</th>
+<th align="right">0.75</th>
+<th align="right">0.9</th>
+<th align="right">0.99</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">value</td>
+<td align="right">56</td>
+<td align="right">145</td>
+<td align="right">228</td>
+<td align="right">354</td>
+<td align="right">519</td>
+<td align="right">705</td>
+<td align="right">1115</td>
+<td align="right">397</td>
+<td align="right">230.072</td>
+</tr>
+</tbody>
+</table>
+<p><img src="cervical_files/figure-html/unnamed-chunk-36-7.png" width="480" /></p>
+<p>Percentiles, mean, and standard deviation of theoretical
+distribution:</p>
+<table>
+<colgroup>
+<col width="7%" />
+<col width="11%" />
+<col width="11%" />
+<col width="11%" />
+<col width="10%" />
+<col width="10%" />
+<col width="10%" />
+<col width="9%" />
+<col width="8%" />
+<col width="7%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">0.01</th>
+<th align="right">0.1</th>
+<th align="right">0.25</th>
+<th align="right">0.5</th>
+<th align="right">0.75</th>
+<th align="right">0.9</th>
+<th align="right">0.99</th>
+<th align="right">mean</th>
+<th align="right">std</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">value</td>
+<td align="right">0.0030151</td>
+<td align="right">0.0316082</td>
+<td align="right">0.0863046</td>
+<td align="right">0.207944</td>
+<td align="right">0.415888</td>
+<td align="right">0.690776</td>
+<td align="right">1.38155</td>
+<td align="right">0.3</td>
+<td align="right">0.3</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+</p>
+</div>
+<div id="define-random-search-grid" class="section level2" number="5.8">
+<h2><span class="header-section-number">5.8</span> Define random search
+grid</h2>
+<p>Here we just input the specified distributions for each parameter to
+the “grid.” The <code>base_grid</code> is common to both the
+<code>mice</code> and <code>simple</code> imputation schemes.</p>
+<div class="sourceCode" id="cb43"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a>lr_dist <span class="op">=</span> stats.expon(scale <span class="op">=</span> scale)</span>
+<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a>ne_dist <span class="op">=</span> stats.nbinom(n <span class="op">=</span> n, p <span class="op">=</span> p, loc <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a>nl_dist <span class="op">=</span> stats.randint(<span class="dv">2</span>, <span class="dv">51</span>)</span>
+<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a>md_dist <span class="op">=</span> stats.randint(<span class="dv">1</span>, <span class="dv">10</span>)</span>
+<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a>pc_dist <span class="op">=</span> stats.randint(<span class="dv">1</span>, <span class="dv">2</span>)</span>
+<span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a>mc_dist <span class="op">=</span> stats.randint(<span class="dv">15</span>, <span class="dv">75</span>)</span>
+<span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a></span>
+<span id="cb43-8"><a href="#cb43-8" tabindex="-1"></a>base_grid <span class="op">=</span> {</span>
+<span id="cb43-9"><a href="#cb43-9" tabindex="-1"></a>    <span class="st">&quot;classifier__n_estimators&quot;</span> : ne_dist,</span>
+<span id="cb43-10"><a href="#cb43-10" tabindex="-1"></a>    <span class="st">&quot;classifier__num_leaves&quot;</span> : nl_dist,</span>
+<span id="cb43-11"><a href="#cb43-11" tabindex="-1"></a>    <span class="st">&quot;classifier__max_depth&quot;</span> : md_dist,</span>
+<span id="cb43-12"><a href="#cb43-12" tabindex="-1"></a>    <span class="st">&quot;classifier__learning_rate&quot;</span> : lr_dist,</span>
+<span id="cb43-13"><a href="#cb43-13" tabindex="-1"></a>    <span class="st">&quot;classifier__min_child_samples&quot;</span> : mc_dist</span>
+<span id="cb43-14"><a href="#cb43-14" tabindex="-1"></a>}</span>
+<span id="cb43-15"><a href="#cb43-15" tabindex="-1"></a></span>
+<span id="cb43-16"><a href="#cb43-16" tabindex="-1"></a>grid <span class="op">=</span> [</span>
+<span id="cb43-17"><a href="#cb43-17" tabindex="-1"></a>    {</span>
+<span id="cb43-18"><a href="#cb43-18" tabindex="-1"></a>        <span class="st">&quot;imputer&quot;</span> : [simple_union],</span>
+<span id="cb43-19"><a href="#cb43-19" tabindex="-1"></a>        <span class="st">&quot;imputer__features__strategy&quot;</span> : [<span class="st">&quot;median&quot;</span>],</span>
+<span id="cb43-20"><a href="#cb43-20" tabindex="-1"></a>        <span class="op">**</span>base_grid</span>
+<span id="cb43-21"><a href="#cb43-21" tabindex="-1"></a>    },</span>
+<span id="cb43-22"><a href="#cb43-22" tabindex="-1"></a>    {</span>
+<span id="cb43-23"><a href="#cb43-23" tabindex="-1"></a>        <span class="st">&quot;imputer&quot;</span> : [mice_union],</span>
+<span id="cb43-24"><a href="#cb43-24" tabindex="-1"></a>        <span class="st">&quot;imputer__features__lgb_iterations&quot;</span> : ne_dist,</span>
+<span id="cb43-25"><a href="#cb43-25" tabindex="-1"></a>        <span class="st">&quot;imputer__features__lgb_learning_rate&quot;</span> : lr_dist,</span>
+<span id="cb43-26"><a href="#cb43-26" tabindex="-1"></a>        <span class="st">&quot;imputer__features__lgb_max_depth&quot;</span> : md_dist,</span>
+<span id="cb43-27"><a href="#cb43-27" tabindex="-1"></a>        <span class="st">&quot;imputer__features__lgb_num_leaves&quot;</span> : nl_dist,</span>
+<span id="cb43-28"><a href="#cb43-28" tabindex="-1"></a>        <span class="op">**</span>base_grid</span>
+<span id="cb43-29"><a href="#cb43-29" tabindex="-1"></a>    }</span>
+<span id="cb43-30"><a href="#cb43-30" tabindex="-1"></a>]</span></code></pre></div>
+<p> </p>
+</div>
+<div id="setup-nested-cv-folds-flush-ram" class="section level2"
+number="5.9">
+<h2><span class="header-section-number">5.9</span> Setup nested CV
+folds, flush RAM</h2>
+<p>For the following reasons, it is appropriate to use nested, repeated,
+stratified K-fold cross validation.</p>
+<ol style="list-style-type: decimal">
+<li><p>For the cross validation, we want to both tune hyperparameters,
+and estimate the selected model’s risk. This requires nested cross
+validation in order to avoid data leakage.</p></li>
+<li><p>We have imbalanced data, so stratifying to preserve the class
+distribution will be done.</p></li>
+<li><p>We have a small data set with class imbalance, so we’ll want to
+repeat this process to reduce the variance on our estimate of the
+risk.</p></li>
+</ol>
+<div class="sourceCode" id="cb44"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a>inner_cv <span class="op">=</span> StratifiedKFold(n_splits <span class="op">=</span> <span class="dv">5</span>, random_state <span class="op">=</span> <span class="dv">874841</span>, shuffle <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a>outer_cv <span class="op">=</span> RepeatedStratifiedKFold(n_splits <span class="op">=</span> <span class="dv">5</span>, n_repeats <span class="op">=</span> <span class="dv">5</span>, random_state <span class="op">=</span> <span class="dv">878571</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb45"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="co"># Flush ram before fit</span></span>
+<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a>gc.collect()</span></code></pre></div>
+<p><br />
+</p>
+</div>
+<div id="fit-model-cleanup-and-save" class="section level2"
+number="5.10">
+<h2><span class="header-section-number">5.10</span> Fit model, cleanup,
+and save</h2>
+<p>Note that before fitting the model, I define a scoring criteria for
+model selection. I define an F2 scorer, which is analogous to the F1
+score, but puts twice as much weight on the recall when computing the
+geomtric mean. This is one because of the context of the problem we’re
+solving: we want to predict cancer. Thus, false negatives are costly,
+much more so than false positives. Of course, we want to minimize
+invasive procedures, but this is not nearly as problematic as failing to
+catch cancer. In fact, the case could be made to just use recall as the
+scoring criteria here. In any case, I weight recall twice as heavily
+than precision when computing the F-score here.</p>
+<p>Finally, we’ll parallelize the outer cross validation loop, and leave
+the inner one serial.</p>
+<div class="sourceCode" id="cb46"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="kw">def</span> save_obj(obj, filename):</span>
+<span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(filename, <span class="st">&#39;wb&#39;</span>) <span class="im">as</span> outp:  <span class="co"># Overwrites any existing file.</span></span>
+<span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a>        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)</span>
+<span id="cb46-4"><a href="#cb46-4" tabindex="-1"></a></span>
+<span id="cb46-5"><a href="#cb46-5" tabindex="-1"></a>f_scorer <span class="op">=</span> make_scorer(fbeta_score, beta <span class="op">=</span> <span class="dv">2</span>)</span>
+<span id="cb46-6"><a href="#cb46-6" tabindex="-1"></a></span>
+<span id="cb46-7"><a href="#cb46-7" tabindex="-1"></a>rcv <span class="op">=</span> RandomizedSearchCV(</span>
+<span id="cb46-8"><a href="#cb46-8" tabindex="-1"></a>    estimator <span class="op">=</span> pipe,</span>
+<span id="cb46-9"><a href="#cb46-9" tabindex="-1"></a>    param_distributions <span class="op">=</span> grid, </span>
+<span id="cb46-10"><a href="#cb46-10" tabindex="-1"></a>    scoring <span class="op">=</span> f_scorer,</span>
+<span id="cb46-11"><a href="#cb46-11" tabindex="-1"></a>    refit <span class="op">=</span> <span class="va">True</span>, </span>
+<span id="cb46-12"><a href="#cb46-12" tabindex="-1"></a>    cv <span class="op">=</span> inner_cv,</span>
+<span id="cb46-13"><a href="#cb46-13" tabindex="-1"></a>    return_train_score <span class="op">=</span> <span class="va">True</span>,</span>
+<span id="cb46-14"><a href="#cb46-14" tabindex="-1"></a>    n_jobs <span class="op">=</span> <span class="dv">1</span>,</span>
+<span id="cb46-15"><a href="#cb46-15" tabindex="-1"></a>    n_iter <span class="op">=</span> <span class="dv">500</span>,</span>
+<span id="cb46-16"><a href="#cb46-16" tabindex="-1"></a>    random_state <span class="op">=</span> <span class="dv">97417</span></span>
+<span id="cb46-17"><a href="#cb46-17" tabindex="-1"></a>)</span>
+<span id="cb46-18"><a href="#cb46-18" tabindex="-1"></a></span>
+<span id="cb46-19"><a href="#cb46-19" tabindex="-1"></a><span class="co"># Set `run = True` to reproduce results. Using cached results to save render time.</span></span>
+<span id="cb46-20"><a href="#cb46-20" tabindex="-1"></a><span class="cf">if</span> run:</span>
+<span id="cb46-21"><a href="#cb46-21" tabindex="-1"></a>    res <span class="op">=</span> cross_validate(</span>
+<span id="cb46-22"><a href="#cb46-22" tabindex="-1"></a>        rcv, </span>
+<span id="cb46-23"><a href="#cb46-23" tabindex="-1"></a>        X <span class="op">=</span> x, </span>
+<span id="cb46-24"><a href="#cb46-24" tabindex="-1"></a>        y <span class="op">=</span> y.values.flatten(), </span>
+<span id="cb46-25"><a href="#cb46-25" tabindex="-1"></a>        cv <span class="op">=</span> outer_cv, </span>
+<span id="cb46-26"><a href="#cb46-26" tabindex="-1"></a>        return_estimator <span class="op">=</span> <span class="va">True</span>, </span>
+<span id="cb46-27"><a href="#cb46-27" tabindex="-1"></a>        scoring <span class="op">=</span> [<span class="st">&quot;average_precision&quot;</span>, <span class="st">&quot;balanced_accuracy&quot;</span>, <span class="st">&quot;f1&quot;</span>, <span class="st">&quot;precision&quot;</span>, <span class="st">&quot;recall&quot;</span>],</span>
+<span id="cb46-28"><a href="#cb46-28" tabindex="-1"></a>        n_jobs <span class="op">=</span> <span class="op">-</span><span class="dv">1</span>,</span>
+<span id="cb46-29"><a href="#cb46-29" tabindex="-1"></a>        verbose <span class="op">=</span> <span class="dv">999</span></span>
+<span id="cb46-30"><a href="#cb46-30" tabindex="-1"></a>    )</span>
+<span id="cb46-31"><a href="#cb46-31" tabindex="-1"></a></span>
+<span id="cb46-32"><a href="#cb46-32" tabindex="-1"></a>    save_obj(res, <span class="st">&quot;./rcv.pkl&quot;</span>)</span>
+<span id="cb46-33"><a href="#cb46-33" tabindex="-1"></a><span class="cf">else</span>: </span>
+<span id="cb46-34"><a href="#cb46-34" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;./rcv.pkl&quot;</span>, <span class="st">&quot;rb&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb46-35"><a href="#cb46-35" tabindex="-1"></a>        res <span class="op">=</span> pickle.load(f)</span></code></pre></div>
+<pre><code>## 0</code></pre>
+<p><br />
+</p>
+</div>
+</div>
+<div id="post-estimation-analysis" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Post-estimation
+analysis</h1>
+<div id="selecting-a-best-model" class="section level2" number="6.1">
+<h2><span class="header-section-number">6.1</span> Selecting a “best”
+model</h2>
+<p>First thing is we’ll need to determine the best estimator. With
+nested cross validation this can be tricky, as different parameters can
+be chosen for each inner cv loop. Moreover, we are using a boosting
+algorithm, so multiple of the parameters trade-off against eachother,
+for example the learning rate and the number of boosting rounds. Thus,
+two seemingly-different models can often achieve the same
+performance.</p>
+<p>The first thing to do here is to see if the results are stable.
+First, I see whether either imputation strategy dominates by checking
+the length of the chosen parameter vector; if either imputation method
+wins every time, then the number of unique lengths for the chosen
+parameter vector will be 1, otherwise 2.</p>
+<p>Doing this below we see that sometimes the MICE imputer won, other
+times the median imputer won. So the next step will be to see how stable
+the results are across each of these sets of models.</p>
+<div class="sourceCode" id="cb48"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a>lens <span class="op">=</span> [<span class="bu">len</span>(est.best_params_) <span class="cf">for</span> est <span class="kw">in</span> res[<span class="st">&#39;estimator&#39;</span>]]</span>
+<span id="cb48-2"><a href="#cb48-2" tabindex="-1"></a>np.unique(lens)</span></code></pre></div>
+<pre><code>## array([ 7, 10])</code></pre>
+<p>To take a look at the models, I create a table of the number of
+parameters, the best (training) score, and the learning rate for each of
+the winning models. Note that if the learning rate is the same between
+any pair of models, then we can be certain that this pair of models also
+has the same values for all other parameters (i.e., they have the same
+specification), as the probability of sampling the same exact learning
+rate from a continuous distribution is zero. Thus, by putting the
+learning rate in the table below, I’m effectively seeing if the same
+model was selected or not.</p>
+<div class="sourceCode" id="cb50"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a>best_parms <span class="op">=</span> <span class="bu">list</span>(<span class="bu">map</span>(<span class="kw">lambda</span> x: x.best_params_, res[<span class="st">&quot;estimator&quot;</span>]))</span></code></pre></div>
+<div class="sourceCode" id="cb51"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a>best_parms <span class="op">=</span> [est.best_params_ <span class="cf">for</span> est <span class="kw">in</span> res[<span class="st">&quot;estimator&quot;</span>]]</span>
+<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a>best_inner_scores <span class="op">=</span> [est.best_score_ <span class="cf">for</span> est <span class="kw">in</span> res[<span class="st">&quot;estimator&quot;</span>]]</span>
+<span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a>best_rate <span class="op">=</span> [parms[<span class="st">&quot;classifier__learning_rate&quot;</span>] <span class="cf">for</span> parms <span class="kw">in</span> best_parms]</span>
+<span id="cb51-4"><a href="#cb51-4" tabindex="-1"></a>best_parms_7 <span class="op">=</span> [parms <span class="cf">for</span> parms <span class="kw">in</span> best_parms <span class="cf">if</span> <span class="bu">len</span>(parms) <span class="op">==</span> <span class="dv">7</span>]</span>
+<span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a>best_parms_10 <span class="op">=</span> [parms <span class="cf">for</span> parms <span class="kw">in</span> best_parms <span class="cf">if</span> <span class="bu">len</span>(parms) <span class="op">==</span> <span class="dv">10</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb52"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a>pd.DataFrame(</span>
+<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a>    [i <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">zip</span>(lens, best_inner_scores, best_rate)], </span>
+<span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a>    columns <span class="op">=</span> [<span class="st">&#39;n_parms&#39;</span>, <span class="st">&quot;f2_score_inner&quot;</span>, <span class="st">&quot;classifier_learning_rate&quot;</span>]</span>
+<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a>).sort_values(<span class="st">&quot;f2_score_inner&quot;</span>, ascending<span class="op">=</span><span class="va">False</span>)</span></code></pre></div>
+<pre><code>##     n_parms  f2_score_inner  classifier_learning_rate
+## 3        10        0.469256                  0.112633
+## 6        10        0.464832                  0.021446
+## 19       10        0.459399                  0.068610
+## 8        10        0.457539                  0.112633
+## 22       10        0.440894                  0.039132
+## 12       10        0.440056                  0.112633
+## 18       10        0.438795                  0.112633
+## 14       10        0.435222                  0.112633
+## 4        10        0.435016                  0.420959
+## 16       10        0.434067                  0.210302
+## 17       10        0.423470                  0.112633
+## 20       10        0.418352                  0.112633
+## 1        10        0.412516                  0.420959
+## 24       10        0.399505                  0.010036
+## 21        7        0.398142                  0.005485
+## 9        10        0.397695                  0.420959
+## 7        10        0.390133                  0.010036
+## 23       10        0.381692                  0.103707
+## 13       10        0.380310                  0.010036
+## 11       10        0.375206                  0.420959
+## 15       10        0.370061                  0.103707
+## 10       10        0.367491                  0.420959
+## 5        10        0.362627                  0.112633
+## 2        10        0.361428                  0.112633
+## 0        10        0.312926                  0.021446</code></pre>
+<p>Looking at the table above, we can see that the model with the
+learning rate of ~0.113 has the best inner cv score, and appears often
+in the top half of selected models. Moreover, it is selected in a
+plurality of models, and its estimated F2 score is somewhat stable
+around the 0.45 mark. Thus, I select his model as the “best” model, and
+refit on the entire dataset.</p>
+<div class="sourceCode" id="cb54"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a>best_final <span class="op">=</span> best_parms[<span class="dv">3</span>]</span>
+<span id="cb54-2"><a href="#cb54-2" tabindex="-1"></a>final <span class="op">=</span> pipe.set_params(<span class="op">**</span>best_final)</span>
+<span id="cb54-3"><a href="#cb54-3" tabindex="-1"></a>final.fit(x, y.values.flatten())</span></code></pre></div>
+<style>#sk-container-id-1 {color: black;background-color: white;}#sk-container-id-1 pre{padding: 0;}#sk-container-id-1 div.sk-toggleable {background-color: white;}#sk-container-id-1 label.sk-toggleable__label {cursor: pointer;display: block;width: 100%;margin-bottom: 0;padding: 0.3em;box-sizing: border-box;text-align: center;}#sk-container-id-1 label.sk-toggleable__label-arrow:before {content: "▸";float: left;margin-right: 0.25em;color: #696969;}#sk-container-id-1 label.sk-toggleable__label-arrow:hover:before {color: black;}#sk-container-id-1 div.sk-estimator:hover label.sk-toggleable__label-arrow:before {color: black;}#sk-container-id-1 div.sk-toggleable__content {max-height: 0;max-width: 0;overflow: hidden;text-align: left;background-color: #f0f8ff;}#sk-container-id-1 div.sk-toggleable__content pre {margin: 0.2em;color: black;border-radius: 0.25em;background-color: #f0f8ff;}#sk-container-id-1 input.sk-toggleable__control:checked~div.sk-toggleable__content {max-height: 200px;max-width: 100%;overflow: auto;}#sk-container-id-1 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {content: "▾";}#sk-container-id-1 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 input.sk-hidden--visually {border: 0;clip: rect(1px 1px 1px 1px);clip: rect(1px, 1px, 1px, 1px);height: 1px;margin: -1px;overflow: hidden;padding: 0;position: absolute;width: 1px;}#sk-container-id-1 div.sk-estimator {font-family: monospace;background-color: #f0f8ff;border: 1px dotted black;border-radius: 0.25em;box-sizing: border-box;margin-bottom: 0.5em;}#sk-container-id-1 div.sk-estimator:hover {background-color: #d4ebff;}#sk-container-id-1 div.sk-parallel-item::after {content: "";width: 100%;border-bottom: 1px solid gray;flex-grow: 1;}#sk-container-id-1 div.sk-label:hover label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-serial::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: 0;}#sk-container-id-1 div.sk-serial {display: flex;flex-direction: column;align-items: center;background-color: white;padding-right: 0.2em;padding-left: 0.2em;position: relative;}#sk-container-id-1 div.sk-item {position: relative;z-index: 1;}#sk-container-id-1 div.sk-parallel {display: flex;align-items: stretch;justify-content: center;background-color: white;position: relative;}#sk-container-id-1 div.sk-item::before, #sk-container-id-1 div.sk-parallel-item::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: -1;}#sk-container-id-1 div.sk-parallel-item {display: flex;flex-direction: column;z-index: 1;position: relative;background-color: white;}#sk-container-id-1 div.sk-parallel-item:first-child::after {align-self: flex-end;width: 50%;}#sk-container-id-1 div.sk-parallel-item:last-child::after {align-self: flex-start;width: 50%;}#sk-container-id-1 div.sk-parallel-item:only-child::after {width: 0;}#sk-container-id-1 div.sk-dashed-wrapped {border: 1px dashed gray;margin: 0 0.4em 0.5em 0.4em;box-sizing: border-box;padding-bottom: 0.4em;background-color: white;}#sk-container-id-1 div.sk-label label {font-family: monospace;font-weight: bold;display: inline-block;line-height: 1.2em;}#sk-container-id-1 div.sk-label-container {text-align: center;}#sk-container-id-1 div.sk-container {/* jupyter's `normalize.less` sets `[hidden] { display: none; }` but bootstrap.min.css set `[hidden] { display: none !important; }` so we also need the `!important` here to be able to override the default hidden behavior on the sphinx rendered scikit-learn.org. See: https://github.com/scikit-learn/scikit-learn/issues/21755 */display: inline-block !important;position: relative;}#sk-container-id-1 div.sk-text-repr-fallback {display: none;}</style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>Pipeline(steps=[(&#x27;imputer&#x27;,
+                 FeatureUnion(transformer_list=[(&#x27;features&#x27;,
+                                                 mice_imputer(lgb_iterations=266,
+                                                              lgb_learning_rate=0.13709275624689288,
+                                                              lgb_max_depth=6,
+                                                              lgb_num_leaves=44,
+                                                              mean_match_scheme=&lt;miceforest.MeanMatchScheme.MeanMatchScheme object at 0x7f4f11513fa0&gt;,
+                                                              mice_iterations=15,
+                                                              variable_parameters={1: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                                                                   2: {&#x27;objective&#x27;: &#x27;poisson&#x27;}...
+                                                                                   7: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                                                                   9: {&#x27;is_unbalance&#x27;: True,
+                                                                                       &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                                                                   10: {&#x27;is_unbalance&#x27;: True,
+                                                                                        &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                                                                   12: {&#x27;objective&#x27;: &#x27;poisson&#x27;}})),
+                                                (&#x27;indicator&#x27;,
+                                                 missing_transformer())])),
+                (&#x27;classifier&#x27;,
+                 LGBMClassifier(is_unbalance=True,
+                                learning_rate=0.11263311888445775, max_depth=1,
+                                min_child_samples=16, n_estimators=399,
+                                num_leaves=6, objective=&#x27;binary&#x27;))])</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox" ><label for="sk-estimator-id-1" class="sk-toggleable__label sk-toggleable__label-arrow">Pipeline</label><div class="sk-toggleable__content"><pre>Pipeline(steps=[(&#x27;imputer&#x27;,
+                 FeatureUnion(transformer_list=[(&#x27;features&#x27;,
+                                                 mice_imputer(lgb_iterations=266,
+                                                              lgb_learning_rate=0.13709275624689288,
+                                                              lgb_max_depth=6,
+                                                              lgb_num_leaves=44,
+                                                              mean_match_scheme=&lt;miceforest.MeanMatchScheme.MeanMatchScheme object at 0x7f4f11513fa0&gt;,
+                                                              mice_iterations=15,
+                                                              variable_parameters={1: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                                                                   2: {&#x27;objective&#x27;: &#x27;poisson&#x27;}...
+                                                                                   7: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                                                                   9: {&#x27;is_unbalance&#x27;: True,
+                                                                                       &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                                                                   10: {&#x27;is_unbalance&#x27;: True,
+                                                                                        &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                                                                   12: {&#x27;objective&#x27;: &#x27;poisson&#x27;}})),
+                                                (&#x27;indicator&#x27;,
+                                                 missing_transformer())])),
+                (&#x27;classifier&#x27;,
+                 LGBMClassifier(is_unbalance=True,
+                                learning_rate=0.11263311888445775, max_depth=1,
+                                min_child_samples=16, n_estimators=399,
+                                num_leaves=6, objective=&#x27;binary&#x27;))])</pre></div></div></div><div class="sk-serial"><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" ><label for="sk-estimator-id-2" class="sk-toggleable__label sk-toggleable__label-arrow">imputer: FeatureUnion</label><div class="sk-toggleable__content"><pre>FeatureUnion(transformer_list=[(&#x27;features&#x27;,
+                                mice_imputer(lgb_iterations=266,
+                                             lgb_learning_rate=0.13709275624689288,
+                                             lgb_max_depth=6, lgb_num_leaves=44,
+                                             mean_match_scheme=&lt;miceforest.MeanMatchScheme.MeanMatchScheme object at 0x7f4f11513fa0&gt;,
+                                             mice_iterations=15,
+                                             variable_parameters={1: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                                                  2: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                                                  3: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                                                  4: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                                                  5: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                                                  6: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                                                  7: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                                                  9: {&#x27;is_unbalance&#x27;: True,
+                                                                      &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                                                  10: {&#x27;is_unbalance&#x27;: True,
+                                                                       &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                                                  12: {&#x27;objective&#x27;: &#x27;poisson&#x27;}})),
+                               (&#x27;indicator&#x27;, missing_transformer())])</pre></div></div></div><div class="sk-parallel"><div class="sk-parallel-item"><div class="sk-item"><div class="sk-label-container"><div class="sk-label sk-toggleable"><label>features</label></div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" ><label for="sk-estimator-id-3" class="sk-toggleable__label sk-toggleable__label-arrow">mice_imputer</label><div class="sk-toggleable__content"><pre>mice_imputer(lgb_iterations=266, lgb_learning_rate=0.13709275624689288,
+             lgb_max_depth=6, lgb_num_leaves=44,
+             mean_match_scheme=&lt;miceforest.MeanMatchScheme.MeanMatchScheme object at 0x7f4f11513fa0&gt;,
+             mice_iterations=15,
+             variable_parameters={1: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                  2: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                  3: {&#x27;objective&#x27;: &#x27;poisson&#x27;},
+                                  4: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                  5: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                  6: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                  7: {&#x27;objective&#x27;: &#x27;regression&#x27;},
+                                  9: {&#x27;is_unbalance&#x27;: True,
+                                      &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                  10: {&#x27;is_unbalance&#x27;: True,
+                                       &#x27;objective&#x27;: &#x27;binary&#x27;},
+                                  12: {&#x27;objective&#x27;: &#x27;poisson&#x27;}})</pre></div></div></div></div></div></div><div class="sk-parallel-item"><div class="sk-item"><div class="sk-label-container"><div class="sk-label sk-toggleable"><label>indicator</label></div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-4" type="checkbox" ><label for="sk-estimator-id-4" class="sk-toggleable__label sk-toggleable__label-arrow">missing_transformer</label><div class="sk-toggleable__content"><pre>missing_transformer()</pre></div></div></div></div></div></div></div></div><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-5" type="checkbox" ><label for="sk-estimator-id-5" class="sk-toggleable__label sk-toggleable__label-arrow">LGBMClassifier</label><div class="sk-toggleable__content"><pre>LGBMClassifier(is_unbalance=True, learning_rate=0.11263311888445775,
+               max_depth=1, min_child_samples=16, n_estimators=399,
+               num_leaves=6, objective=&#x27;binary&#x27;)</pre></div></div></div></div></div></div></div>
+<p>Several estimated performance metrics for the model then follow
+below. Based on work by the original authors, this model outperforms
+most of the models they consider for the citology-only case, found in <a
+href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7924508/pdf/peerj-cs-04-154.pdf">table
+3</a>. This performance was achieved without any deep learning or other
+computationally intensive tricks, but with good data preprocessing and
+analysis.</p>
+<div class="sourceCode" id="cb55"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a>mn <span class="op">=</span> []</span>
+<span id="cb55-2"><a href="#cb55-2" tabindex="-1"></a>sd <span class="op">=</span> []</span>
+<span id="cb55-3"><a href="#cb55-3" tabindex="-1"></a>names <span class="op">=</span> []</span>
+<span id="cb55-4"><a href="#cb55-4" tabindex="-1"></a></span>
+<span id="cb55-5"><a href="#cb55-5" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> res.keys():</span>
+<span id="cb55-6"><a href="#cb55-6" tabindex="-1"></a>    <span class="cf">if</span> i.startswith(<span class="st">&quot;test&quot;</span>):</span>
+<span id="cb55-7"><a href="#cb55-7" tabindex="-1"></a>        names.append(i)</span>
+<span id="cb55-8"><a href="#cb55-8" tabindex="-1"></a>        mn.append(res[i].mean())</span>
+<span id="cb55-9"><a href="#cb55-9" tabindex="-1"></a>        sd.append(res[i].std())</span>
+<span id="cb55-10"><a href="#cb55-10" tabindex="-1"></a></span>
+<span id="cb55-11"><a href="#cb55-11" tabindex="-1"></a>pd.DataFrame({</span>
+<span id="cb55-12"><a href="#cb55-12" tabindex="-1"></a>    <span class="st">&quot;mean&quot;</span>: mn, </span>
+<span id="cb55-13"><a href="#cb55-13" tabindex="-1"></a>    <span class="st">&quot;sd&quot;</span> : sd</span>
+<span id="cb55-14"><a href="#cb55-14" tabindex="-1"></a>    },</span>
+<span id="cb55-15"><a href="#cb55-15" tabindex="-1"></a>    index <span class="op">=</span> names</span>
+<span id="cb55-16"><a href="#cb55-16" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code>##                             mean        sd
+## test_average_precision  0.310867  0.132079
+## test_balanced_accuracy  0.703057  0.081141
+## test_f1                 0.314558  0.088469
+## test_precision          0.228899  0.066977
+## test_recall             0.530909  0.173786</code></pre>
+<p><br />
+</p>
+</div>
+<div id="variable-importance" class="section level2" number="6.2">
+<h2><span class="header-section-number">6.2</span> Variable
+importance</h2>
+<p>Note that both of the variable importance metrics computed below have
+drawbacks. I encourage readers to do their own research on both
+permutation importance and partial dependence in order to become
+familiar with what problems these approaches have.</p>
+<p>Additionally, <em>these are computed on the full dataset</em>. This
+is done because the dataset is so small that a train/val/test split was
+not done; k-fold cross-validation was used. In otherwords, computing
+these quantitities on a test set wouldn’t be very accurate, as there is
+not enough data to do so. Thus, these importances are biased towards
+finding an effect, as they are computed on the training data.</p>
+<p><br />
+</p>
+<div id="permutation-importance" class="section level3" number="6.2.1">
+<h3><span class="header-section-number">6.2.1</span> Permutation
+Importance</h3>
+<p>I first compute the permutation variable importance. Briefly, this
+just takes each column, randomly shuffles it, and re-scores the model
+using the shuffled variable. If the variable is useful in reducing the
+loss (or improving the score), then shuffling it randomly should cause
+the score to decrease, or the loss to increase. In contrast, if it is
+unimportant, then shuffling it should result in little or no change in
+the loss/score.</p>
+<p>Permutation importance offers the advantage of being computable on
+the test set, whereas the typical mean decrease importance metric is
+necessarily computed on the training data. That said, I do compute the
+permutation importance on the training data here, as was discussed in
+the introduction to this section.</p>
+<div class="sourceCode" id="cb57"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="cf">if</span> run:</span>
+<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a>  imp <span class="op">=</span> permutation_importance(</span>
+<span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a>    final, </span>
+<span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a>    x, </span>
+<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a>    y.values.flatten(),</span>
+<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a>    scoring <span class="op">=</span> f_scorer,</span>
+<span id="cb57-7"><a href="#cb57-7" tabindex="-1"></a>    n_repeats <span class="op">=</span> <span class="dv">500</span>,</span>
+<span id="cb57-8"><a href="#cb57-8" tabindex="-1"></a>    random_state <span class="op">=</span> <span class="dv">897447</span>,</span>
+<span id="cb57-9"><a href="#cb57-9" tabindex="-1"></a>    n_jobs<span class="op">=-</span><span class="dv">1</span></span>
+<span id="cb57-10"><a href="#cb57-10" tabindex="-1"></a>  )</span>
+<span id="cb57-11"><a href="#cb57-11" tabindex="-1"></a>  save_obj(imp, <span class="st">&quot;./perm.pkl&quot;</span>)</span>
+<span id="cb57-12"><a href="#cb57-12" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb57-13"><a href="#cb57-13" tabindex="-1"></a>  <span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;./perm.pkl&quot;</span>, <span class="st">&quot;rb&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb57-14"><a href="#cb57-14" tabindex="-1"></a>    imp <span class="op">=</span> pickle.load(f)</span>
+<span id="cb57-15"><a href="#cb57-15" tabindex="-1"></a>  </span>
+<span id="cb57-16"><a href="#cb57-16" tabindex="-1"></a></span>
+<span id="cb57-17"><a href="#cb57-17" tabindex="-1"></a>imp_sort <span class="op">=</span> imp.importances_mean.argsort()</span>
+<span id="cb57-18"><a href="#cb57-18" tabindex="-1"></a>imp_df <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb57-19"><a href="#cb57-19" tabindex="-1"></a>    imp.importances[imp_sort].T,</span>
+<span id="cb57-20"><a href="#cb57-20" tabindex="-1"></a>    columns <span class="op">=</span> x.columns[imp_sort]</span>
+<span id="cb57-21"><a href="#cb57-21" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb58"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a>mpl.rcParams[<span class="st">&#39;figure.figsize&#39;</span>] <span class="op">=</span> [<span class="dv">8</span>, <span class="dv">8</span>]</span>
+<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a>bplot <span class="op">=</span> plt.errorbar(</span>
+<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a>  x <span class="op">=</span> imp_df.mean(), </span>
+<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a>  y <span class="op">=</span> imp_df.columns, </span>
+<span id="cb58-5"><a href="#cb58-5" tabindex="-1"></a>  xerr <span class="op">=</span> <span class="fl">1.96</span><span class="op">*</span>imp_df.std(), </span>
+<span id="cb58-6"><a href="#cb58-6" tabindex="-1"></a>  linestyle <span class="op">=</span> <span class="st">&#39;None&#39;</span>, </span>
+<span id="cb58-7"><a href="#cb58-7" tabindex="-1"></a>  marker <span class="op">=</span> <span class="st">&#39;o&#39;</span></span>
+<span id="cb58-8"><a href="#cb58-8" tabindex="-1"></a>)</span>
+<span id="cb58-9"><a href="#cb58-9" tabindex="-1"></a>plt.axvline(x <span class="op">=</span> <span class="dv">0</span>, color<span class="op">=</span><span class="st">&#39;red&#39;</span>, linestyle <span class="op">=</span> <span class="st">&#39;:&#39;</span>)</span>
+<span id="cb58-10"><a href="#cb58-10" tabindex="-1"></a>plt.xlabel(<span class="st">&quot;Change in Score&quot;</span>)</span>
+<span id="cb58-11"><a href="#cb58-11" tabindex="-1"></a>plt.title(<span class="st">&quot;Permutation Importance </span><span class="ch">\n</span><span class="st"> 95% Normal Approx. Confidence Interval&quot;</span>)</span></code></pre></div>
+<p><img src="cervical_files/figure-html/unnamed-chunk-50-9.png" width="480" /></p>
+<p>Based on the above permutation importance plot, there is statistical
+reason to believe that citology results, age, hormonal BC, number of
+pregnancies, age at first sexual intercourse, and any previous cervical
+diagnosis are all driving the predictive power behind the chosen model.
+However, one of the known drawbacks of permutation importance is that it
+merely reflects the importance of the variable for the model; thus, if
+the model is bad (which in this case, it is, as the data is not so
+great), then we may not find important features where we would if the
+model were better.</p>
+<p><br />
+</p>
+</div>
+<div id="partial-dependence" class="section level3" number="6.2.2">
+<h3><span class="header-section-number">6.2.2</span> Partial
+Dependence</h3>
+<p>Next, I compute the partial dependence of each feature. Partial
+dependence computes average effect of a variable on the predicted
+probability, marginalizing over all other variables. Mathematically we
+have the theoretical expectation, and its sample-based estimator below
+(from <a
+href="https://scikit-learn.org/stable/modules/partial_dependence.html#mathematical-definition">section
+4.1.3</a> of the sklearn documentation):</p>
+<p><span class="math display">\[\frac{1}{n}\sum_i g(x_S, x_C^{(i)})
+\overset{p}{\rightarrow} \mathbb{E}_{X_c}[g(x_s, X_c)] = \int g(x_S,
+x_C) dF_{X_c}\]</span></p>
+<p>where <span class="math inline">\(g()\)</span> computes the predicted
+probability of an estimator, <span class="math inline">\(X_s\)</span> is
+the set of variables we’re interested in computing the partial
+dependence of, while <span class="math inline">\(X_c\)</span> is the set
+of remaining variables, and the right-hand integral is the
+Riemann-Stieltjes integral.</p>
+<p>In words then, we do the following to estimate partial dependence for
+a single feature <span class="math inline">\(X_s\)</span> (e.g.,
+age):</p>
+<ol style="list-style-type: decimal">
+<li>For each value of interest, <span class="math inline">\(x_s\)</span>
+(e.g., age = 18, 19, …, 75):
+<ul>
+<li>set the value of variable <span class="math inline">\(X_s\)</span>
+to <span class="math inline">\(x_s\)</span> for all observations <span
+class="math inline">\(i\)</span>, keeping the other variables <span
+class="math inline">\(X_c\)</span> at their original values. (e.g., set
+age variable to 18 for everyone, keep everything else the same)</li>
+<li>compute the predicted probability of all observations, <span
+class="math inline">\(g(x_s, x_c) \forall i\)</span>, (i.e., “what is
+the predicted probability of each observation <em>if we set age to
+18</em>”)</li>
+<li>compute the sample mean of these predicted probabilities over all
+observations, (i.e., “what is the average predicted probability if we
+set age to 18 for all observations.”)</li>
+</ul></li>
+</ol>
+<p>At the end, we have the average predicted probability at each value
+of age, which we call the the partial dependence.</p>
+<p>Computing these below, we then have the count of observations
+indicated on the right-hand axis of each plot, with the histogram
+corresponding to this axis, or the grey points for binary variables.</p>
+<div class="sourceCode" id="cb59"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" tabindex="-1"></a>mpl.rcParams[<span class="st">&#39;figure.figsize&#39;</span>] <span class="op">=</span> [<span class="dv">10</span>, <span class="dv">16</span>]</span>
+<span id="cb59-2"><a href="#cb59-2" tabindex="-1"></a></span>
+<span id="cb59-3"><a href="#cb59-3" tabindex="-1"></a>is_cat <span class="op">=</span> x.<span class="bu">apply</span>(func <span class="op">=</span> <span class="kw">lambda</span> x: x.nunique() <span class="op">==</span> <span class="dv">2</span>) </span>
+<span id="cb59-4"><a href="#cb59-4" tabindex="-1"></a></span>
+<span id="cb59-5"><a href="#cb59-5" tabindex="-1"></a>pdep <span class="op">=</span> PartialDependenceDisplay.from_estimator(final, x, features <span class="op">=</span> x.columns.values, grid_resolution<span class="op">=</span><span class="dv">1000</span>, categorical_features<span class="op">=</span>is_cat, n_jobs <span class="op">=</span> <span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb59-6"><a href="#cb59-6" tabindex="-1"></a></span>
+<span id="cb59-7"><a href="#cb59-7" tabindex="-1"></a>fts <span class="op">=</span> np.array(pdep.features).flatten()</span>
+<span id="cb59-8"><a href="#cb59-8" tabindex="-1"></a>ft_names <span class="op">=</span> x.columns.values[fts]</span>
+<span id="cb59-9"><a href="#cb59-9" tabindex="-1"></a></span>
+<span id="cb59-10"><a href="#cb59-10" tabindex="-1"></a><span class="cf">for</span> ax, var, ft_ind <span class="kw">in</span> <span class="bu">zip</span>(pdep.axes_.ravel(), ft_names, fts):</span>
+<span id="cb59-11"><a href="#cb59-11" tabindex="-1"></a></span>
+<span id="cb59-12"><a href="#cb59-12" tabindex="-1"></a>    sec_ax <span class="op">=</span> ax.twinx()</span>
+<span id="cb59-13"><a href="#cb59-13" tabindex="-1"></a></span>
+<span id="cb59-14"><a href="#cb59-14" tabindex="-1"></a>    <span class="cf">if</span> ft_ind <span class="op">==</span> <span class="dv">5</span>:</span>
+<span id="cb59-15"><a href="#cb59-15" tabindex="-1"></a>        sec_ax.set_ylabel(<span class="st">&quot;Count of Observations&quot;</span>)</span>
+<span id="cb59-16"><a href="#cb59-16" tabindex="-1"></a></span>
+<span id="cb59-17"><a href="#cb59-17" tabindex="-1"></a>    <span class="cf">if</span> is_cat[ft_ind]:</span>
+<span id="cb59-18"><a href="#cb59-18" tabindex="-1"></a>        sec_ax <span class="op">=</span> sec_ax.scatter(x <span class="op">=</span> [<span class="dv">0</span>, <span class="dv">1</span>], y <span class="op">=</span> x.groupby(var)[var].count(), c<span class="op">=</span><span class="st">&#39;grey&#39;</span>)</span>
+<span id="cb59-19"><a href="#cb59-19" tabindex="-1"></a>    <span class="cf">else</span>: </span>
+<span id="cb59-20"><a href="#cb59-20" tabindex="-1"></a>        sec_ax <span class="op">=</span> sec_ax.hist(x[var], bins <span class="op">=</span> <span class="dv">30</span>, color <span class="op">=</span> <span class="st">&#39;grey&#39;</span>, alpha <span class="op">=</span> <span class="fl">.25</span>)</span>
+<span id="cb59-21"><a href="#cb59-21" tabindex="-1"></a></span>
+<span id="cb59-22"><a href="#cb59-22" tabindex="-1"></a>plt.suptitle(<span class="st">&quot;Partial Dependence Plots&quot;</span>)</span>
+<span id="cb59-23"><a href="#cb59-23" tabindex="-1"></a>plt.tight_layout(rect<span class="op">=</span>[<span class="dv">0</span>, <span class="fl">0.03</span>, <span class="dv">1</span>, <span class="fl">0.99</span>])</span>
+<span id="cb59-24"><a href="#cb59-24" tabindex="-1"></a>plt.show()</span></code></pre></div>
+<p><img src="cervical_files/figure-html/unnamed-chunk-51-11.png" width="960" /></p>
+<p>Computing these partial dependencies, we can observe the
+following:</p>
+<ol style="list-style-type: decimal">
+<li>Middle aged women tend to have a higher risk of cervical cancer,
+consistent with current medical understanding. Although the plot spikes
+in later years, we can see that there is very little data in the
+right-tail, so results there are suspect.</li>
+<li>Number of sexual partners most likely has no strong effect. Despite
+some fluctuation, this occurs in locations with little data.</li>
+<li>The age at first sexual intercourse is difficult to make claims
+about. It appears that first intercourse occurring between ages 15-20
+may be associated with greater risk, but again there is little data in
+the two tails, so this is probably an artifact.</li>
+<li>Having 3-4 pregnancies may be associated with greater risk, but
+again, data…</li>
+<li>Surprisingly, the number of years smoking has no effect on risk; the
+quantity of cigarattes smoked, however, does increase risk of cancer.
+Notably, after we pass the point-mass at zero packs per year (implying a
+non-smoker), risk takes a step-function-like increase. It drops down
+shortly after, but this is likely due to very little data at the higher
+numbers of packs per year.</li>
+<li>After 8-9 years of hormonal birth control, risk increases.</li>
+<li>Merely having an IUD does not increase risk, all else equal.
+However, keep in mind that some IUDs are hormonal, in which case the
+hormonal BC effects should be considered.</li>
+<li>Unsurprisingly, a positive pap result carries greater risk.</li>
+<li>Both STDs and any previous cervical diagnoses carry greater risk.
+The number of STDs however appears to be negligable in its effect, with
+the real issue being whether you have an STD or not.</li>
+</ol>
+</div>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("show" === "show");
+});
+</script>
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
