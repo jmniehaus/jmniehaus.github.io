@@ -5,7 +5,7 @@ pagetitle: John Niehaus
 <img src="images/headshot_tamu.jpg" style="width:30%; border:10px solid; margin-right: 40px; margin-top: 20px" align="left">
 
 
-I am a data scientist in the mortgage industry, received my M.S. in statistics in 2021 from Texas A\&M University, and my M.A. in political science in 2020. On this site you will find a set of posts on various topics which I wanted to learn, as I find that I learn best when trying to explain things.
+On this site you will find a set of posts on various statistics and data science topics which I wanted to learn, as I find that I learn best when trying to explain things.
 
 I am also the author and maintainer of the `bizicount` R package, available from [CRAN](https://cran.r-project.org/web/packages/bizicount/index.html), or the dev version from
 [GitHub](https://github.com/jmniehaus/bizicount). To notify me of issues with the package, 
@@ -16,10 +16,10 @@ For my resume, or to visit my GitHub page, see the links above. To contact me vi
 
 
 ```{r klippy, echo=FALSE, include=TRUE}
-klippy::klippy(position = c('top', 'right'),
-               tooltip_message = 'Click to copy', 
-               tooltip_success = 'Done',
-               color = "white")
+klippy::klippy(position = c('bottom', 'left'),
+               tooltip_message = 'Copy to clipboard', 
+               tooltip_success = 'Copied!',
+               color = "blue")
 ```
 
 ```{r, echo=T, eval=F, results='hide', class.source="klippy"}
